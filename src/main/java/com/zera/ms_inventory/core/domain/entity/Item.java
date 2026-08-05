@@ -15,10 +15,13 @@ public class Item {
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastEventAt;
+    private LocalDateTime nextPredictionDate;
+    private Integer manufacturingDate;
+    private Integer usageIntensity;
     private String serialNumber;
     private LocalDate acquiredAt;
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -26,11 +29,14 @@ public class Item {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.lastEventAt = lastEventAt;
+        this.nextPredictionDate = nextPredictionDate;
+        this.manufacturingDate = manufacturingDate;
+        this.usageIntensity = usageIntensity;
         this.serialNumber = serialNumber;
         this.acquiredAt = acquiredAt;
     }
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, LocalDateTime lastEventAt, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -38,11 +44,14 @@ public class Item {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.lastEventAt = lastEventAt;
+        this.nextPredictionDate = nextPredictionDate;
+        this.manufacturingDate = manufacturingDate;
+        this.usageIntensity = usageIntensity;
         this.serialNumber = serialNumber;
         this.acquiredAt = acquiredAt;
     }
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -50,6 +59,9 @@ public class Item {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.lastEventAt = LocalDateTime.now();
+        this.nextPredictionDate = nextPredictionDate;
+        this.manufacturingDate = manufacturingDate;
+        this.usageIntensity = usageIntensity;
         this.serialNumber = serialNumber;
         this.acquiredAt = acquiredAt;
     }
@@ -84,6 +96,18 @@ public class Item {
         return lastEventAt;
     }
 
+    public LocalDateTime getNextPredictionDate() {
+        return nextPredictionDate;
+    }
+
+    public Integer getManufacturingDate() {
+        return manufacturingDate;
+    }
+
+    public Integer getUsageIntensity() {
+        return usageIntensity;
+    }
+
     public String getSerialNumber() {
         return serialNumber;
     }
@@ -111,6 +135,21 @@ public class Item {
 
     public void updateAcquiredAt(LocalDate acquiredAt) {
         this.acquiredAt = acquiredAt;
+        touch();
+    }
+
+    public void updateNextPredictionDate(LocalDateTime nextPredictionDate) {
+        this.nextPredictionDate = nextPredictionDate;
+        touch();
+    }
+
+    public void updateManufacturingDate(Integer manufacturingDate) {
+        this.manufacturingDate = manufacturingDate;
+        touch();
+    }
+
+    public void updateUsageIntensity(Integer usageIntensity) {
+        this.usageIntensity = usageIntensity;
         touch();
     }
 
