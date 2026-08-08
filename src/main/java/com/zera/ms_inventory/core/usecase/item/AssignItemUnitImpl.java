@@ -1,0 +1,23 @@
+package com.zera.ms_inventory.core.usecase.item;
+
+import java.util.UUID;
+
+import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
+import com.zera.ms_inventory.core.repository.ItemRepository;
+
+public class AssignItemUnitImpl implements AssignItemUnit {
+    private final ItemRepository itemRepository;
+
+    public AssignItemUnitImpl(ItemRepository itemRepository) {
+        this.itemRepository = itemRepository;
+    }
+
+    @Override
+    public Item execute(UUID id, UUID unitId) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new ItemNotFoundException(id));
+        item.assignUnit(unitId);
+        return itemRepository.save(item);
+    }
+}
