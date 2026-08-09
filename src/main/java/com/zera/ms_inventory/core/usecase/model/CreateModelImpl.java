@@ -15,7 +15,7 @@ public class CreateModelImpl implements CreateModel {
 
     @Override
     public Model execute(String name, String manufacturer, Integer warrantyMonths, Integer expectedLifespanMonths, Set<String> hazardousMaterials) {
-        Model model = new Model(UUID.randomUUID(), name, manufacturer, warrantyMonths, expectedLifespanMonths, hazardousMaterials);
+        Model model = new Model(UUID.randomUUID(), name, manufacturer, warrantyMonths, expectedLifespanMonths, Set.copyOf(hazardousMaterials));
         return modelRepository.save(model);
     }
 }

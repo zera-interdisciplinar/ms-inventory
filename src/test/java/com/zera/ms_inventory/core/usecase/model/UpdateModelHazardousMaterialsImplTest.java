@@ -1,5 +1,6 @@
 package com.zera.ms_inventory.core.usecase.model;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -37,6 +38,21 @@ class UpdateModelHazardousMaterialsImplTest {
 
         assertEquals(newMaterials, result.getHazardousMaterials());
         verify(modelRepository).save(model);
+    }
+
+    @Test
+    void shouldNotBeAffectedByMutatingCallerSetAfterUpdate() {
+        UUID id = UUID.randomUUID();
+        Model model = new Model(id, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
+        Set<String> callerMaterials = new HashSet<>(Set.of("Mercury"));
+        when(modelRepository.findById(id)).thenReturn(Optional.of(model));
+        when(modelRepository.save(model)).thenReturn(model);
+
+        UpdateModelHazardousMaterialsImpl useCase = new UpdateModelHazardousMaterialsImpl(modelRepository);
+        Model result = useCase.execute(id, callerMaterials);
+        callerMaterials.add("Cadmium");
+
+        assertEquals(Set.of("Mercury"), result.getHazardousMaterials());
     }
 
     @Test

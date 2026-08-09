@@ -18,7 +18,7 @@ public class UpdateModelHazardousMaterialsImpl implements UpdateModelHazardousMa
     public Model execute(UUID id, Set<String> hazardousMaterials) {
         Model model = modelRepository.findById(id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
-        model.changeHazardousMaterials(hazardousMaterials);
+        model.changeHazardousMaterials(Set.copyOf(hazardousMaterials));
         return modelRepository.save(model);
     }
 }
