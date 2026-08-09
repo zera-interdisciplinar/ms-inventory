@@ -15,7 +15,9 @@ import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,11 +31,13 @@ class CreateItemImplTest {
         when(itemRepository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         CreateItemImpl useCase = new CreateItemImpl(itemRepository);
-        LocalDateTime now = LocalDateTime.now();
-        Item result = useCase.execute(new Barcode("123456"), ItemStatus.OK, UUID.randomUUID(), now, now, now, now,
-                12, 5, "SN-001", LocalDate.now());
+        CreateItemCommand command = new CreateItemCommand(new Barcode("123456"), ItemStatus.OK, UUID.randomUUID(),
+                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
+        Item result = useCase.execute(command);
 
+        assertNotNull(result.getId());
         assertEquals(ItemStatus.OK, result.getStatus());
         assertEquals("SN-001", result.getSerialNumber());
+        verify(itemRepository).save(result);
     }
 }
