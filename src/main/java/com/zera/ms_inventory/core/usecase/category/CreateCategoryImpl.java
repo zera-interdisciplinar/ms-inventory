@@ -6,13 +6,14 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Category;
 import com.zera.ms_inventory.core.repository.CategoryRepository;
 
-public class CreateCategoryImpl {
+public class CreateCategoryImpl implements CreateCategory {
     private final CategoryRepository categoryRepository;
 
     public CreateCategoryImpl(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
     }
 
+    @Override
     public Category execute(String name, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
         Category category = new Category(UUID.randomUUID(), name, description, createdAt, updatedAt);
         return categoryRepository.save(category);
