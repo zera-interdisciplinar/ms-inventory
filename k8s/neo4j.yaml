@@ -25,6 +25,7 @@ spec:
       labels:
         app: neo4j
     spec:
+      enableServiceLinks: false
       containers:
       - name: neo4j
         image: neo4j:5-community
@@ -47,6 +48,18 @@ spec:
         volumeMounts:
         - name: neo4j-storage
           mountPath: /data
+        livenessProbe:
+          tcpSocket:
+            port: 7687
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: 7687
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
       volumes:
       - name: neo4j-storage
         persistentVolumeClaim:
