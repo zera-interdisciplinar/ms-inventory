@@ -1,0 +1,67 @@
+package com.zera.ms_inventory.core.usecase.model;
+
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
+import com.zera.ms_inventory.core.repository.ModelRepository;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class UpdateModelHazardousMaterialsImplTest {
+
+    @Mock
+    private ModelRepository modelRepository;
+
+    @Test
+    void shouldUpdateHazardousMaterials() {
+        UUID id = UUID.randomUUID();
+        Model model = new Model(id, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
+        Set<String> newMaterials = Set.of("Mercury", "Cadmium");
+        when(modelRepository.findById(id)).thenReturn(Optional.of(model));
+        when(modelRepository.save(model)).thenReturn(model);
+
+        UpdateModelHazardousMaterialsImpl useCase = new UpdateModelHazardousMaterialsImpl(modelRepository);
+        Model result = useCase.execute(id, newMaterials);
+
+        assertEquals(newMaterials, result.getHazardousMaterials());
+        verify(modelRepository).save(model);
+    }
+
+    @Test
+    void shouldNotBeAffectedByMutatingCallerSetAfterUpdate() {
+        UUID id = UUID.randomUUID();
+        Model model = new Model(id, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
+        Set<String> callerMaterials = new HashSet<>(Set.of("Mercury"));
+        when(modelRepository.findById(id)).thenReturn(Optional.of(model));
+        when(modelRepository.save(model)).thenReturn(model);
+
+        UpdateModelHazardousMaterialsImpl useCase = new UpdateModelHazardousMaterialsImpl(modelRepository);
+        Model result = useCase.execute(id, callerMaterials);
+        callerMaterials.add("Cadmium");
+
+        assertEquals(Set.of("Mercury"), result.getHazardousMaterials());
+    }
+
+    @Test
+    void shouldThrowWhenModelDoesNotExist() {
+        UUID id = UUID.randomUUID();
+        when(modelRepository.findById(id)).thenReturn(Optional.empty());
+
+        UpdateModelHazardousMaterialsImpl useCase = new UpdateModelHazardousMaterialsImpl(modelRepository);
+
+        assertThrows(ModelNotFoundException.class, () -> useCase.execute(id, Set.of("Mercury")));
+    }
+}
