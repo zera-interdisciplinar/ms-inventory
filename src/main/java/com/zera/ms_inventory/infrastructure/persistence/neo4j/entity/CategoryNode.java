@@ -54,3 +54,5 @@ public class CategoryNode {
         return updatedAt;
     }
 }
+
+//TODO: incluir relacionamentos com @Relationship
