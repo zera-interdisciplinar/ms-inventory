@@ -2,9 +2,12 @@ package com.zera.ms_inventory.core.usecase.item;
 
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 
+@Service
 public class FindAllItemsImpl implements FindAllItems {
     private final ItemRepository itemRepository;
 

@@ -2,6 +2,8 @@ package com.zera.ms_inventory.core.domain.valueobject;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public class Barcode {
 
     private final String value;
@@ -13,6 +15,7 @@ public class Barcode {
         this.value = value;
     }
 
+    @JsonValue
     public String getValue() {
         return value;
     }
