@@ -2,9 +2,12 @@ package com.zera.ms_inventory.core.usecase.model;
 
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 
+@Service
 public class DeleteModelImpl implements DeleteModel {
     private final ModelRepository modelRepository;
 
