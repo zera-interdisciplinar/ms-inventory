@@ -3,10 +3,13 @@ package com.zera.ms_inventory.core.usecase.item;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 
+@Service
 public class UpdateItemNextPredictionDateImpl implements UpdateItemNextPredictionDate {
     private final ItemRepository itemRepository;
 
