@@ -9,8 +9,8 @@ import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 
-import io.modelcontextprotocol.server.mcp.annotation.McpTool;
-import io.modelcontextprotocol.server.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
 
 @Component
 public class SearchInventoryTool {
@@ -54,7 +54,7 @@ public class SearchInventoryTool {
         if (item.getSerialNumber() == null) {
             return false;
         }
-        return item.getSerialNumber().getValue()
+        return item.getSerialNumber()
             .toLowerCase()
             .contains(serialNumber.toLowerCase());
     }

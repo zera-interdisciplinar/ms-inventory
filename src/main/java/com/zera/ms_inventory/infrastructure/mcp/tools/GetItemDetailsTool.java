@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 
-import io.modelcontextprotocol.server.mcp.annotation.McpTool;
-import io.modelcontextprotocol.server.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
 
 @Component
 public class GetItemDetailsTool {

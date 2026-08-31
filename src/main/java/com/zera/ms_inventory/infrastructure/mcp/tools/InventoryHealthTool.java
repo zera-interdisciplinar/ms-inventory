@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 
-import io.modelcontextprotocol.server.mcp.annotation.McpTool;
-import io.modelcontextprotocol.server.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
 
 @Component
 public class InventoryHealthTool {
@@ -35,7 +35,7 @@ public class InventoryHealthTool {
         List<Item> items = findAllItems.execute();
 
         if (items.isEmpty()) {
-            return new InventoryHealthReport(0, 0, 0.0, 0, 0, 0, 0);
+            return new InventoryHealthReport(0, 0, 0.0, 0, 0, 0);
         }
 
         long totalItems = items.size();
