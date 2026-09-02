@@ -36,3 +36,9 @@ build/
 
 ### Windows Zone.Identifier ###
 *:Zone.Identifier
+# Added by code-review-graph
+.code-review-graph/
+.serena
+CLAUDE.md
+.mcp.json
+.claude
