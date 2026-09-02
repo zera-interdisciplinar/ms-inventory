@@ -33,6 +33,9 @@ build/
 .vscode/
 
 .env
+
+### Windows Zone.Identifier ###
+*:Zone.Identifier
 # Added by code-review-graph
 .code-review-graph/
 .serena
