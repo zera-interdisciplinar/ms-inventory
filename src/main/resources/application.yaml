@@ -1,0 +1,12 @@
+spring:
+  ai:
+    mcp:
+      server:
+        protocol: STREAMABLE
+        type: SYNC
+        name: ms-inventory-mcp
+        version: 1.0.0
+        instructions: "Inventory management system for tracking items, models, and categories with health analytics"
+        annotation-scanner:
+          enabled: true
+        web-endpoint: /mcp
