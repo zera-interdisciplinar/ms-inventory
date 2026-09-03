@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.core.usecase.model;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -9,11 +8,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,24 +24,23 @@ class DeleteModelImplTest {
     private ModelRepository modelRepository;
 
     @Test
-    void shouldDeleteModelWhenItExists() {
+    void shouldDelete() {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
-        when(modelRepository.findById(id)).thenReturn(Optional.of(model));
+        when(modelRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(Fixtures.model(id, Fixtures.UNIT)));
 
-        DeleteModelImpl useCase = new DeleteModelImpl(modelRepository);
-        useCase.execute(id);
+        new DeleteModelImpl(modelRepository).execute(Fixtures.UNIT, id);
 
-        verify(modelRepository).deleteById(id);
+        verify(modelRepository).deleteById(Fixtures.UNIT, id);
     }
 
     @Test
-    void shouldThrowWhenModelDoesNotExist() {
+    void shouldNotDeleteFromAnotherUnit() {
         UUID id = UUID.randomUUID();
-        when(modelRepository.findById(id)).thenReturn(Optional.empty());
+        when(modelRepository.findById(Fixtures.OTHER_UNIT, id)).thenReturn(Optional.empty());
 
         DeleteModelImpl useCase = new DeleteModelImpl(modelRepository);
 
-        assertThrows(ModelNotFoundException.class, () -> useCase.execute(id));
+        assertThrows(ModelNotFoundException.class, () -> useCase.execute(Fixtures.OTHER_UNIT, id));
+        verify(modelRepository, never()).deleteById(Fixtures.OTHER_UNIT, id);
     }
 }

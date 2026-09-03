@@ -17,8 +17,8 @@ public class UpdateCategoryNameImpl implements UpdateCategoryName {
     }
 
     @Override
-    public Category execute(UUID id, String name) {
-        Category category = categoryRepository.findById(id)
+    public Category execute(UUID unitId, UUID id, String name) {
+        Category category = categoryRepository.findById(unitId, id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));
         category.rename(name);
         return categoryRepository.save(category);

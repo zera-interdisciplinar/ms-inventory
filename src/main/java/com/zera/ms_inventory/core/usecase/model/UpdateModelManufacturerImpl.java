@@ -17,8 +17,8 @@ public class UpdateModelManufacturerImpl implements UpdateModelManufacturer {
     }
 
     @Override
-    public Model execute(UUID id, String manufacturer) {
-        Model model = modelRepository.findById(id)
+    public Model execute(UUID unitId, UUID id, String manufacturer) {
+        Model model = modelRepository.findById(unitId, id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
         model.changeManufacturer(manufacturer);
         return modelRepository.save(model);

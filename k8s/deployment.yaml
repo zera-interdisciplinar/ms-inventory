@@ -64,3 +64,9 @@ spec:
             secretKeyRef:
               name: neo4j-secrets
               key: NEO4J_PASSWORD
+        # secret já existente no namespace; evita criar um segundo segredo para a mesma chave
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ms-artificial-intelligence-core-secrets
+              key: GEMINI_API_KEY

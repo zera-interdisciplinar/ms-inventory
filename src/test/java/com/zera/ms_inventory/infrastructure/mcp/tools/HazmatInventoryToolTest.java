@@ -9,10 +9,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.usecase.model.FindAllModels;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -21,31 +24,44 @@ class HazmatInventoryToolTest {
     @Mock
     private FindAllModels findAllModels;
 
+    private Model model(String name, Set<String> hazmat) {
+        return new Model(UUID.randomUUID(), Fixtures.UNIT, name, "Acme", 24, 60, hazmat,
+                Fixtures.category(Fixtures.UNIT));
+    }
+
     @Test
-    void shouldFilterModelsWithHazardousMaterials() {
-        Model hazmat = new Model(UUID.randomUUID(), "Battery", "Acme", 12, 60, Set.of("Lithium"));
-        Model clean = new Model(UUID.randomUUID(), "Hammer", "Acme", 12, 60, Set.of());
-        when(findAllModels.execute()).thenReturn(List.of(hazmat, clean));
+    void shouldListOnlyModelsWithHazardousMaterials() {
+        when(findAllModels.execute(Fixtures.UNIT)).thenReturn(List.of(
+                model("Laptop", Set.of("Lithium")),
+                model("Cadeira", Set.of())));
 
-        HazmatInventoryTool tool = new HazmatInventoryTool(findAllModels);
-
-        List<HazmatInventoryTool.HazmatModel> result = tool.getHazmatInventory(null, null);
+        List<HazmatInventoryTool.HazmatModel> result =
+                new HazmatInventoryTool(findAllModels).getHazmatInventory(Fixtures.UNIT, null, null);
 
         assertEquals(1, result.size());
-        assertEquals(hazmat.getId(), result.get(0).modelId);
+        assertEquals("Laptop", result.get(0).modelName);
+        assertEquals("Electronics", result.get(0).categoryName);
     }
 
     @Test
     void shouldApplyLimitAndOffset() {
-        Model m1 = new Model(UUID.randomUUID(), "A", "Acme", 12, 60, Set.of("X"));
-        Model m2 = new Model(UUID.randomUUID(), "B", "Acme", 12, 60, Set.of("Y"));
-        when(findAllModels.execute()).thenReturn(List.of(m1, m2));
+        when(findAllModels.execute(Fixtures.UNIT)).thenReturn(List.of(
+                model("A", Set.of("Lithium")),
+                model("B", Set.of("Mercury")),
+                model("C", Set.of("Cobalt"))));
 
-        HazmatInventoryTool tool = new HazmatInventoryTool(findAllModels);
-
-        List<HazmatInventoryTool.HazmatModel> result = tool.getHazmatInventory(1, 1);
+        List<HazmatInventoryTool.HazmatModel> result =
+                new HazmatInventoryTool(findAllModels).getHazmatInventory(Fixtures.UNIT, 1, 1);
 
         assertEquals(1, result.size());
-        assertEquals(m2.getId(), result.get(0).modelId);
+        assertEquals("B", result.get(0).modelName);
+    }
+
+    @Test
+    void shouldRejectMissingUnitIdInsteadOfFallingBackToAGlobalRead() {
+        HazmatInventoryTool tool = new HazmatInventoryTool(findAllModels);
+
+        assertThrows(IllegalArgumentException.class, () -> tool.getHazmatInventory(null, null, null));
+        verifyNoInteractions(findAllModels);
     }
 }

@@ -17,8 +17,8 @@ public class UpdateModelNameImpl implements UpdateModelName {
     }
 
     @Override
-    public Model execute(UUID id, String name) {
-        Model model = modelRepository.findById(id)
+    public Model execute(UUID unitId, UUID id, String name) {
+        Model model = modelRepository.findById(unitId, id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
         model.rename(name);
         return modelRepository.save(model);

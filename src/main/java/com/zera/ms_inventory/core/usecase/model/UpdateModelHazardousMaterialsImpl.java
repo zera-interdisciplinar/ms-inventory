@@ -18,8 +18,8 @@ public class UpdateModelHazardousMaterialsImpl implements UpdateModelHazardousMa
     }
 
     @Override
-    public Model execute(UUID id, Set<String> hazardousMaterials) {
-        Model model = modelRepository.findById(id)
+    public Model execute(UUID unitId, UUID id, Set<String> hazardousMaterials) {
+        Model model = modelRepository.findById(unitId, id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
         model.changeHazardousMaterials(Set.copyOf(hazardousMaterials));
         return modelRepository.save(model);

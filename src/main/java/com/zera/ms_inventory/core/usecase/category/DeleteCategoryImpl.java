@@ -16,9 +16,9 @@ public class DeleteCategoryImpl implements DeleteCategory {
     }
 
     @Override
-    public void execute(UUID id) {
-        categoryRepository.findById(id)
+    public void execute(UUID unitId, UUID id) {
+        categoryRepository.findById(unitId, id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));
-        categoryRepository.deleteById(id);
+        categoryRepository.deleteById(unitId, id);
     }
 }

@@ -5,5 +5,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Model;
 
 public interface UpdateModelExpectedLifespanMonths {
-    Model execute(UUID id, Integer expectedLifespanMonths);
+    Model execute(UUID unitId, UUID id, Integer expectedLifespanMonths);
 }

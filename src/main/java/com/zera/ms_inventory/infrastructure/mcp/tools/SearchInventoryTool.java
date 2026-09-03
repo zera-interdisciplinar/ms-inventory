@@ -1,6 +1,7 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -23,17 +24,19 @@ public class SearchInventoryTool {
 
     @McpTool(
         name = "search_inventory",
-        description = "Search inventory items by status and/or serial number. Returns matching items with their details.",
+        description = "Search inventory items by exact status and/or serial number substring. "
+                + "Use semantic_search_inventory instead when the user describes the equipment in natural language.",
         annotations = @McpTool.McpAnnotations(
             readOnlyHint = true,
             title = "Search Inventory"
         )
     )
     public List<Item> searchInventory(
+            @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId,
             @McpToolParam(description = "Filter by item status (DAMAGED or OK). Optional.", required = false) String status,
             @McpToolParam(description = "Filter by serial number (partial match, case-insensitive). Optional.", required = false) String serialNumber) {
 
-        List<Item> allItems = findAllItems.execute();
+        List<Item> allItems = findAllItems.execute(McpToolScope.require(unitId));
 
         return allItems.stream()
             .filter(item -> status == null || matchesStatus(item, status))

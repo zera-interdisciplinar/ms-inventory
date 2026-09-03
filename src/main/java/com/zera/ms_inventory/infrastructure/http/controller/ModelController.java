@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -68,50 +69,51 @@ public class ModelController {
     }
 
     @PostMapping
-    public ResponseEntity<Model> create(@RequestBody @Valid CreateModelRequest request) {
-        Model created = createModel.execute(request.name(), request.manufacturer(), request.warrantyMonths(),
-                request.expectedLifespanMonths(), request.hazardousMaterials());
+    public ResponseEntity<Model> create(@RequestHeader("X-Unit-Id") UUID unitId,
+                                         @RequestBody @Valid CreateModelRequest request) {
+        Model created = createModel.execute(unitId, request.name(), request.manufacturer(), request.warrantyMonths(),
+                request.expectedLifespanMonths(), request.hazardousMaterials(), request.categoryId());
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping
-    public ResponseEntity<List<Model>> findAll() {
-        return ResponseEntity.ok(findAllModels.execute());
+    public ResponseEntity<List<Model>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
+        return ResponseEntity.ok(findAllModels.execute(unitId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Model> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(findModelById.execute(id));
+    public ResponseEntity<Model> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        return ResponseEntity.ok(findModelById.execute(unitId, id));
     }
 
     @PatchMapping("/{id}/name")
-    public ResponseEntity<Model> rename(@PathVariable UUID id, @RequestBody @Valid UpdateModelNameRequest request) {
-        return ResponseEntity.ok(updateModelName.execute(id, request.name()));
+    public ResponseEntity<Model> rename(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelNameRequest request) {
+        return ResponseEntity.ok(updateModelName.execute(unitId, id, request.name()));
     }
 
     @PatchMapping("/{id}/manufacturer")
-    public ResponseEntity<Model> updateManufacturer(@PathVariable UUID id, @RequestBody @Valid UpdateModelManufacturerRequest request) {
-        return ResponseEntity.ok(updateModelManufacturer.execute(id, request.manufacturer()));
+    public ResponseEntity<Model> updateManufacturer(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelManufacturerRequest request) {
+        return ResponseEntity.ok(updateModelManufacturer.execute(unitId, id, request.manufacturer()));
     }
 
     @PatchMapping("/{id}/warranty-months")
-    public ResponseEntity<Model> updateWarrantyMonths(@PathVariable UUID id, @RequestBody @Valid UpdateModelWarrantyMonthsRequest request) {
-        return ResponseEntity.ok(updateModelWarrantyMonths.execute(id, request.warrantyMonths()));
+    public ResponseEntity<Model> updateWarrantyMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelWarrantyMonthsRequest request) {
+        return ResponseEntity.ok(updateModelWarrantyMonths.execute(unitId, id, request.warrantyMonths()));
     }
 
     @PatchMapping("/{id}/expected-lifespan-months")
-    public ResponseEntity<Model> updateExpectedLifespanMonths(@PathVariable UUID id, @RequestBody @Valid UpdateModelExpectedLifespanMonthsRequest request) {
-        return ResponseEntity.ok(updateModelExpectedLifespanMonths.execute(id, request.expectedLifespanMonths()));
+    public ResponseEntity<Model> updateExpectedLifespanMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelExpectedLifespanMonthsRequest request) {
+        return ResponseEntity.ok(updateModelExpectedLifespanMonths.execute(unitId, id, request.expectedLifespanMonths()));
     }
 
     @PatchMapping("/{id}/hazardous-materials")
-    public ResponseEntity<Model> updateHazardousMaterials(@PathVariable UUID id, @RequestBody @Valid UpdateModelHazardousMaterialsRequest request) {
-        return ResponseEntity.ok(updateModelHazardousMaterials.execute(id, request.hazardousMaterials()));
+    public ResponseEntity<Model> updateHazardousMaterials(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelHazardousMaterialsRequest request) {
+        return ResponseEntity.ok(updateModelHazardousMaterials.execute(unitId, id, request.hazardousMaterials()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        deleteModel.execute(id);
+    public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        deleteModel.execute(unitId, id);
         return ResponseEntity.noContent().build();
     }
 }

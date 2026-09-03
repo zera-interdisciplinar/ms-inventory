@@ -1,9 +1,9 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
@@ -31,6 +31,7 @@ public class WarrantyExpirationReportTool {
         )
     )
     public List<WarrantyExpiringItem> getWarrantyExpirationReport(
+            @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId,
             @McpToolParam(description = "Days ahead to check for expiration (default: 30)", required = false) Integer daysAhead,
             @McpToolParam(description = "Maximum number of results", required = false) Integer limit,
             @McpToolParam(description = "Pagination offset", required = false) Integer offset) {
@@ -40,40 +41,39 @@ public class WarrantyExpirationReportTool {
         int actualOffset = offset != null ? offset : 0;
 
         LocalDate today = LocalDate.now();
-        LocalDate expirationDeadline = today.plusDays(checkDays);
+        LocalDate deadline = today.plusDays(checkDays);
 
-        List<Item> items = findAllItems.execute();
+        List<WarrantyExpiringItem> expiring = new ArrayList<>();
+        for (Item item : findAllItems.execute(McpToolScope.require(unitId))) {
+            LocalDate expiry = warrantyExpiry(item);
+            if (expiry == null || expiry.isBefore(today) || expiry.isAfter(deadline)) {
+                continue;
+            }
+            expiring.add(new WarrantyExpiringItem(item.getId(), item.getSerialNumber(), item.getAcquiredAt(), expiry));
+        }
 
-        return items.stream()
-            .filter(item -> {
-                if (item.getAcquiredAt() == null) return false;
-                // Warranty expiration would be acquiredAt + warrantyMonths
-                // For now, filter by items acquired within last N years
-                LocalDate potentialExpiry = item.getAcquiredAt().plusYears(3);
-                return !potentialExpiry.isBefore(today) && !potentialExpiry.isAfter(expirationDeadline);
-            })
-            .skip(actualOffset)
-            .limit(actualLimit)
-            .map(item -> new WarrantyExpiringItem(
-                item.getId(),
-                item.getSerialNumber(),
-                item.getAcquiredAt(),
-                item.getAcquiredAt().plusYears(3) // Estimated expiry
-            ))
-            .collect(Collectors.toList());
+        return expiring.stream().skip(actualOffset).limit(actualLimit).toList();
+    }
+
+    private LocalDate warrantyExpiry(Item item) {
+        if (item.getAcquiredAt() == null || item.getModel() == null
+                || item.getModel().getWarrantyMonths() == null) {
+            return null;
+        }
+        return item.getAcquiredAt().plusMonths(item.getModel().getWarrantyMonths());
     }
 
     public static class WarrantyExpiringItem {
-        public final java.util.UUID itemId;
+        public final UUID itemId;
         public final String serialNumber;
         public final LocalDate acquiredAt;
-        public final LocalDate estimatedExpiryDate;
+        public final LocalDate expiryDate;
 
-        public WarrantyExpiringItem(java.util.UUID itemId, String serialNumber, LocalDate acquiredAt, LocalDate estimatedExpiryDate) {
+        public WarrantyExpiringItem(UUID itemId, String serialNumber, LocalDate acquiredAt, LocalDate expiryDate) {
             this.itemId = itemId;
             this.serialNumber = serialNumber;
             this.acquiredAt = acquiredAt;
-            this.estimatedExpiryDate = estimatedExpiryDate;
+            this.expiryDate = expiryDate;
         }
     }
 }

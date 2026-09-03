@@ -17,8 +17,8 @@ public class FindCategoryByIdImpl implements FindCategoryById {
     }
 
     @Override
-    public Category execute(UUID id) {
-        return categoryRepository.findById(id)
+    public Category execute(UUID unitId, UUID id) {
+        return categoryRepository.findById(unitId, id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));
     }
 }
