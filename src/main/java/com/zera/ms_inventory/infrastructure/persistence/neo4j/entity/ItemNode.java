@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
+import org.springframework.data.neo4j.core.schema.Relationship;
 
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 
@@ -21,6 +22,9 @@ public class ItemNode {
     private ItemStatus status;
 
     private UUID unitId;
+
+    @Relationship(type = "IS_MODEL", direction = Relationship.Direction.OUTGOING)
+    private ModelNode model;
 
     @Property("createdAt")
     private LocalDateTime createdAt;
@@ -76,6 +80,14 @@ public class ItemNode {
 
     public UUID getUnitId() {
         return unitId;
+    }
+
+    public ModelNode getModel() {
+        return model;
+    }
+
+    public void setModel(ModelNode model) {
+        this.model = model;
     }
 
     public LocalDateTime getCreatedAt() {

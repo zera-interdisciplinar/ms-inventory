@@ -54,6 +54,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @org.springframework.context.annotation.Import(GlobalExceptionHandler.class)
 class ItemControllerTest {
 
+
+    private static final UUID UNIT = com.zera.ms_inventory.Fixtures.UNIT;
+    private static final UUID MODEL_ID = UUID.fromString("00000000-0000-0000-0000-0000000000d4");
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -73,7 +77,8 @@ class ItemControllerTest {
     @MockitoBean private DeleteItem deleteItem;
 
     private Item sampleItem(UUID id) {
-        return new Item(id, new Barcode("123456"), ItemStatus.OK, UUID.randomUUID(), LocalDateTime.now(),
+        return new Item(id, new Barcode("123456"), ItemStatus.OK, UNIT,
+                com.zera.ms_inventory.Fixtures.model(MODEL_ID, UNIT), LocalDateTime.now(),
                 12, 5, "SN-001", LocalDate.now());
     }
 
@@ -84,12 +89,13 @@ class ItemControllerTest {
         Item item = sampleItem(id);
         when(createItem.execute(any(CreateItemCommand.class))).thenReturn(item);
 
-        CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, UUID.randomUUID(),
+        CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
                 LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
 
         mockMvc.perform(post("/api/v1/items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.barcode").value("123456"));
@@ -98,12 +104,13 @@ class ItemControllerTest {
     @Test
     @DisplayName("POST /api/v1/items - deve retornar 400 quando o barcode estiver em branco")
     void shouldReturn400WhenBarcodeIsBlank() throws Exception {
-        CreateItemRequest request = new CreateItemRequest("", ItemStatus.OK, UUID.randomUUID(),
+        CreateItemRequest request = new CreateItemRequest("", ItemStatus.OK, MODEL_ID,
                 LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
 
         mockMvc.perform(post("/api/v1/items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
     }
 
@@ -111,9 +118,10 @@ class ItemControllerTest {
     @DisplayName("GET /api/v1/items - deve listar todos os itens")
     void shouldFindAllItems() throws Exception {
         Item item = sampleItem(UUID.randomUUID());
-        when(findAllItems.execute()).thenReturn(List.of(item));
+        when(findAllItems.execute(UNIT)).thenReturn(List.of(item));
 
-        mockMvc.perform(get("/api/v1/items"))
+        mockMvc.perform(get("/api/v1/items")
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].barcode").value("123456"));
     }
@@ -123,9 +131,10 @@ class ItemControllerTest {
     void shouldFindItemById() throws Exception {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(findItemById.execute(id)).thenReturn(item);
+        when(findItemById.execute(UNIT, id)).thenReturn(item);
 
-        mockMvc.perform(get("/api/v1/items/{id}", id))
+        mockMvc.perform(get("/api/v1/items/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -134,9 +143,10 @@ class ItemControllerTest {
     @DisplayName("GET /api/v1/items/{id} - deve retornar 404 quando o item não existir")
     void shouldReturn404WhenItemDoesNotExist() throws Exception {
         UUID id = UUID.randomUUID();
-        when(findItemById.execute(id)).thenThrow(new ItemNotFoundException(id));
+        when(findItemById.execute(UNIT, id)).thenThrow(new ItemNotFoundException(id));
 
-        mockMvc.perform(get("/api/v1/items/{id}", id))
+        mockMvc.perform(get("/api/v1/items/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNotFound());
     }
 
@@ -145,11 +155,12 @@ class ItemControllerTest {
     void shouldUpdateStatus() throws Exception {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(updateItemStatus.execute(id, ItemStatus.DAMAGED)).thenReturn(item);
+        when(updateItemStatus.execute(UNIT, id, ItemStatus.DAMAGED)).thenReturn(item);
 
         mockMvc.perform(patch("/api/v1/items/{id}/status", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(ItemStatus.DAMAGED))))
+                        .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(ItemStatus.DAMAGED)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
 
@@ -159,11 +170,12 @@ class ItemControllerTest {
         UUID id = UUID.randomUUID();
         UUID unitId = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(assignItemUnit.execute(id, unitId)).thenReturn(item);
+        when(assignItemUnit.execute(UNIT, id, unitId)).thenReturn(item);
 
         mockMvc.perform(patch("/api/v1/items/{id}/unit", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new AssignItemUnitRequest(unitId))))
+                        .content(objectMapper.writeValueAsString(new AssignItemUnitRequest(unitId)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
 
@@ -172,11 +184,12 @@ class ItemControllerTest {
     void shouldUpdateSerialNumber() throws Exception {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(updateItemSerialNumber.execute(id, "SN-002")).thenReturn(item);
+        when(updateItemSerialNumber.execute(UNIT, id, "SN-002")).thenReturn(item);
 
         mockMvc.perform(patch("/api/v1/items/{id}/serial-number", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemSerialNumberRequest("SN-002"))))
+                        .content(objectMapper.writeValueAsString(new UpdateItemSerialNumberRequest("SN-002")))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
 
@@ -186,11 +199,12 @@ class ItemControllerTest {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
         LocalDate newDate = LocalDate.now();
-        when(updateItemAcquiredAt.execute(id, newDate)).thenReturn(item);
+        when(updateItemAcquiredAt.execute(UNIT, id, newDate)).thenReturn(item);
 
         mockMvc.perform(patch("/api/v1/items/{id}/acquired-at", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemAcquiredAtRequest(newDate))))
+                        .content(objectMapper.writeValueAsString(new UpdateItemAcquiredAtRequest(newDate)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
 
@@ -200,11 +214,12 @@ class ItemControllerTest {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
         LocalDateTime newDate = LocalDateTime.now();
-        when(updateItemNextPredictionDate.execute(id, newDate)).thenReturn(item);
+        when(updateItemNextPredictionDate.execute(UNIT, id, newDate)).thenReturn(item);
 
         mockMvc.perform(patch("/api/v1/items/{id}/next-prediction-date", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemNextPredictionDateRequest(newDate))))
+                        .content(objectMapper.writeValueAsString(new UpdateItemNextPredictionDateRequest(newDate)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
 
@@ -213,11 +228,12 @@ class ItemControllerTest {
     void shouldUpdateManufacturingDate() throws Exception {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(updateItemManufacturingDate.execute(id, 2024)).thenReturn(item);
+        when(updateItemManufacturingDate.execute(UNIT, id, 2024)).thenReturn(item);
 
         mockMvc.perform(patch("/api/v1/items/{id}/manufacturing-date", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemManufacturingDateRequest(2024))))
+                        .content(objectMapper.writeValueAsString(new UpdateItemManufacturingDateRequest(2024)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
 
@@ -226,11 +242,12 @@ class ItemControllerTest {
     void shouldUpdateUsageIntensity() throws Exception {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(updateItemUsageIntensity.execute(id, 8)).thenReturn(item);
+        when(updateItemUsageIntensity.execute(UNIT, id, 8)).thenReturn(item);
 
         mockMvc.perform(patch("/api/v1/items/{id}/usage-intensity", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemUsageIntensityRequest(8))))
+                        .content(objectMapper.writeValueAsString(new UpdateItemUsageIntensityRequest(8)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
 
@@ -239,9 +256,10 @@ class ItemControllerTest {
     void shouldDeleteItem() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/v1/items/{id}", id))
+        mockMvc.perform(delete("/api/v1/items/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNoContent());
 
-        verify(deleteItem).execute(id);
+        verify(deleteItem).execute(UNIT, id);
     }
 }

@@ -18,8 +18,8 @@ public class UpdateItemAcquiredAtImpl implements UpdateItemAcquiredAt {
     }
 
     @Override
-    public Item execute(UUID id, LocalDate acquiredAt) {
-        Item item = itemRepository.findById(id)
+    public Item execute(UUID unitId, UUID id, LocalDate acquiredAt) {
+        Item item = itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
         item.updateAcquiredAt(acquiredAt);
         return itemRepository.save(item);

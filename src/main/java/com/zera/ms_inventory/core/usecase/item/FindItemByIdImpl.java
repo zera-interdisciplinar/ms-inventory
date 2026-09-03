@@ -17,8 +17,8 @@ public class FindItemByIdImpl implements FindItemById {
     }
 
     @Override
-    public Item execute(UUID id) {
-        return itemRepository.findById(id)
+    public Item execute(UUID unitId, UUID id) {
+        return itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
     }
 }

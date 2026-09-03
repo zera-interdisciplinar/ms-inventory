@@ -16,9 +16,9 @@ public class DeleteModelImpl implements DeleteModel {
     }
 
     @Override
-    public void execute(UUID id) {
-        modelRepository.findById(id)
+    public void execute(UUID unitId, UUID id) {
+        modelRepository.findById(unitId, id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
-        modelRepository.deleteById(id);
+        modelRepository.deleteById(unitId, id);
     }
 }

@@ -18,8 +18,8 @@ public class UpdateItemStatusImpl implements UpdateItemStatus {
     }
 
     @Override
-    public Item execute(UUID id, ItemStatus status) {
-        Item item = itemRepository.findById(id)
+    public Item execute(UUID unitId, UUID id, ItemStatus status) {
+        Item item = itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
         item.updateStatus(status);
         return itemRepository.save(item);

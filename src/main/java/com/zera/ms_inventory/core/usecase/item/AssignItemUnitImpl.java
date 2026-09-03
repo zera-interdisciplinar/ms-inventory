@@ -17,10 +17,10 @@ public class AssignItemUnitImpl implements AssignItemUnit {
     }
 
     @Override
-    public Item execute(UUID id, UUID unitId) {
-        Item item = itemRepository.findById(id)
+    public Item execute(UUID unitId, UUID id, UUID newUnitId) {
+        Item item = itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
-        item.assignUnit(unitId);
+        item.assignUnit(newUnitId);
         return itemRepository.save(item);
     }
 }

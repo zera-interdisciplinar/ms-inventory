@@ -1,6 +1,7 @@
 package com.zera.ms_inventory.core.usecase.item;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,7 @@ public class FindAllItemsImpl implements FindAllItems {
     }
 
     @Override
-    public List<Item> execute() {
-        return itemRepository.findAll();
+    public List<Item> execute(UUID unitId) {
+        return itemRepository.findAll(unitId);
     }
 }

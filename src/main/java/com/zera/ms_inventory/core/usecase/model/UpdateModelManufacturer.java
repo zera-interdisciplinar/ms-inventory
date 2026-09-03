@@ -5,5 +5,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Model;
 
 public interface UpdateModelManufacturer {
-    Model execute(UUID id, String manufacturer);
+    Model execute(UUID unitId, UUID id, String manufacturer);
 }

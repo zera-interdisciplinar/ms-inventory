@@ -1,6 +1,7 @@
 package com.zera.ms_inventory.core.usecase.category;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,7 @@ public class FindAllCategoriesImpl implements FindAllCategories {
     }
 
     @Override
-    public List<Category> execute() {
-        return categoryRepository.findAll();
+    public List<Category> execute(UUID unitId) {
+        return categoryRepository.findAll(unitId);
     }
 }

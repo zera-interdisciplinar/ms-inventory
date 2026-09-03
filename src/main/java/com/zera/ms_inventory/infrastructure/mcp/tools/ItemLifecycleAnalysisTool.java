@@ -30,9 +30,10 @@ public class ItemLifecycleAnalysisTool {
         )
     )
     public ItemLifecycleReport analyzeItemLifecycle(
+            @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId,
             @McpToolParam(description = "UUID of the item to analyze", required = true) UUID itemId) {
 
-        Item item = findItemById.execute(itemId);
+        Item item = findItemById.execute(McpToolScope.require(unitId), itemId);
         LocalDate today = LocalDate.now();
 
         long ageInDays = 0;

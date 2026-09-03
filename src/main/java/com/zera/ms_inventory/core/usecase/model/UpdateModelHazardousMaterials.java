@@ -6,5 +6,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Model;
 
 public interface UpdateModelHazardousMaterials {
-    Model execute(UUID id, Set<String> hazardousMaterials);
+    Model execute(UUID unitId, UUID id, Set<String> hazardousMaterials);
 }

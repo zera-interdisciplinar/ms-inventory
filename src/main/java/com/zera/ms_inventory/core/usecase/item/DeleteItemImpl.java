@@ -16,9 +16,9 @@ public class DeleteItemImpl implements DeleteItem {
     }
 
     @Override
-    public void execute(UUID id) {
-        itemRepository.findById(id)
+    public void execute(UUID unitId, UUID id) {
+        itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
-        itemRepository.deleteById(id);
+        itemRepository.deleteById(unitId, id);
     }
 }

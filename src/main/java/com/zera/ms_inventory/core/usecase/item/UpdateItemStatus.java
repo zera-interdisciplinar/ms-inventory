@@ -6,5 +6,5 @@ import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 
 public interface UpdateItemStatus {
-    Item execute(UUID id, ItemStatus status);
+    Item execute(UUID unitId, UUID id, ItemStatus status);
 }

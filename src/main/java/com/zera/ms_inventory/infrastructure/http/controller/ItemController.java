@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -78,59 +79,60 @@ public class ItemController {
     }
 
     @PostMapping
-    public ResponseEntity<Item> create(@RequestBody @Valid CreateItemRequest request) {
-        Item created = createItem.execute(request.toCommand());
+    public ResponseEntity<Item> create(@RequestHeader("X-Unit-Id") UUID unitId,
+                                        @RequestBody @Valid CreateItemRequest request) {
+        Item created = createItem.execute(request.toCommand(unitId));
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping
-    public ResponseEntity<List<Item>> findAll() {
-        return ResponseEntity.ok(findAllItems.execute());
+    public ResponseEntity<List<Item>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
+        return ResponseEntity.ok(findAllItems.execute(unitId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Item> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(findItemById.execute(id));
+    public ResponseEntity<Item> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        return ResponseEntity.ok(findItemById.execute(unitId, id));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Item> updateStatus(@PathVariable UUID id, @RequestBody @Valid UpdateItemStatusRequest request) {
-        return ResponseEntity.ok(updateItemStatus.execute(id, request.status()));
+    public ResponseEntity<Item> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemStatusRequest request) {
+        return ResponseEntity.ok(updateItemStatus.execute(unitId, id, request.status()));
     }
 
     @PatchMapping("/{id}/unit")
-    public ResponseEntity<Item> assignUnit(@PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
-        return ResponseEntity.ok(assignItemUnit.execute(id, request.unitId()));
+    public ResponseEntity<Item> assignUnit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
+        return ResponseEntity.ok(assignItemUnit.execute(unitId, id, request.unitId()));
     }
 
     @PatchMapping("/{id}/serial-number")
-    public ResponseEntity<Item> updateSerialNumber(@PathVariable UUID id, @RequestBody @Valid UpdateItemSerialNumberRequest request) {
-        return ResponseEntity.ok(updateItemSerialNumber.execute(id, request.serialNumber()));
+    public ResponseEntity<Item> updateSerialNumber(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemSerialNumberRequest request) {
+        return ResponseEntity.ok(updateItemSerialNumber.execute(unitId, id, request.serialNumber()));
     }
 
     @PatchMapping("/{id}/acquired-at")
-    public ResponseEntity<Item> updateAcquiredAt(@PathVariable UUID id, @RequestBody @Valid UpdateItemAcquiredAtRequest request) {
-        return ResponseEntity.ok(updateItemAcquiredAt.execute(id, request.acquiredAt()));
+    public ResponseEntity<Item> updateAcquiredAt(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemAcquiredAtRequest request) {
+        return ResponseEntity.ok(updateItemAcquiredAt.execute(unitId, id, request.acquiredAt()));
     }
 
     @PatchMapping("/{id}/next-prediction-date")
-    public ResponseEntity<Item> updateNextPredictionDate(@PathVariable UUID id, @RequestBody @Valid UpdateItemNextPredictionDateRequest request) {
-        return ResponseEntity.ok(updateItemNextPredictionDate.execute(id, request.nextPredictionDate()));
+    public ResponseEntity<Item> updateNextPredictionDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemNextPredictionDateRequest request) {
+        return ResponseEntity.ok(updateItemNextPredictionDate.execute(unitId, id, request.nextPredictionDate()));
     }
 
     @PatchMapping("/{id}/manufacturing-date")
-    public ResponseEntity<Item> updateManufacturingDate(@PathVariable UUID id, @RequestBody @Valid UpdateItemManufacturingDateRequest request) {
-        return ResponseEntity.ok(updateItemManufacturingDate.execute(id, request.manufacturingDate()));
+    public ResponseEntity<Item> updateManufacturingDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemManufacturingDateRequest request) {
+        return ResponseEntity.ok(updateItemManufacturingDate.execute(unitId, id, request.manufacturingDate()));
     }
 
     @PatchMapping("/{id}/usage-intensity")
-    public ResponseEntity<Item> updateUsageIntensity(@PathVariable UUID id, @RequestBody @Valid UpdateItemUsageIntensityRequest request) {
-        return ResponseEntity.ok(updateItemUsageIntensity.execute(id, request.usageIntensity()));
+    public ResponseEntity<Item> updateUsageIntensity(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemUsageIntensityRequest request) {
+        return ResponseEntity.ok(updateItemUsageIntensity.execute(unitId, id, request.usageIntensity()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        deleteItem.execute(id);
+    public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        deleteItem.execute(unitId, id);
         return ResponseEntity.noContent().build();
     }
 }
