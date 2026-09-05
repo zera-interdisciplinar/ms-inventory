@@ -38,7 +38,7 @@ public class WarrantyExpirationReportTool {
 
         int checkDays = daysAhead != null ? daysAhead : 30;
         int actualLimit = limit != null ? limit : 100;
-        int actualOffset = offset != null ? offset : 0;
+        int actualOffset = Math.max(0, offset != null ? offset : 0);
 
         LocalDate today = LocalDate.now();
         LocalDate deadline = today.plusDays(checkDays);
