@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,9 +29,11 @@ import com.zera.ms_inventory.core.usecase.category.UpdateCategoryName;
 import com.zera.ms_inventory.infrastructure.http.request.CreateCategoryRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateCategoryDescriptionRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateCategoryNameRequest;
+import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
 @RequestMapping("/api/v1/categories")
+@PreAuthorize(Authz.MANAGER)
 public class CategoryController {
 
     private final CreateCategory createCategory;
@@ -63,11 +66,13 @@ public class CategoryController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Category>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
         return ResponseEntity.ok(findAllCategories.execute(unitId));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Category> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
         return ResponseEntity.ok(findCategoryById.execute(unitId, id));
     }
