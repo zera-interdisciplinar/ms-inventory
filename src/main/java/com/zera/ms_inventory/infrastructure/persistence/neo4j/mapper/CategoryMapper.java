@@ -9,11 +9,18 @@ import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.CategoryNod
 public class CategoryMapper {
 
     public Category toDomain(CategoryNode node) {
-        return new Category(node.getId(), node.getName(), node.getDescription(), node.getCreatedAt(), node.getUpdatedAt());
+        if (node == null) {
+            return null;
+        }
+        return new Category(node.getId(), node.getUnitId(), node.getName(), node.getDescription(),
+                node.getCreatedAt(), node.getUpdatedAt());
     }
 
     public CategoryNode toNode(Category category) {
-        return new CategoryNode(category.getId(), category.getName(), category.getDescription(),
+        if (category == null) {
+            return null;
+        }
+        return new CategoryNode(category.getId(), category.getUnitId(), category.getName(), category.getDescription(),
                 category.getCreatedAt(), category.getUpdatedAt());
     }
 }

@@ -17,8 +17,8 @@ public class UpdateModelExpectedLifespanMonthsImpl implements UpdateModelExpecte
     }
 
     @Override
-    public Model execute(UUID id, Integer expectedLifespanMonths) {
-        Model model = modelRepository.findById(id)
+    public Model execute(UUID unitId, UUID id, Integer expectedLifespanMonths) {
+        Model model = modelRepository.findById(unitId, id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
         model.changeExpectedLifespanMonths(expectedLifespanMonths);
         return modelRepository.save(model);

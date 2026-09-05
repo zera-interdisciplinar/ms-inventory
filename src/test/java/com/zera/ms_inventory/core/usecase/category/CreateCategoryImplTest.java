@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Category;
 import com.zera.ms_inventory.core.repository.CategoryRepository;
 
@@ -23,16 +24,18 @@ class CreateCategoryImplTest {
     private CategoryRepository categoryRepository;
 
     @Test
-    void shouldCreateCategory() {
+    void shouldCreateCategoryStampedWithTheGivenUnit() {
         when(categoryRepository.save(any(Category.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        LocalDateTime now = LocalDateTime.of(2026, 8, 4, 10, 0);
 
         CreateCategoryImpl useCase = new CreateCategoryImpl(categoryRepository);
-        LocalDateTime now = LocalDateTime.now();
-        Category result = useCase.execute("Electronics", "Devices", now, now);
+        Category result = useCase.execute(Fixtures.UNIT, "Electronics", "Devices", now, now);
 
         assertNotNull(result.getId());
+        assertEquals(Fixtures.UNIT, result.getUnitId());
         assertEquals("Electronics", result.getName());
         assertEquals("Devices", result.getDescription());
+        assertEquals(now, result.getCreatedAt());
         verify(categoryRepository).save(result);
     }
 }

@@ -17,8 +17,8 @@ public class FindModelByIdImpl implements FindModelById {
     }
 
     @Override
-    public Model execute(UUID id) {
-        return modelRepository.findById(id)
+    public Model execute(UUID unitId, UUID id) {
+        return modelRepository.findById(unitId, id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
     }
 }

@@ -6,5 +6,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Item;
 
 public interface UpdateItemNextPredictionDate {
-    Item execute(UUID id, LocalDateTime nextPredictionDate);
+    Item execute(UUID unitId, UUID id, LocalDateTime nextPredictionDate);
 }

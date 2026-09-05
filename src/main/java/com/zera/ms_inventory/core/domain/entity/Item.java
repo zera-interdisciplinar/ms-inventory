@@ -12,6 +12,7 @@ public class Item {
     private final Barcode barcode;
     private ItemStatus status;
     private UUID unitId;
+    private final Model model;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastEventAt;
@@ -21,11 +22,12 @@ public class Item {
     private String serialNumber;
     private LocalDate acquiredAt;
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
         this.unitId = unitId;
+        this.model = model;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.lastEventAt = lastEventAt;
@@ -36,11 +38,12 @@ public class Item {
         this.acquiredAt = acquiredAt;
     }
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
         this.unitId = unitId;
+        this.model = model;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.lastEventAt = lastEventAt;
@@ -51,11 +54,12 @@ public class Item {
         this.acquiredAt = acquiredAt;
     }
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
         this.unitId = unitId;
+        this.model = model;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.lastEventAt = LocalDateTime.now();
@@ -82,6 +86,10 @@ public class Item {
 
     public UUID getUnitId() {
         return unitId;
+    }
+
+    public Model getModel() {
+        return model;
     }
 
     public LocalDateTime getCreatedAt() {

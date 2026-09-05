@@ -1,13 +1,13 @@
 package com.zera.ms_inventory.core.usecase.category;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Category;
 import com.zera.ms_inventory.core.repository.CategoryRepository;
 
@@ -22,21 +22,20 @@ class FindAllCategoriesImplTest {
     private CategoryRepository categoryRepository;
 
     @Test
-    void shouldReturnAllCategories() {
-        Category category = new Category(UUID.randomUUID(), "Electronics", "Devices");
-        when(categoryRepository.findAll()).thenReturn(List.of(category));
+    void shouldReturnOnlyTheGivenUnit() {
+        Category category = Fixtures.category(Fixtures.UNIT);
+        when(categoryRepository.findAll(Fixtures.UNIT)).thenReturn(List.of(category));
 
-        FindAllCategoriesImpl useCase = new FindAllCategoriesImpl(categoryRepository);
+        List<Category> result = new FindAllCategoriesImpl(categoryRepository).execute(Fixtures.UNIT);
 
-        assertEquals(List.of(category), useCase.execute());
+        assertEquals(1, result.size());
+        assertEquals(Fixtures.UNIT, result.get(0).getUnitId());
     }
 
     @Test
-    void shouldReturnEmptyListWhenNoCategoriesExist() {
-        when(categoryRepository.findAll()).thenReturn(List.of());
+    void shouldReturnEmptyForAnotherUnit() {
+        when(categoryRepository.findAll(Fixtures.OTHER_UNIT)).thenReturn(List.of());
 
-        FindAllCategoriesImpl useCase = new FindAllCategoriesImpl(categoryRepository);
-
-        assertTrue(useCase.execute().isEmpty());
+        assertTrue(new FindAllCategoriesImpl(categoryRepository).execute(Fixtures.OTHER_UNIT).isEmpty());
     }
 }

@@ -17,8 +17,8 @@ public class CreateCategoryImpl implements CreateCategory {
     }
 
     @Override
-    public Category execute(String name, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        Category category = new Category(UUID.randomUUID(), name, description, createdAt, updatedAt);
+    public Category execute(UUID unitId, String name, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        Category category = new Category(UUID.randomUUID(), unitId, name, description, createdAt, updatedAt);
         return categoryRepository.save(category);
     }
 }

@@ -21,14 +21,15 @@ public class GetModelDetailsTool {
 
     @McpTool(
         name = "get_model_details",
-        description = "Retrieve detailed information about a specific product model including warranty, lifespan, and hazardous materials",
+        description = "Retrieve detailed information about a specific product model including warranty, lifespan, category and hazardous materials",
         annotations = @McpTool.McpAnnotations(
             readOnlyHint = true,
             title = "Get Model Details"
         )
     )
     public Model getModelDetails(
+            @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId,
             @McpToolParam(description = "UUID of the model to retrieve", required = true) UUID modelId) {
-        return findModelById.execute(modelId);
+        return findModelById.execute(McpToolScope.require(unitId), modelId);
     }
 }

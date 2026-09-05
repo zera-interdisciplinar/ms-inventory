@@ -1,6 +1,7 @@
 package com.zera.ms_inventory.infrastructure.http.request;
 
 import java.util.Set;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,5 +12,6 @@ public record CreateModelRequest(
         @NotBlank String manufacturer,
         @NotNull @Positive Integer warrantyMonths,
         @NotNull @Positive Integer expectedLifespanMonths,
-        @NotNull Set<String> hazardousMaterials
+        @NotNull Set<String> hazardousMaterials,
+        @NotNull UUID categoryId
 ) {}

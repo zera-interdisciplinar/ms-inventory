@@ -17,8 +17,8 @@ public class UpdateCategoryDescriptionImpl implements UpdateCategoryDescription 
     }
 
     @Override
-    public Category execute(UUID id, String description) {
-        Category category = categoryRepository.findById(id)
+    public Category execute(UUID unitId, UUID id, String description) {
+        Category category = categoryRepository.findById(unitId, id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));
         category.updateDescription(description);
         return categoryRepository.save(category);

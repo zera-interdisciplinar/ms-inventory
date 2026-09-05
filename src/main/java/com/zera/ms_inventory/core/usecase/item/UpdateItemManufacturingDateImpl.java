@@ -17,8 +17,8 @@ public class UpdateItemManufacturingDateImpl implements UpdateItemManufacturingD
     }
 
     @Override
-    public Item execute(UUID id, Integer manufacturingDate) {
-        Item item = itemRepository.findById(id)
+    public Item execute(UUID unitId, UUID id, Integer manufacturingDate) {
+        Item item = itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
         item.updateManufacturingDate(manufacturingDate);
         return itemRepository.save(item);

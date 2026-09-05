@@ -46,6 +46,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @org.springframework.context.annotation.Import(GlobalExceptionHandler.class)
 class ModelControllerTest {
 
+
+    private static final UUID UNIT = com.zera.ms_inventory.Fixtures.UNIT;
+    private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-0000000000c3");
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -66,14 +70,15 @@ class ModelControllerTest {
     @DisplayName("POST /api/v1/models - deve criar model e retornar 201")
     void shouldCreateModel() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
-        when(createModel.execute(eq("Laptop X1"), eq("Acme"), eq(24), eq(60), eq(Set.of("Lithium"))))
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(createModel.execute(eq(UNIT), eq("Laptop X1"), eq("Acme"), eq(24), eq(60), eq(Set.of("Lithium")), eq(CATEGORY_ID)))
                 .thenReturn(model);
 
         mockMvc.perform(post("/api/v1/models")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateModelRequest("Laptop X1", "Acme", 24, 60, Set.of("Lithium")))))
+                                new CreateModelRequest("Laptop X1", "Acme", 24, 60, Set.of("Lithium"), CATEGORY_ID)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Laptop X1"));
@@ -85,7 +90,8 @@ class ModelControllerTest {
         mockMvc.perform(post("/api/v1/models")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateModelRequest("", "Acme", 24, 60, Set.of("Lithium")))))
+                                new CreateModelRequest("", "Acme", 24, 60, Set.of("Lithium"), CATEGORY_ID)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
     }
 
@@ -95,17 +101,19 @@ class ModelControllerTest {
         mockMvc.perform(post("/api/v1/models")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateModelRequest("Laptop X1", "Acme", 0, 60, Set.of("Lithium")))))
+                                new CreateModelRequest("Laptop X1", "Acme", 0, 60, Set.of("Lithium"), CATEGORY_ID)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("GET /api/v1/models - deve listar todos os models")
     void shouldFindAllModels() throws Exception {
-        Model model = new Model(UUID.randomUUID(), "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
-        when(findAllModels.execute()).thenReturn(List.of(model));
+        Model model = new Model(UUID.randomUUID(), UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(findAllModels.execute(UNIT)).thenReturn(List.of(model));
 
-        mockMvc.perform(get("/api/v1/models"))
+        mockMvc.perform(get("/api/v1/models")
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Laptop X1"));
     }
@@ -114,10 +122,11 @@ class ModelControllerTest {
     @DisplayName("GET /api/v1/models/{id} - deve retornar o model")
     void shouldFindModelById() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
-        when(findModelById.execute(id)).thenReturn(model);
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(findModelById.execute(UNIT, id)).thenReturn(model);
 
-        mockMvc.perform(get("/api/v1/models/{id}", id))
+        mockMvc.perform(get("/api/v1/models/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -126,9 +135,10 @@ class ModelControllerTest {
     @DisplayName("GET /api/v1/models/{id} - deve retornar 404 quando o model não existir")
     void shouldReturn404WhenModelDoesNotExist() throws Exception {
         UUID id = UUID.randomUUID();
-        when(findModelById.execute(id)).thenThrow(new ModelNotFoundException(id));
+        when(findModelById.execute(UNIT, id)).thenThrow(new ModelNotFoundException(id));
 
-        mockMvc.perform(get("/api/v1/models/{id}", id))
+        mockMvc.perform(get("/api/v1/models/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNotFound());
     }
 
@@ -136,12 +146,13 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/name - deve renomear o model")
     void shouldRenameModel() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X2", "Acme", 24, 60, Set.of("Lithium"));
-        when(updateModelName.execute(id, "Laptop X2")).thenReturn(model);
+        Model model = new Model(id, UNIT, "Laptop X2", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(updateModelName.execute(UNIT, id, "Laptop X2")).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/name", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateModelNameRequest("Laptop X2"))))
+                        .content(objectMapper.writeValueAsString(new UpdateModelNameRequest("Laptop X2")))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Laptop X2"));
     }
@@ -150,12 +161,13 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/manufacturer - deve atualizar o fabricante")
     void shouldUpdateManufacturer() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X1", "Globex", 24, 60, Set.of("Lithium"));
-        when(updateModelManufacturer.execute(id, "Globex")).thenReturn(model);
+        Model model = new Model(id, UNIT, "Laptop X1", "Globex", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(updateModelManufacturer.execute(UNIT, id, "Globex")).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/manufacturer", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateModelManufacturerRequest("Globex"))))
+                        .content(objectMapper.writeValueAsString(new UpdateModelManufacturerRequest("Globex")))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.manufacturer").value("Globex"));
     }
@@ -164,12 +176,13 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/warranty-months - deve atualizar a garantia")
     void shouldUpdateWarrantyMonths() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X1", "Acme", 36, 60, Set.of("Lithium"));
-        when(updateModelWarrantyMonths.execute(id, 36)).thenReturn(model);
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 36, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(updateModelWarrantyMonths.execute(UNIT, id, 36)).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/warranty-months", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateModelWarrantyMonthsRequest(36))))
+                        .content(objectMapper.writeValueAsString(new UpdateModelWarrantyMonthsRequest(36)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.warrantyMonths").value(36));
     }
@@ -178,12 +191,13 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/expected-lifespan-months - deve atualizar a vida útil esperada")
     void shouldUpdateExpectedLifespanMonths() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X1", "Acme", 24, 72, Set.of("Lithium"));
-        when(updateModelExpectedLifespanMonths.execute(id, 72)).thenReturn(model);
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 72, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(updateModelExpectedLifespanMonths.execute(UNIT, id, 72)).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/expected-lifespan-months", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateModelExpectedLifespanMonthsRequest(72))))
+                        .content(objectMapper.writeValueAsString(new UpdateModelExpectedLifespanMonthsRequest(72)))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.expectedLifespanMonths").value(72));
     }
@@ -192,12 +206,13 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/hazardous-materials - deve atualizar os materiais perigosos")
     void shouldUpdateHazardousMaterials() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X1", "Acme", 24, 60, Set.of("Mercury"));
-        when(updateModelHazardousMaterials.execute(id, Set.of("Mercury"))).thenReturn(model);
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Mercury"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(updateModelHazardousMaterials.execute(UNIT, id, Set.of("Mercury"))).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/hazardous-materials", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateModelHazardousMaterialsRequest(Set.of("Mercury")))))
+                        .content(objectMapper.writeValueAsString(new UpdateModelHazardousMaterialsRequest(Set.of("Mercury"))))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.hazardousMaterials[0]").value("Mercury"));
     }
@@ -207,9 +222,10 @@ class ModelControllerTest {
     void shouldDeleteModel() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/v1/models/{id}", id))
+        mockMvc.perform(delete("/api/v1/models/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNoContent());
 
-        verify(deleteModel).execute(id);
+        verify(deleteModel).execute(UNIT, id);
     }
 }

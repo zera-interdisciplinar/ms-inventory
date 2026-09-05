@@ -5,5 +5,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Item;
 
 public interface FindItemById {
-    Item execute(UUID id);
+    Item execute(UUID unitId, UUID id);
 }

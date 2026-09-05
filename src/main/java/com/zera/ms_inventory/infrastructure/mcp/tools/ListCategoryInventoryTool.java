@@ -1,8 +1,7 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -35,13 +34,13 @@ public class ListCategoryInventoryTool {
         )
     )
     public List<CategoryInventorySummary> listCategoryInventory(
+            @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId,
             @McpToolParam(description = "Maximum number of results", required = false) Integer limit,
-            @McpToolParam(description = "Pagination offset", required = false) Integer offset,
-            @McpToolParam(description = "Filter from date (ISO format)", required = false) String fromDate,
-            @McpToolParam(description = "Filter to date (ISO format)", required = false) String toDate) {
+            @McpToolParam(description = "Pagination offset", required = false) Integer offset) {
 
-        List<Category> categories = findAllCategories.execute();
-        List<Item> items = findAllItems.execute();
+        UUID scope = McpToolScope.require(unitId);
+        List<Category> categories = findAllCategories.execute(scope);
+        List<Item> items = findAllItems.execute(scope);
 
         int actualOffset = offset != null ? offset : 0;
         int actualLimit = limit != null ? limit : 100;
@@ -52,33 +51,42 @@ public class ListCategoryInventoryTool {
             .map(category -> buildSummary(category, items))
             .collect(Collectors.toList());
     }
-
+    
     private CategoryInventorySummary buildSummary(Category category, List<Item> allItems) {
-        long totalItems = allItems.size();
-        long damagedItems = allItems.stream()
+        List<Item> categoryItems = allItems.stream()
+            .filter(item -> belongsTo(item, category))
+            .toList();
+
+        long totalItems = categoryItems.size();
+        long damagedItems = categoryItems.stream()
             .filter(item -> item.getStatus().name().equals("DAMAGED"))
             .count();
-        long okItems = totalItems - damagedItems;
 
         return new CategoryInventorySummary(
             category.getId(),
             category.getName(),
             category.getDescription(),
             totalItems,
-            okItems,
+            totalItems - damagedItems,
             damagedItems
         );
     }
 
+    private boolean belongsTo(Item item, Category category) {
+        return item.getModel() != null
+                && item.getModel().getCategory() != null
+                && category.getId().equals(item.getModel().getCategory().getId());
+    }
+
     public static class CategoryInventorySummary {
-        public final java.util.UUID categoryId;
+        public final UUID categoryId;
         public final String categoryName;
         public final String description;
         public final long totalItems;
         public final long okItems;
         public final long damagedItems;
 
-        public CategoryInventorySummary(java.util.UUID categoryId, String categoryName, String description,
+        public CategoryInventorySummary(UUID categoryId, String categoryName, String description,
                                        long totalItems, long okItems, long damagedItems) {
             this.categoryId = categoryId;
             this.categoryName = categoryName;

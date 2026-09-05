@@ -1,19 +1,15 @@
 package com.zera.ms_inventory.core.usecase.item;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
-import com.zera.ms_inventory.core.domain.valueobject.Barcode;
-import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,26 +24,26 @@ class UpdateItemUsageIntensityImplTest {
     private ItemRepository itemRepository;
 
     @Test
-    void shouldUpdateUsageIntensity() {
+    void shouldUpdate() {
         UUID id = UUID.randomUUID();
-        Item item = new Item(id, new Barcode("123456"), ItemStatus.OK, UUID.randomUUID(), LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
-        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        Item item = Fixtures.item(id, Fixtures.UNIT);
+        when(itemRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(item));
         when(itemRepository.save(item)).thenReturn(item);
 
         UpdateItemUsageIntensityImpl useCase = new UpdateItemUsageIntensityImpl(itemRepository);
-        Item result = useCase.execute(id, 8);
+        Item result = useCase.execute(Fixtures.UNIT, id, 9);
 
-        assertEquals(8, result.getUsageIntensity());
+        assertEquals(9, result.getUsageIntensity());
         verify(itemRepository).save(item);
     }
 
     @Test
-    void shouldThrowWhenItemDoesNotExist() {
+    void shouldThrowWhenNotFoundInThisUnit() {
         UUID id = UUID.randomUUID();
-        when(itemRepository.findById(id)).thenReturn(Optional.empty());
+        when(itemRepository.findById(Fixtures.OTHER_UNIT, id)).thenReturn(Optional.empty());
 
         UpdateItemUsageIntensityImpl useCase = new UpdateItemUsageIntensityImpl(itemRepository);
 
-        assertThrows(ItemNotFoundException.class, () -> useCase.execute(id, 8));
+        assertThrows(ItemNotFoundException.class, () -> useCase.execute(Fixtures.OTHER_UNIT, id, 9));
     }
 }

@@ -6,5 +6,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Item;
 
 public interface UpdateItemAcquiredAt {
-    Item execute(UUID id, LocalDate acquiredAt);
+    Item execute(UUID unitId, UUID id, LocalDate acquiredAt);
 }

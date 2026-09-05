@@ -1,14 +1,13 @@
 package com.zera.ms_inventory.core.usecase.model;
 
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 
@@ -23,21 +22,20 @@ class FindAllModelsImplTest {
     private ModelRepository modelRepository;
 
     @Test
-    void shouldReturnAllModels() {
-        Model model = new Model(UUID.randomUUID(), "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
-        when(modelRepository.findAll()).thenReturn(List.of(model));
+    void shouldReturnOnlyTheGivenUnit() {
+        Model model = Fixtures.model(Fixtures.UNIT);
+        when(modelRepository.findAll(Fixtures.UNIT)).thenReturn(List.of(model));
 
-        FindAllModelsImpl useCase = new FindAllModelsImpl(modelRepository);
+        List<Model> result = new FindAllModelsImpl(modelRepository).execute(Fixtures.UNIT);
 
-        assertEquals(List.of(model), useCase.execute());
+        assertEquals(1, result.size());
+        assertEquals(Fixtures.UNIT, result.get(0).getUnitId());
     }
 
     @Test
-    void shouldReturnEmptyListWhenNoModelsExist() {
-        when(modelRepository.findAll()).thenReturn(List.of());
+    void shouldReturnEmptyForAnotherUnit() {
+        when(modelRepository.findAll(Fixtures.OTHER_UNIT)).thenReturn(List.of());
 
-        FindAllModelsImpl useCase = new FindAllModelsImpl(modelRepository);
-
-        assertTrue(useCase.execute().isEmpty());
+        assertTrue(new FindAllModelsImpl(modelRepository).execute(Fixtures.OTHER_UNIT).isEmpty());
     }
 }
