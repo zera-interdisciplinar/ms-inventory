@@ -1,6 +1,7 @@
 package com.zera.ms_inventory.core.usecase.model;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,7 @@ public class FindAllModelsImpl implements FindAllModels {
     }
 
     @Override
-    public List<Model> execute() {
-        return modelRepository.findAll();
+    public List<Model> execute(UUID unitId) {
+        return modelRepository.findAll(unitId);
     }
 }

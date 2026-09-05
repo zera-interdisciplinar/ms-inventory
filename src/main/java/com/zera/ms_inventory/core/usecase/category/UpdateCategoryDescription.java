@@ -5,5 +5,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Category;
 
 public interface UpdateCategoryDescription {
-    Category execute(UUID id, String description);
+    Category execute(UUID unitId, UUID id, String description);
 }

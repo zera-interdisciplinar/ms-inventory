@@ -5,21 +5,24 @@ import java.util.UUID;
 
 public class Category {
     private final UUID id;
+    private final UUID unitId;
     private String name;
     private String description;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public Category(UUID id, String name, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Category(UUID id, UUID unitId, String name, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
+        this.unitId = unitId;
         this.name = name;
         this.description = description;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
-    public Category(UUID id, String name, String description) {
+    public Category(UUID id, UUID unitId, String name, String description) {
         this.id = id;
+        this.unitId = unitId;
         this.name = name;
         this.description = description;
         this.createdAt = LocalDateTime.now();
@@ -48,6 +51,10 @@ public class Category {
         return id;
     }
 
+    public UUID getUnitId() {
+        return unitId;
+    }
+
     public String getName() {
         return name;
     }
@@ -62,5 +69,10 @@ public class Category {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    /** Texto que alimenta o embedding. Muda aqui, muda o vetor no proximo save. */
+    public String toEmbeddableText() {
+        return String.join(" ", name == null ? "" : name, description == null ? "" : description).trim();
     }
 }

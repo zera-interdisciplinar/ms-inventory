@@ -4,85 +4,131 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.embedding.EmbeddingModel;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Category;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.CategoryNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.mapper.CategoryMapper;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CategoryRepositoryImplTest {
 
+    private static final float[] VECTOR = {0.1f, 0.2f, 0.3f};
+
     @Mock
     private CategoryNeo4jRepository neo4jRepository;
+
+    @Mock
+    private EmbeddingModel embeddingModel;
 
     private final CategoryMapper mapper = new CategoryMapper();
 
     private CategoryRepositoryImpl repository;
 
+    @BeforeEach
+    void setUp() {
+        repository = new CategoryRepositoryImpl(neo4jRepository, mapper, embeddingModel);
+    }
+
     @Test
-    void shouldSaveCategory() {
-        repository = new CategoryRepositoryImpl(neo4jRepository, mapper);
-        UUID id = UUID.randomUUID();
-        Category category = new Category(id, "Electronics", "Devices");
-        when(neo4jRepository.save(any(CategoryNode.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    void shouldEmbedOnFirstSave() {
+        Category category = Fixtures.category(Fixtures.UNIT);
+        when(neo4jRepository.findByIdAndUnitId(category.getId(), Fixtures.UNIT)).thenReturn(Optional.empty());
+        when(embeddingModel.embed(category.toEmbeddableText())).thenReturn(VECTOR);
+        when(neo4jRepository.save(any(CategoryNode.class))).thenAnswer(i -> i.getArgument(0));
 
         Category result = repository.save(category);
 
         assertEquals(category.getId(), result.getId());
-        assertEquals(category.getName(), result.getName());
+        verify(neo4jRepository).save(argThatCarries(VECTOR, category.toEmbeddableText()));
     }
 
     @Test
-    void shouldFindById() {
-        repository = new CategoryRepositoryImpl(neo4jRepository, mapper);
+    void shouldReuseTheStoredVectorWhenTheTextDidNotChange() {
+        Category category = Fixtures.category(Fixtures.UNIT);
+        CategoryNode stored = mapper.toNode(category);
+        stored.setEmbedding(VECTOR);
+        stored.setEmbeddedText(category.toEmbeddableText());
+        when(neo4jRepository.findByIdAndUnitId(category.getId(), Fixtures.UNIT)).thenReturn(Optional.of(stored));
+        when(neo4jRepository.save(any(CategoryNode.class))).thenAnswer(i -> i.getArgument(0));
+
+        repository.save(category);
+
+        verify(embeddingModel, never()).embed(anyString());
+    }
+
+    @Test
+    void shouldReEmbedWhenTheTextChanged() {
+        Category category = Fixtures.category(Fixtures.UNIT);
+        CategoryNode stored = mapper.toNode(category);
+        stored.setEmbedding(VECTOR);
+        stored.setEmbeddedText("outro texto qualquer");
+        when(neo4jRepository.findByIdAndUnitId(category.getId(), Fixtures.UNIT)).thenReturn(Optional.of(stored));
+        when(embeddingModel.embed(category.toEmbeddableText())).thenReturn(VECTOR);
+        when(neo4jRepository.save(any(CategoryNode.class))).thenAnswer(i -> i.getArgument(0));
+
+        repository.save(category);
+
+        verify(embeddingModel).embed(category.toEmbeddableText());
+    }
+
+    @Test
+    void shouldFindByIdWithinTheUnit() {
         UUID id = UUID.randomUUID();
-        CategoryNode node = mapper.toNode(new Category(id, "Electronics", "Devices"));
-        when(neo4jRepository.findById(id)).thenReturn(Optional.of(node));
+        when(neo4jRepository.findByIdAndUnitId(id, Fixtures.UNIT))
+                .thenReturn(Optional.of(mapper.toNode(Fixtures.category(id, Fixtures.UNIT))));
 
-        Optional<Category> result = repository.findById(id);
-
-        assertTrue(result.isPresent());
-        assertEquals(id, result.get().getId());
+        assertEquals(id, repository.findById(Fixtures.UNIT, id).orElseThrow().getId());
     }
 
     @Test
-    void shouldReturnEmptyWhenNotFound() {
-        repository = new CategoryRepositoryImpl(neo4jRepository, mapper);
+    void shouldReturnEmptyForAnotherUnit() {
         UUID id = UUID.randomUUID();
-        when(neo4jRepository.findById(id)).thenReturn(Optional.empty());
+        when(neo4jRepository.findByIdAndUnitId(id, Fixtures.OTHER_UNIT)).thenReturn(Optional.empty());
 
-        assertTrue(repository.findById(id).isEmpty());
+        assertTrue(repository.findById(Fixtures.OTHER_UNIT, id).isEmpty());
     }
 
     @Test
-    void shouldFindAll() {
-        repository = new CategoryRepositoryImpl(neo4jRepository, mapper);
-        CategoryNode node = mapper.toNode(new Category(UUID.randomUUID(), "Electronics", "Devices"));
-        when(neo4jRepository.findAll()).thenReturn(List.of(node));
+    void shouldFindAllWithinTheUnit() {
+        when(neo4jRepository.findAllByUnitId(Fixtures.UNIT))
+                .thenReturn(List.of(mapper.toNode(Fixtures.category(Fixtures.UNIT))));
 
-        List<Category> result = repository.findAll();
+        List<Category> result = repository.findAll(Fixtures.UNIT);
 
         assertEquals(1, result.size());
-        assertEquals("Electronics", result.get(0).getName());
+        assertEquals(Fixtures.UNIT, result.get(0).getUnitId());
     }
 
     @Test
-    void shouldDeleteById() {
-        repository = new CategoryRepositoryImpl(neo4jRepository, mapper);
+    void shouldDeleteWithinTheUnit() {
         UUID id = UUID.randomUUID();
 
-        repository.deleteById(id);
+        repository.deleteById(Fixtures.UNIT, id);
 
-        verify(neo4jRepository).deleteById(id);
+        verify(neo4jRepository).deleteByIdAndUnitId(id, Fixtures.UNIT);
+    }
+
+    private CategoryNode argThatCarries(float[] vector, String text) {
+        return org.mockito.ArgumentMatchers.argThat(node -> {
+            assertArrayEquals(vector, node.getEmbedding());
+            assertEquals(text, node.getEmbeddedText());
+            return true;
+        });
     }
 }

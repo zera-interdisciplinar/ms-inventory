@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.core.usecase.model;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -9,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.repository.ModelRepository;
@@ -24,23 +24,23 @@ class FindModelByIdImplTest {
     private ModelRepository modelRepository;
 
     @Test
-    void shouldReturnModelWhenItExists() {
+    void shouldFindById() {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"));
-        when(modelRepository.findById(id)).thenReturn(Optional.of(model));
+        Model model = Fixtures.model(id, Fixtures.UNIT);
+        when(modelRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(model));
 
-        FindModelByIdImpl useCase = new FindModelByIdImpl(modelRepository);
+        Model result = new FindModelByIdImpl(modelRepository).execute(Fixtures.UNIT, id);
 
-        assertEquals(model, useCase.execute(id));
+        assertEquals(id, result.getId());
     }
 
     @Test
-    void shouldThrowWhenModelDoesNotExist() {
+    void shouldThrowWhenTheIdBelongsToAnotherUnit() {
         UUID id = UUID.randomUUID();
-        when(modelRepository.findById(id)).thenReturn(Optional.empty());
+        when(modelRepository.findById(Fixtures.OTHER_UNIT, id)).thenReturn(Optional.empty());
 
         FindModelByIdImpl useCase = new FindModelByIdImpl(modelRepository);
 
-        assertThrows(ModelNotFoundException.class, () -> useCase.execute(id));
+        assertThrows(ModelNotFoundException.class, () -> useCase.execute(Fixtures.OTHER_UNIT, id));
     }
 }

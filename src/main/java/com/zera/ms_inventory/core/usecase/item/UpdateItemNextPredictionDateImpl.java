@@ -18,8 +18,8 @@ public class UpdateItemNextPredictionDateImpl implements UpdateItemNextPredictio
     }
 
     @Override
-    public Item execute(UUID id, LocalDateTime nextPredictionDate) {
-        Item item = itemRepository.findById(id)
+    public Item execute(UUID unitId, UUID id, LocalDateTime nextPredictionDate) {
+        Item item = itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
         item.updateNextPredictionDate(nextPredictionDate);
         return itemRepository.save(item);

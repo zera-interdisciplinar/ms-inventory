@@ -5,5 +5,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Item;
 
 public interface UpdateItemUsageIntensity {
-    Item execute(UUID id, Integer usageIntensity);
+    Item execute(UUID unitId, UUID id, Integer usageIntensity);
 }

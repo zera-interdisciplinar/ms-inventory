@@ -1,7 +1,7 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
@@ -20,6 +20,8 @@ public class InventoryHealthTool {
         this.findAllItems = findAllItems;
     }
 
+    // fromDate/toDate foram removidos: eram declarados e nunca lidos, so induziam o LLM a
+    // achar que o relatorio aceitava recorte de periodo.
     @McpTool(
         name = "inventory_health",
         description = "Get overall inventory health score with statistics on item status, age, and condition",
@@ -29,10 +31,9 @@ public class InventoryHealthTool {
         )
     )
     public InventoryHealthReport getInventoryHealth(
-            @McpToolParam(description = "Filter from date (ISO format)", required = false) String fromDate,
-            @McpToolParam(description = "Filter to date (ISO format)", required = false) String toDate) {
+            @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId) {
 
-        List<Item> items = findAllItems.execute();
+        List<Item> items = findAllItems.execute(McpToolScope.require(unitId));
 
         if (items.isEmpty()) {
             return new InventoryHealthReport(0, 0, 0.0, 0, 0, 0);
@@ -44,7 +45,7 @@ public class InventoryHealthTool {
             .count();
         long okItems = totalItems - damagedItems;
 
-        double healthScore = totalItems > 0 ? (okItems * 100.0) / totalItems : 0.0;
+        double healthScore = (okItems * 100.0) / totalItems;
 
         long itemsWithoutUnitAssignment = items.stream()
             .filter(item -> item.getUnitId() == null)

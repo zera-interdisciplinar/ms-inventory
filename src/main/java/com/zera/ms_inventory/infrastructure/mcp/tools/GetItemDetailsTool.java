@@ -28,7 +28,8 @@ public class GetItemDetailsTool {
         )
     )
     public Item getItemDetails(
+            @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId,
             @McpToolParam(description = "UUID of the item to retrieve", required = true) UUID itemId) {
-        return findItemById.execute(itemId);
+        return findItemById.execute(McpToolScope.require(unitId), itemId);
     }
 }

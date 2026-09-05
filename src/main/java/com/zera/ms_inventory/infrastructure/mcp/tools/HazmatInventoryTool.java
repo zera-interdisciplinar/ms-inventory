@@ -1,6 +1,8 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -29,13 +31,14 @@ public class HazmatInventoryTool {
         )
     )
     public List<HazmatModel> getHazmatInventory(
+            @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId,
             @McpToolParam(description = "Maximum number of results", required = false) Integer limit,
             @McpToolParam(description = "Pagination offset", required = false) Integer offset) {
 
         int actualLimit = limit != null ? limit : 100;
         int actualOffset = offset != null ? offset : 0;
 
-        List<Model> models = findAllModels.execute();
+        List<Model> models = findAllModels.execute(McpToolScope.require(unitId));
 
         return models.stream()
             .filter(model -> model.getHazardousMaterials() != null && !model.getHazardousMaterials().isEmpty())
@@ -45,21 +48,25 @@ public class HazmatInventoryTool {
                 model.getId(),
                 model.getName(),
                 model.getManufacturer(),
+                model.getCategory() != null ? model.getCategory().getName() : null,
                 model.getHazardousMaterials()
             ))
             .collect(Collectors.toList());
     }
 
     public static class HazmatModel {
-        public final java.util.UUID modelId;
+        public final UUID modelId;
         public final String modelName;
         public final String manufacturer;
-        public final java.util.Set<String> hazardousMaterials;
+        public final String categoryName;
+        public final Set<String> hazardousMaterials;
 
-        public HazmatModel(java.util.UUID modelId, String modelName, String manufacturer, java.util.Set<String> hazardousMaterials) {
+        public HazmatModel(UUID modelId, String modelName, String manufacturer, String categoryName,
+                            Set<String> hazardousMaterials) {
             this.modelId = modelId;
             this.modelName = modelName;
             this.manufacturer = manufacturer;
+            this.categoryName = categoryName;
             this.hazardousMaterials = hazardousMaterials;
         }
     }

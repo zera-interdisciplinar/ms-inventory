@@ -17,8 +17,8 @@ public class UpdateModelWarrantyMonthsImpl implements UpdateModelWarrantyMonths 
     }
 
     @Override
-    public Model execute(UUID id, Integer warrantyMonths) {
-        Model model = modelRepository.findById(id)
+    public Model execute(UUID unitId, UUID id, Integer warrantyMonths) {
+        Model model = modelRepository.findById(unitId, id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
         model.changeWarrantyMonths(warrantyMonths);
         return modelRepository.save(model);

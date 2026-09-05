@@ -11,6 +11,7 @@ public record CreateItemCommand(
         Barcode barcode,
         ItemStatus status,
         UUID unitId,
+        UUID modelId,
         LocalDateTime nextPredictionDate,
         Integer manufacturingDate,
         Integer usageIntensity,

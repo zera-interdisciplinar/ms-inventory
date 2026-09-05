@@ -8,12 +8,14 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,9 +29,11 @@ import com.zera.ms_inventory.core.usecase.category.UpdateCategoryName;
 import com.zera.ms_inventory.infrastructure.http.request.CreateCategoryRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateCategoryDescriptionRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateCategoryNameRequest;
+import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
 @RequestMapping("/api/v1/categories")
+@PreAuthorize(Authz.MANAGER)
 public class CategoryController {
 
     private final CreateCategory createCategory;
@@ -54,35 +58,38 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<Category> create(@RequestBody @Valid CreateCategoryRequest request) {
+    public ResponseEntity<Category> create(@RequestHeader("X-Unit-Id") UUID unitId,
+                                            @RequestBody @Valid CreateCategoryRequest request) {
         LocalDateTime now = LocalDateTime.now();
-        Category created = createCategory.execute(request.name(), request.description(), now, now);
+        Category created = createCategory.execute(unitId, request.name(), request.description(), now, now);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping
-    public ResponseEntity<List<Category>> findAll() {
-        return ResponseEntity.ok(findAllCategories.execute());
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<Category>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
+        return ResponseEntity.ok(findAllCategories.execute(unitId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Category> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(findCategoryById.execute(id));
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Category> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        return ResponseEntity.ok(findCategoryById.execute(unitId, id));
     }
 
     @PatchMapping("/{id}/name")
-    public ResponseEntity<Category> rename(@PathVariable UUID id, @RequestBody @Valid UpdateCategoryNameRequest request) {
-        return ResponseEntity.ok(updateCategoryName.execute(id, request.name()));
+    public ResponseEntity<Category> rename(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateCategoryNameRequest request) {
+        return ResponseEntity.ok(updateCategoryName.execute(unitId, id, request.name()));
     }
 
     @PatchMapping("/{id}/description")
-    public ResponseEntity<Category> updateDescription(@PathVariable UUID id, @RequestBody @Valid UpdateCategoryDescriptionRequest request) {
-        return ResponseEntity.ok(updateCategoryDescription.execute(id, request.description()));
+    public ResponseEntity<Category> updateDescription(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateCategoryDescriptionRequest request) {
+        return ResponseEntity.ok(updateCategoryDescription.execute(unitId, id, request.description()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        deleteCategory.execute(id);
+    public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        deleteCategory.execute(unitId, id);
         return ResponseEntity.noContent().build();
     }
 }

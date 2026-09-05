@@ -1,18 +1,14 @@
 package com.zera.ms_inventory.core.usecase.item;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
-import com.zera.ms_inventory.core.domain.valueobject.Barcode;
-import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,21 +22,20 @@ class FindAllItemsImplTest {
     private ItemRepository itemRepository;
 
     @Test
-    void shouldReturnAllItems() {
-        Item item = new Item(UUID.randomUUID(), new Barcode("123456"), ItemStatus.OK, UUID.randomUUID(), LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
-        when(itemRepository.findAll()).thenReturn(List.of(item));
+    void shouldReturnOnlyTheGivenUnit() {
+        Item item = Fixtures.item(Fixtures.UNIT);
+        when(itemRepository.findAll(Fixtures.UNIT)).thenReturn(List.of(item));
 
-        FindAllItemsImpl useCase = new FindAllItemsImpl(itemRepository);
+        List<Item> result = new FindAllItemsImpl(itemRepository).execute(Fixtures.UNIT);
 
-        assertEquals(List.of(item), useCase.execute());
+        assertEquals(1, result.size());
+        assertEquals(Fixtures.UNIT, result.get(0).getUnitId());
     }
 
     @Test
-    void shouldReturnEmptyListWhenNoItemsExist() {
-        when(itemRepository.findAll()).thenReturn(List.of());
+    void shouldReturnEmptyForAnotherUnit() {
+        when(itemRepository.findAll(Fixtures.OTHER_UNIT)).thenReturn(List.of());
 
-        FindAllItemsImpl useCase = new FindAllItemsImpl(itemRepository);
-
-        assertTrue(useCase.execute().isEmpty());
+        assertTrue(new FindAllItemsImpl(itemRepository).execute(Fixtures.OTHER_UNIT).isEmpty());
     }
 }

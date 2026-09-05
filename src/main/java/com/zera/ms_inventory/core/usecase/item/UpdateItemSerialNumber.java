@@ -5,5 +5,5 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.entity.Item;
 
 public interface UpdateItemSerialNumber {
-    Item execute(UUID id, String serialNumber);
+    Item execute(UUID unitId, UUID id, String serialNumber);
 }

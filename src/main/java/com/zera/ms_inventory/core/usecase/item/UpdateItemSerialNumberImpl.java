@@ -17,8 +17,8 @@ public class UpdateItemSerialNumberImpl implements UpdateItemSerialNumber {
     }
 
     @Override
-    public Item execute(UUID id, String serialNumber) {
-        Item item = itemRepository.findById(id)
+    public Item execute(UUID unitId, UUID id, String serialNumber) {
+        Item item = itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
         item.updateSerialNumber(serialNumber);
         return itemRepository.save(item);

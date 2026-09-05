@@ -41,6 +41,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @org.springframework.context.annotation.Import(GlobalExceptionHandler.class)
 class CategoryControllerTest {
 
+
+    private static final UUID UNIT = com.zera.ms_inventory.Fixtures.UNIT;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -58,13 +61,14 @@ class CategoryControllerTest {
     @DisplayName("POST /api/v1/categories - deve criar categoria e retornar 201")
     void shouldCreateCategory() throws Exception {
         UUID id = UUID.randomUUID();
-        Category category = new Category(id, "Electronics", "Devices");
-        when(createCategory.execute(eq("Electronics"), eq("Devices"), any(LocalDateTime.class), any(LocalDateTime.class)))
+        Category category = new Category(id, UNIT, "Electronics", "Devices");
+        when(createCategory.execute(eq(UNIT), eq("Electronics"), eq("Devices"), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(category);
 
         mockMvc.perform(post("/api/v1/categories")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateCategoryRequest("Electronics", "Devices"))))
+                        .content(objectMapper.writeValueAsString(new CreateCategoryRequest("Electronics", "Devices")))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Electronics"));
@@ -75,17 +79,19 @@ class CategoryControllerTest {
     void shouldReturn400WhenNameIsBlank() throws Exception {
         mockMvc.perform(post("/api/v1/categories")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateCategoryRequest("", "Devices"))))
+                        .content(objectMapper.writeValueAsString(new CreateCategoryRequest("", "Devices")))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("GET /api/v1/categories - deve listar todas as categorias")
     void shouldFindAllCategories() throws Exception {
-        Category category = new Category(UUID.randomUUID(), "Electronics", "Devices");
-        when(findAllCategories.execute()).thenReturn(List.of(category));
+        Category category = new Category(UUID.randomUUID(), UNIT, "Electronics", "Devices");
+        when(findAllCategories.execute(UNIT)).thenReturn(List.of(category));
 
-        mockMvc.perform(get("/api/v1/categories"))
+        mockMvc.perform(get("/api/v1/categories")
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Electronics"));
     }
@@ -94,10 +100,11 @@ class CategoryControllerTest {
     @DisplayName("GET /api/v1/categories/{id} - deve retornar a categoria")
     void shouldFindCategoryById() throws Exception {
         UUID id = UUID.randomUUID();
-        Category category = new Category(id, "Electronics", "Devices");
-        when(findCategoryById.execute(id)).thenReturn(category);
+        Category category = new Category(id, UNIT, "Electronics", "Devices");
+        when(findCategoryById.execute(UNIT, id)).thenReturn(category);
 
-        mockMvc.perform(get("/api/v1/categories/{id}", id))
+        mockMvc.perform(get("/api/v1/categories/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -106,9 +113,10 @@ class CategoryControllerTest {
     @DisplayName("GET /api/v1/categories/{id} - deve retornar 404 quando a categoria não existir")
     void shouldReturn404WhenCategoryDoesNotExist() throws Exception {
         UUID id = UUID.randomUUID();
-        when(findCategoryById.execute(id)).thenThrow(new CategoryNotFoundException(id));
+        when(findCategoryById.execute(UNIT, id)).thenThrow(new CategoryNotFoundException(id));
 
-        mockMvc.perform(get("/api/v1/categories/{id}", id))
+        mockMvc.perform(get("/api/v1/categories/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNotFound());
     }
 
@@ -116,12 +124,13 @@ class CategoryControllerTest {
     @DisplayName("PATCH /api/v1/categories/{id}/name - deve renomear a categoria")
     void shouldRenameCategory() throws Exception {
         UUID id = UUID.randomUUID();
-        Category category = new Category(id, "Hardware", "Devices");
-        when(updateCategoryName.execute(id, "Hardware")).thenReturn(category);
+        Category category = new Category(id, UNIT, "Hardware", "Devices");
+        when(updateCategoryName.execute(UNIT, id, "Hardware")).thenReturn(category);
 
         mockMvc.perform(patch("/api/v1/categories/{id}/name", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateCategoryNameRequest("Hardware"))))
+                        .content(objectMapper.writeValueAsString(new UpdateCategoryNameRequest("Hardware")))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Hardware"));
     }
@@ -130,12 +139,13 @@ class CategoryControllerTest {
     @DisplayName("PATCH /api/v1/categories/{id}/description - deve atualizar a descrição")
     void shouldUpdateCategoryDescription() throws Exception {
         UUID id = UUID.randomUUID();
-        Category category = new Category(id, "Electronics", "Computer parts");
-        when(updateCategoryDescription.execute(id, "Computer parts")).thenReturn(category);
+        Category category = new Category(id, UNIT, "Electronics", "Computer parts");
+        when(updateCategoryDescription.execute(UNIT, id, "Computer parts")).thenReturn(category);
 
         mockMvc.perform(patch("/api/v1/categories/{id}/description", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateCategoryDescriptionRequest("Computer parts"))))
+                        .content(objectMapper.writeValueAsString(new UpdateCategoryDescriptionRequest("Computer parts")))
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.description").value("Computer parts"));
     }
@@ -145,9 +155,10 @@ class CategoryControllerTest {
     void shouldDeleteCategory() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/v1/categories/{id}", id))
+        mockMvc.perform(delete("/api/v1/categories/{id}", id)
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNoContent());
 
-        verify(deleteCategory).execute(id);
+        verify(deleteCategory).execute(UNIT, id);
     }
 }
