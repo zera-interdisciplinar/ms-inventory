@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,9 +38,11 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateItemNextPredictio
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemSerialNumberRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemUsageIntensityRequest;
+import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
 @RequestMapping("/api/v1/items")
+@PreAuthorize(Authz.MANAGER)
 public class ItemController {
 
     private final CreateItem createItem;
@@ -86,11 +89,13 @@ public class ItemController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Item>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
         return ResponseEntity.ok(findAllItems.execute(unitId));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Item> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
         return ResponseEntity.ok(findItemById.execute(unitId, id));
     }

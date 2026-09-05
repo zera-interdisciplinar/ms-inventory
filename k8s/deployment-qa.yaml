@@ -70,3 +70,9 @@ spec:
             secretKeyRef:
               name: ms-artificial-intelligence-core-secrets
               key: GEMINI_API_KEY
+        # chave pública RSA do ms-administrative-core, para validar os access tokens
+        - name: JWT_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ms-inventory-jwt
+              key: public.pem

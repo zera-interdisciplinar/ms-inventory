@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,9 +34,11 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateModelHazardousMat
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturerRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
+import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
 @RequestMapping("/api/v1/models")
+@PreAuthorize(Authz.MANAGER)
 public class ModelController {
 
     private final CreateModel createModel;
@@ -77,11 +80,13 @@ public class ModelController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<Model>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
         return ResponseEntity.ok(findAllModels.execute(unitId));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Model> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
         return ResponseEntity.ok(findModelById.execute(unitId, id));
     }
