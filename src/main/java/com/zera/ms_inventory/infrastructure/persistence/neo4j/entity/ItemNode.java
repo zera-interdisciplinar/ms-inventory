@@ -14,6 +14,7 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 @Node("Item")
 public class ItemNode {
@@ -39,12 +40,13 @@ public class ItemNode {
     @Property("lastEventAt")
     private LocalDateTime lastEventAt;
 
-    @Property("nextPredictionDate")
-    private LocalDateTime nextPredictionDate;
+    private LocalDate predictedFailureDate;
 
-    private Integer manufacturingDate;
+    private LocalDateTime predictionUpdatedAt;
 
-    private Integer usageIntensity;
+    private Integer manufacturingYear;
+
+    private UsageIntensity usageIntensity;
 
     private String serialNumber;
 
@@ -68,8 +70,8 @@ public class ItemNode {
     }
 
     public ItemNode(UUID id, String barcode, ItemStatus status, UUID unitId, LocalDateTime createdAt,
-                     LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate,
-                     Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
+                     LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDate predictedFailureDate,
+                     Integer manufacturingYear, UsageIntensity usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -77,8 +79,8 @@ public class ItemNode {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.lastEventAt = lastEventAt;
-        this.nextPredictionDate = nextPredictionDate;
-        this.manufacturingDate = manufacturingDate;
+        this.predictedFailureDate = predictedFailureDate;
+        this.manufacturingYear = manufacturingYear;
         this.usageIntensity = usageIntensity;
         this.serialNumber = serialNumber;
         this.acquiredAt = acquiredAt;
@@ -120,15 +122,23 @@ public class ItemNode {
         return lastEventAt;
     }
 
-    public LocalDateTime getNextPredictionDate() {
-        return nextPredictionDate;
+    public LocalDate getPredictedFailureDate() {
+        return predictedFailureDate;
     }
 
-    public Integer getManufacturingDate() {
-        return manufacturingDate;
+    public LocalDateTime getPredictionUpdatedAt() {
+        return predictionUpdatedAt;
     }
 
-    public Integer getUsageIntensity() {
+    public void setPredictionUpdatedAt(LocalDateTime predictionUpdatedAt) {
+        this.predictionUpdatedAt = predictionUpdatedAt;
+    }
+
+    public Integer getManufacturingYear() {
+        return manufacturingYear;
+    }
+
+    public UsageIntensity getUsageIntensity() {
         return usageIntensity;
     }
 

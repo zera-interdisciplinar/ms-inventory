@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.core.usecase.item;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -20,6 +19,7 @@ import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 
@@ -44,7 +44,7 @@ class CreateItemImplTest {
 
     private CreateItemCommand command(UUID modelId, UUID unitId) {
         return new CreateItemCommand(new Barcode("7891234567890"), ItemStatus.OK, unitId, modelId,
-                LocalDateTime.of(2026, 8, 10, 8, 0), 2024, 7, "SN-001", LocalDate.of(2026, 8, 4), "Placa de vídeo",
+                2024, UsageIntensity.HIGH, "SN-001", LocalDate.of(2026, 8, 4), "Placa de vídeo",
                 ItemCondition.SEMI_DAMAGED, true, Set.of(DamageType.OXIDATION), "Pino torto",
                 new Actor(OPERATOR, ActorRole.EMPLOYEE, "Gustavo Macal"));
     }

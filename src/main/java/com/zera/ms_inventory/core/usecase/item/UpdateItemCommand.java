@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 /** Edicao parcial do item: campo nulo significa "nao alterar". */
 public record UpdateItemCommand(
@@ -18,6 +19,6 @@ public record UpdateItemCommand(
         String notes,
         String serialNumber,
         LocalDate acquiredAt,
-        Integer manufacturingDate,
-        Integer usageIntensity
+        Integer manufacturingYear,
+        UsageIntensity usageIntensity
 ) {}

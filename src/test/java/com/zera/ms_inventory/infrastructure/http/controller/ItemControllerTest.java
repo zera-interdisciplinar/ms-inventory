@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -25,6 +24,7 @@ import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
@@ -74,8 +74,8 @@ class ItemControllerTest {
 
     private Item sampleItem(UUID id) {
         return new Item(id, new Barcode("123456"), ItemStatus.OK, UNIT,
-                com.zera.ms_inventory.Fixtures.model(MODEL_ID, UNIT), LocalDateTime.now(),
-                12, 5, "SN-001", LocalDate.now());
+                com.zera.ms_inventory.Fixtures.model(MODEL_ID, UNIT), null,
+                2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now());
     }
 
     @Test
@@ -86,7 +86,7 @@ class ItemControllerTest {
         when(createItem.execute(any(CreateItemCommand.class))).thenReturn(item);
 
         CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
-                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
+                2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
                         .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
@@ -105,7 +105,7 @@ class ItemControllerTest {
                 .thenThrow(new DataIntegrityViolationException("Node already exists with label `Item`"));
 
         CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
-                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
+                2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
                         .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
@@ -120,7 +120,7 @@ class ItemControllerTest {
     @DisplayName("POST /api/v1/items - deve retornar 400 quando o barcode estiver em branco")
     void shouldReturn400WhenBarcodeIsBlank() throws Exception {
         CreateItemRequest request = new CreateItemRequest("", ItemStatus.OK, MODEL_ID,
-                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
+                2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
                         .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))

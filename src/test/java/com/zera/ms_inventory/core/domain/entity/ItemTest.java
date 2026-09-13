@@ -15,6 +15,7 @@ import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 class ItemTest {
 
@@ -32,11 +33,11 @@ class ItemTest {
         LocalDateTime createdAt = LocalDateTime.of(2026, 8, 4, 12, 0);
         LocalDateTime updatedAt = LocalDateTime.of(2026, 8, 4, 12, 5);
         LocalDateTime lastEventAt = LocalDateTime.of(2026, 8, 4, 12, 10);
-        LocalDateTime nextPredictionDate = LocalDateTime.of(2026, 8, 10, 8, 0);
+        LocalDate predictedFailureDate = LocalDate.of(2026, 11, 10);
         LocalDate acquiredAt = LocalDate.of(2026, 8, 4);
 
         Item item = new Item(id, barcode, ItemStatus.OK, unitId, model, createdAt, updatedAt, lastEventAt,
-                nextPredictionDate, 2024, 7, "SN-001", acquiredAt);
+                predictedFailureDate, 2024, UsageIntensity.MEDIUM, "SN-001", acquiredAt);
 
         assertEquals(id, item.getId());
         assertEquals(barcode, item.getBarcode());
@@ -46,9 +47,9 @@ class ItemTest {
         assertEquals(createdAt, item.getCreatedAt());
         assertEquals(updatedAt, item.getUpdatedAt());
         assertEquals(lastEventAt, item.getLastEventAt());
-        assertEquals(nextPredictionDate, item.getNextPredictionDate());
-        assertEquals(2024, item.getManufacturingDate());
-        assertEquals(7, item.getUsageIntensity());
+        assertEquals(predictedFailureDate, item.getPredictedFailureDate());
+        assertEquals(2024, item.getManufacturingYear());
+        assertEquals(UsageIntensity.MEDIUM, item.getUsageIntensity());
         assertEquals("SN-001", item.getSerialNumber());
         assertEquals(acquiredAt, item.getAcquiredAt());
     }
@@ -63,9 +64,9 @@ class ItemTest {
                 unitId,
                 model(unitId),
                 LocalDateTime.of(2026, 8, 4, 12, 10),
-                LocalDateTime.of(2026, 8, 10, 8, 0),
+                LocalDate.of(2026, 11, 10),
                 2024,
-                7,
+                UsageIntensity.MEDIUM,
                 "SN-001",
                 LocalDate.of(2026, 8, 4)
         );
@@ -73,24 +74,25 @@ class ItemTest {
         LocalDateTime beforeUpdate = item.getUpdatedAt();
 
         UUID newUnitId = UUID.randomUUID();
-        LocalDateTime newPredictionDate = LocalDateTime.of(2026, 8, 20, 9, 30);
+        LocalDate newPredictionDate = LocalDate.of(2026, 12, 20);
         LocalDate newAcquiredAt = LocalDate.of(2026, 8, 5);
 
         item.updateStatus(ItemStatus.DAMAGED);
         item.assignUnit(newUnitId);
         item.updateSerialNumber("SN-002");
         item.updateAcquiredAt(newAcquiredAt);
-        item.updateNextPredictionDate(newPredictionDate);
-        item.updateManufacturingDate(2025);
-        item.updateUsageIntensity(9);
+        item.recordPrediction(newPredictionDate);
+        item.updateManufacturingYear(2025);
+        item.updateUsageIntensity(UsageIntensity.HIGH);
 
         assertEquals(ItemStatus.DAMAGED, item.getStatus());
         assertEquals(newUnitId, item.getUnitId());
         assertEquals("SN-002", item.getSerialNumber());
         assertEquals(newAcquiredAt, item.getAcquiredAt());
-        assertEquals(newPredictionDate, item.getNextPredictionDate());
-        assertEquals(2025, item.getManufacturingDate());
-        assertEquals(9, item.getUsageIntensity());
+        assertEquals(newPredictionDate, item.getPredictedFailureDate());
+        org.junit.jupiter.api.Assertions.assertNotNull(item.getPredictionUpdatedAt());
+        assertEquals(2025, item.getManufacturingYear());
+        assertEquals(UsageIntensity.HIGH, item.getUsageIntensity());
         assertTrue(item.getUpdatedAt().isAfter(beforeUpdate) || item.getUpdatedAt().isEqual(beforeUpdate));
     }
 
@@ -134,5 +136,20 @@ class ItemTest {
 
         assertEquals(null, item.getHasDamages());
         assertEquals(Set.of(), item.getDamages());
+    }
+
+    @Test
+    void shouldRejectAnImplausibleManufacturingYear() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> item.updateManufacturingYear(1900));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> item.updateManufacturingYear(LocalDate.now().getYear() + 1));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> new Item(UUID.randomUUID(), new Barcode("222222-J"), ItemStatus.OK, unitId, model(unitId),
+                        null, 1800, null, null, null));
     }
 }
