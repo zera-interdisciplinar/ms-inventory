@@ -218,4 +218,32 @@ class ModelRepositoryImplTest {
         assertThrows(MaterialNotFoundException.class, () -> repository.save(model));
         verify(neo4jRepository, never()).save(any(ModelNode.class));
     }
+
+    @Test
+    void shouldDropMaterialsNoLongerInTheModelWhenUpdating() {
+        Model model = modelMadeOf(MaterialCode.PLASTIC);
+        MaterialNode plastic = new MaterialNode(UUID.randomUUID(), MaterialCode.PLASTIC, "Plástico", true, false, "g");
+        when(materialNeo4jRepository.findAllByCodeIn(java.util.Set.of(MaterialCode.PLASTIC))).thenReturn(List.of(plastic));
+        when(neo4jRepository.findByIdAndUnitId(model.getId(), Fixtures.UNIT)).thenReturn(Optional.of(mapper.toNode(model)));
+        when(embeddingModel.embed(anyString())).thenReturn(VECTOR);
+        when(neo4jRepository.save(any(ModelNode.class))).thenAnswer(i -> i.getArgument(0));
+
+        repository.save(model);
+
+        verify(neo4jRepository).removeMaterialsNotIn(model.getId(), Fixtures.UNIT, List.of("PLASTIC"));
+    }
+
+    @Test
+    void shouldNotTouchRelationshipsOnFirstSave() {
+        Model model = modelMadeOf(MaterialCode.PLASTIC);
+        MaterialNode plastic = new MaterialNode(UUID.randomUUID(), MaterialCode.PLASTIC, "Plástico", true, false, "g");
+        when(materialNeo4jRepository.findAllByCodeIn(java.util.Set.of(MaterialCode.PLASTIC))).thenReturn(List.of(plastic));
+        when(neo4jRepository.findByIdAndUnitId(model.getId(), Fixtures.UNIT)).thenReturn(Optional.empty());
+        when(embeddingModel.embed(anyString())).thenReturn(VECTOR);
+        when(neo4jRepository.save(any(ModelNode.class))).thenAnswer(i -> i.getArgument(0));
+
+        repository.save(model);
+
+        verify(neo4jRepository, never()).removeMaterialsNotIn(any(), any(), any());
+    }
 }
