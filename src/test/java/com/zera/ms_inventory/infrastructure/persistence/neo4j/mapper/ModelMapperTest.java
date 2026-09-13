@@ -32,7 +32,6 @@ class ModelMapperTest {
         assertEquals(model.getManufacturer(), result.getManufacturer());
         assertEquals(model.getWarrantyMonths(), result.getWarrantyMonths());
         assertEquals(model.getExpectedLifespanMonths(), result.getExpectedLifespanMonths());
-        assertEquals(model.getHazardousMaterials(), result.getHazardousMaterials());
         assertEquals(model.getCreatedAt(), result.getCreatedAt());
         assertEquals(model.getUpdatedAt(), result.getUpdatedAt());
     }
@@ -63,7 +62,7 @@ class ModelMapperTest {
     @Test
     void shouldMapWeightNotesAndMaterials() {
         Model model = new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", null, null, java.util.Set.of(),
-                java.util.Set.of(), 1.8, "Sem bateria", null);
+                1.8, "Sem bateria", null);
 
         ModelNode node = mapper.toNode(model);
         assertEquals(1.8, node.getEstimatedWeightKg());

@@ -13,7 +13,6 @@ public class Model {
     private String manufacturer;
     private Integer warrantyMonths;
     private Integer expectedLifespanMonths;
-    private Set<String> hazardousMaterials;
     private Set<Material> materials;
     private Double estimatedWeightKg;
     private String notes;
@@ -22,9 +21,8 @@ public class Model {
     private LocalDateTime updatedAt;
 
     public Model(UUID id, UUID unitId, String name, String manufacturer, Integer warrantyMonths,
-                 Integer expectedLifespanMonths, Set<String> hazardousMaterials, Set<Material> materials,
-                 Double estimatedWeightKg, String notes, Category category, LocalDateTime createdAt,
-                 LocalDateTime updatedAt) {
+                 Integer expectedLifespanMonths, Set<Material> materials, Double estimatedWeightKg, String notes,
+                 Category category, LocalDateTime createdAt, LocalDateTime updatedAt) {
         validateWeight(estimatedWeightKg);
         this.id = id;
         this.unitId = unitId;
@@ -32,7 +30,6 @@ public class Model {
         this.manufacturer = manufacturer;
         this.warrantyMonths = warrantyMonths;
         this.expectedLifespanMonths = expectedLifespanMonths;
-        this.hazardousMaterials = hazardousMaterials;
         this.materials = materials == null ? Set.of() : Set.copyOf(materials);
         this.estimatedWeightKg = estimatedWeightKg;
         this.notes = notes;
@@ -42,20 +39,10 @@ public class Model {
     }
 
     public Model(UUID id, UUID unitId, String name, String manufacturer, Integer warrantyMonths,
-                 Integer expectedLifespanMonths, Set<String> hazardousMaterials, Set<Material> materials,
-                 Double estimatedWeightKg, String notes, Category category) {
-        this(id, unitId, name, manufacturer, warrantyMonths, expectedLifespanMonths, hazardousMaterials, materials,
-                estimatedWeightKg, notes, category, LocalDateTime.now(), LocalDateTime.now());
-    }
-
-    public Model(UUID id, UUID unitId, String name, String manufacturer, Integer warrantyMonths, Integer expectedLifespanMonths, Set<String> hazardousMaterials, Category category, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this(id, unitId, name, manufacturer, warrantyMonths, expectedLifespanMonths, hazardousMaterials, Set.of(),
-                null, null, category, createdAt, updatedAt);
-    }
-
-    public Model(UUID id, UUID unitId, String name, String manufacturer, Integer warrantyMonths, Integer expectedLifespanMonths, Set<String> hazardousMaterials, Category category) {
-        this(id, unitId, name, manufacturer, warrantyMonths, expectedLifespanMonths, hazardousMaterials, category,
-                LocalDateTime.now(), LocalDateTime.now());
+                 Integer expectedLifespanMonths, Set<Material> materials, Double estimatedWeightKg, String notes,
+                 Category category) {
+        this(id, unitId, name, manufacturer, warrantyMonths, expectedLifespanMonths, materials, estimatedWeightKg,
+                notes, category, LocalDateTime.now(), LocalDateTime.now());
     }
 
     // -------------------------------------------------
@@ -82,10 +69,6 @@ public class Model {
 
     public Integer getExpectedLifespanMonths() {
         return expectedLifespanMonths;
-    }
-
-    public Set<String> getHazardousMaterials() {
-        return hazardousMaterials;
     }
 
     public Set<Material> getMaterials() {
@@ -143,11 +126,6 @@ public class Model {
         touch();
     }
 
-    public void changeHazardousMaterials(Set<String> newHazardousMaterials) {
-        this.hazardousMaterials = newHazardousMaterials;
-        touch();
-    }
-
     public void changeMaterials(Set<Material> newMaterials) {
         this.materials = newMaterials == null ? Set.of() : Set.copyOf(newMaterials);
         touch();
@@ -173,7 +151,6 @@ public class Model {
         // ordenado: Set nao tem ordem estavel e o texto instavel re-embedaria a cada save
         materials.stream().map(Material::getName).sorted(Comparator.naturalOrder())
                 .forEach(m -> sb.append(m).append(' '));
-        if (hazardousMaterials != null) hazardousMaterials.stream().sorted().forEach(m -> sb.append(m).append(' '));
         return sb.toString().trim();
     }
 

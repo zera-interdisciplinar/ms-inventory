@@ -16,7 +16,7 @@ class ItemTest {
 
     private Model model(UUID unitId) {
         Category category = new Category(UUID.randomUUID(), unitId, "Notebooks", "Portable computers");
-        return new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of("Lithium"), category);
+        return new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of(), null, null, category);
     }
 
     @Test

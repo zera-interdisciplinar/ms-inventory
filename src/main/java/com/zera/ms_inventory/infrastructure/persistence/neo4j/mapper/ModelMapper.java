@@ -26,7 +26,7 @@ public class ModelMapper {
         Set<Material> materials = node.getMaterials() == null ? Set.of()
                 : node.getMaterials().stream().map(materialMapper::toDomain).collect(Collectors.toSet());
         return new Model(node.getId(), node.getUnitId(), node.getName(), node.getManufacturer(),
-                node.getWarrantyMonths(), node.getExpectedLifespanMonths(), node.getHazardousMaterials(), materials,
+                node.getWarrantyMonths(), node.getExpectedLifespanMonths(), materials,
                 node.getEstimatedWeightKg(), node.getNotes(), categoryMapper.toDomain(node.getCategory()),
                 node.getCreatedAt(), node.getUpdatedAt());
     }
@@ -40,8 +40,8 @@ public class ModelMapper {
             return null;
         }
         ModelNode node = new ModelNode(model.getId(), model.getUnitId(), model.getName(), model.getManufacturer(),
-                model.getWarrantyMonths(), model.getExpectedLifespanMonths(), model.getHazardousMaterials(),
-                model.getCreatedAt(), model.getUpdatedAt());
+                model.getWarrantyMonths(), model.getExpectedLifespanMonths(), model.getCreatedAt(),
+                model.getUpdatedAt());
         node.setEstimatedWeightKg(model.getEstimatedWeightKg());
         node.setNotes(model.getNotes());
         return node;

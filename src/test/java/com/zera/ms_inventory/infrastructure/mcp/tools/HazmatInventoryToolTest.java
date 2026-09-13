@@ -32,7 +32,7 @@ class HazmatInventoryToolTest {
             "Plástico", true, false, "guia");
 
     private Model model(String name, Material... materials) {
-        return new Model(UUID.randomUUID(), Fixtures.UNIT, name, "Acme", 24, 60, Set.of(), Set.of(materials),
+        return new Model(UUID.randomUUID(), Fixtures.UNIT, name, "Acme", 24, 60, Set.of(materials),
                 null, null, Fixtures.category(Fixtures.UNIT));
     }
 
