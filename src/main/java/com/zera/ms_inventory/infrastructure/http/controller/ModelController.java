@@ -1,6 +1,5 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
-import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -16,13 +15,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
-import com.zera.ms_inventory.core.usecase.model.FindAllModels;
 import com.zera.ms_inventory.core.usecase.model.FindModelById;
+import com.zera.ms_inventory.core.usecase.model.ListModels;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelExpectedLifespanMonths;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelHazardousMaterials;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelManufacturer;
@@ -35,6 +36,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturer
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
 import com.zera.ms_inventory.infrastructure.http.response.ModelResponse;
+import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
@@ -43,7 +45,7 @@ import com.zera.ms_inventory.infrastructure.security.Authz;
 public class ModelController {
 
     private final CreateModel createModel;
-    private final FindAllModels findAllModels;
+    private final ListModels listModels;
     private final FindModelById findModelById;
     private final UpdateModelName updateModelName;
     private final UpdateModelManufacturer updateModelManufacturer;
@@ -53,7 +55,7 @@ public class ModelController {
     private final DeleteModel deleteModel;
 
     public ModelController(CreateModel createModel,
-                            FindAllModels findAllModels,
+                            ListModels listModels,
                             FindModelById findModelById,
                             UpdateModelName updateModelName,
                             UpdateModelManufacturer updateModelManufacturer,
@@ -62,7 +64,7 @@ public class ModelController {
                             UpdateModelHazardousMaterials updateModelHazardousMaterials,
                             DeleteModel deleteModel) {
         this.createModel = createModel;
-        this.findAllModels = findAllModels;
+        this.listModels = listModels;
         this.findModelById = findModelById;
         this.updateModelName = updateModelName;
         this.updateModelManufacturer = updateModelManufacturer;
@@ -82,8 +84,10 @@ public class ModelController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ModelResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
-        return ResponseEntity.ok(findAllModels.execute(unitId).stream().map(ModelResponse::from).toList());
+    public ResponseEntity<PageResponse<ModelResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                            @RequestParam(defaultValue = "0") int page,
+                                                            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(PageResponse.from(listModels.execute(unitId, new Pagination(page, size)), ModelResponse::from));
     }
 
     @GetMapping("/{id}")

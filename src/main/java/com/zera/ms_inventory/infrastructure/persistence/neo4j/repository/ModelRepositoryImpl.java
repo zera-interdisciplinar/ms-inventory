@@ -8,9 +8,14 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.PageResult;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ModelNode;
@@ -80,6 +85,15 @@ public class ModelRepositoryImpl implements ModelRepository {
     @Override
     public List<Model> findAll(UUID unitId) {
         return neo4jRepository.findAllByUnitId(unitId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public PageResult<Model> findPage(UUID unitId, Pagination pagination) {
+        // mais recentes primeiro, como a lista do app
+        Page<ModelNode> page = neo4jRepository.findAllByUnitId(unitId,
+                PageRequest.of(pagination.page(), pagination.size(), Sort.by(Sort.Direction.DESC, "createdAt")));
+        return new PageResult<>(page.getContent().stream().map(mapper::toDomain).toList(),
+                pagination.page(), pagination.size(), page.getTotalElements());
     }
 
     @Override
