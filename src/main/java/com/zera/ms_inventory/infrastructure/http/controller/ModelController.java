@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
@@ -76,8 +77,8 @@ public class ModelController {
 
     @PostMapping
     public ResponseEntity<ModelResponse> create(@RequestHeader("X-Unit-Id") UUID unitId,
-                                         @RequestBody @Valid CreateModelRequest request) {
-        Model created = createModel.execute(request.toCommand(unitId));
+                                         @RequestBody @Valid CreateModelRequest request, Actor actor) {
+        Model created = createModel.execute(request.toCommand(unitId, actor));
         return ResponseEntity.status(HttpStatus.CREATED).body(ModelResponse.from(created));
     }
 

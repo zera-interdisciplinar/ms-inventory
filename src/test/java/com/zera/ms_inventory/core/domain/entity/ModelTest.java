@@ -6,10 +6,15 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 
 class ModelTest {
@@ -114,5 +119,43 @@ class ModelTest {
                 null, null, category(unitId));
 
         assertEquals("Notebook X Zera Notebooks Metal Plástico", model.toEmbeddableText());
+    }
+
+    @Test
+    void shouldRegisterAsPendingWhenAnEmployeeCreatesAndApprovedWhenAManagerCreates() {
+        UUID unitId = UUID.randomUUID();
+        UUID operator = UUID.randomUUID();
+        UUID manager = UUID.randomUUID();
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", null, null, Set.of(), null, null,
+                category(unitId));
+
+        assertEquals(ApprovalStatus.APPROVED, model.getApprovalStatus());
+
+        model.registerBy(new Actor(operator, ActorRole.EMPLOYEE));
+        assertEquals(ApprovalStatus.PENDING, model.getApprovalStatus());
+        assertEquals(operator, model.getCreatedBy());
+        assertNull(model.getReviewedBy());
+        assertNull(model.getReviewedAt());
+
+        model.registerBy(new Actor(manager, ActorRole.MANAGER));
+        assertEquals(ApprovalStatus.APPROVED, model.getApprovalStatus());
+        assertEquals(manager, model.getReviewedBy());
+        assertNotNull(model.getReviewedAt());
+    }
+
+    @Test
+    void shouldRestoreApprovalAndTreatMissingStatusAsApproved() {
+        UUID unitId = UUID.randomUUID();
+        UUID creator = UUID.randomUUID();
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", null, null, Set.of(), null, null,
+                category(unitId));
+
+        model.restoreApproval(ApprovalStatus.REJECTED, "Foto ilegivel", creator, null, null);
+        assertEquals(ApprovalStatus.REJECTED, model.getApprovalStatus());
+        assertEquals("Foto ilegivel", model.getRejectionReason());
+        assertEquals(creator, model.getCreatedBy());
+
+        model.restoreApproval(null, null, null, null, null);
+        assertEquals(ApprovalStatus.APPROVED, model.getApprovalStatus());
     }
 }

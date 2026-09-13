@@ -5,6 +5,9 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
 
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
+
 public class Model {
 
     private final UUID id;
@@ -17,6 +20,12 @@ public class Model {
     private Double estimatedWeightKg;
     private String notes;
     private final Category category;
+    // modelos anteriores ao fluxo de aprovacao eram criados so por gestores
+    private ApprovalStatus approvalStatus = ApprovalStatus.APPROVED;
+    private String rejectionReason;
+    private UUID createdBy;
+    private UUID reviewedBy;
+    private LocalDateTime reviewedAt;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -95,12 +104,61 @@ public class Model {
         return updatedAt;
     }
 
+    public ApprovalStatus getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public UUID getReviewedBy() {
+        return reviewedBy;
+    }
+
+    public LocalDateTime getReviewedAt() {
+        return reviewedAt;
+    }
+
     /** Perigoso quando qualquer material do catalogo que compoe o modelo e perigoso. */
     public boolean isHazardous() {
         return materials.stream().anyMatch(Material::isHazardous);
     }
 
     // -------------------------------------
+
+    /**
+     * Cadastro de um modelo novo: o do operario nasce pendente de aprovacao; o do gestor ja nasce
+     * aprovado, revisado por ele mesmo.
+     */
+    public void registerBy(Actor actor) {
+        this.createdBy = actor.userId();
+        this.rejectionReason = null;
+        if (actor.isManager()) {
+            this.approvalStatus = ApprovalStatus.APPROVED;
+            this.reviewedBy = actor.userId();
+            this.reviewedAt = LocalDateTime.now();
+        } else {
+            this.approvalStatus = ApprovalStatus.PENDING;
+            this.reviewedBy = null;
+            this.reviewedAt = null;
+        }
+        touch();
+    }
+
+    /** Reidrata o estado de aprovacao salvo. Uso exclusivo da camada de persistencia. */
+    public void restoreApproval(ApprovalStatus approvalStatus, String rejectionReason, UUID createdBy,
+                                UUID reviewedBy, LocalDateTime reviewedAt) {
+        this.approvalStatus = approvalStatus == null ? ApprovalStatus.APPROVED : approvalStatus;
+        this.rejectionReason = rejectionReason;
+        this.createdBy = createdBy;
+        this.reviewedBy = reviewedBy;
+        this.reviewedAt = reviewedAt;
+    }
 
     public void touch(){
         this.updatedAt = LocalDateTime.now();
