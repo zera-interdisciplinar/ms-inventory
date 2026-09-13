@@ -27,7 +27,10 @@ interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
     @Query("""
             MATCH (i:Item)-[r:IS_MODEL]->(m:Model)
             WHERE i.unitId = $unitId AND m.id IN $modelIds
-            RETURN i, collect(r), collect(m)
+            OPTIONAL MATCH (m)-[bt:BELONGS_TO]->(c:Category)
+            OPTIONAL MATCH (m)-[mo:MADE_OF]->(mat:Material)
+            RETURN i, collect(DISTINCT r), collect(DISTINCT m), collect(DISTINCT bt), collect(DISTINCT c),
+                   collect(DISTINCT mo), collect(DISTINCT mat)
             """)
     List<ItemNode> findAllByUnitIdAndModelIdIn(@Param("unitId") UUID unitId,
                                               @Param("modelIds") List<UUID> modelIds);
