@@ -72,6 +72,11 @@ public class ItemRepositoryImpl implements ItemRepository {
     }
 
     @Override
+    public boolean existsAnyWithId(UUID id) {
+        return neo4jRepository.existsById(id);
+    }
+
+    @Override
     public boolean existsByDisplayCode(UUID unitId, String displayCode) {
         return neo4jRepository.existsByUnitIdAndDisplayCode(unitId, displayCode);
     }
