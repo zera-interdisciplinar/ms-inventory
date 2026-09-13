@@ -39,6 +39,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateModelMaterialsReq
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
 import com.zera.ms_inventory.infrastructure.http.response.ModelResponse;
 import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
@@ -48,6 +49,7 @@ import com.zera.ms_inventory.infrastructure.security.Authz;
 @PreAuthorize(Authz.INVENTORY_OPERATOR)
 public class ModelController {
 
+    private final ItemResponses itemResponses;
     private final CreateModel createModel;
     private final ListModels listModels;
     private final FindModelById findModelById;
@@ -68,7 +70,9 @@ public class ModelController {
                             UpdateModelWarrantyMonths updateModelWarrantyMonths,
                             UpdateModelExpectedLifespanMonths updateModelExpectedLifespanMonths,
                             UpdateModelMaterials updateModelMaterials,
-                            DeleteModel deleteModel) {
+                            DeleteModel deleteModel,
+                            ItemResponses itemResponses) {
+        this.itemResponses = itemResponses;
         this.createModel = createModel;
         this.listModels = listModels;
         this.findModelById = findModelById;
@@ -111,7 +115,7 @@ public class ModelController {
                                                               @RequestParam(defaultValue = "0") int page,
                                                               @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(PageResponse.from(
-                listModelItems.execute(unitId, id, new Pagination(page, size)), ItemResponse::from));
+                listModelItems.execute(unitId, id, new Pagination(page, size)), itemResponses::from));
     }
 
     @PatchMapping("/{id}/name")
