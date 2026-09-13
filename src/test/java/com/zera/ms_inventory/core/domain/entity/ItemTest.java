@@ -9,7 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
+import com.zera.ms_inventory.core.domain.valueobject.DamageType;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 
 class ItemTest {
@@ -88,5 +92,47 @@ class ItemTest {
         assertEquals(2025, item.getManufacturingDate());
         assertEquals(9, item.getUsageIntensity());
         assertTrue(item.getUpdatedAt().isAfter(beforeUpdate) || item.getUpdatedAt().isEqual(beforeUpdate));
+    }
+
+    @Test
+    void shouldDescribeTheItemAndRecordWhoRegisteredIt() {
+        UUID unitId = UUID.randomUUID();
+        UUID operator = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        item.describe("Placa de vídeo", ItemCondition.SEMI_DAMAGED, true,
+                Set.of(DamageType.BROKEN_SCREEN, DamageType.OXIDATION), "Pino torto");
+        item.registerBy(new Actor(operator, ActorRole.EMPLOYEE, "Gustavo Macal"));
+
+        assertEquals("Placa de vídeo", item.getName());
+        assertEquals(ItemCondition.SEMI_DAMAGED, item.getCondition());
+        assertEquals(Boolean.TRUE, item.getHasDamages());
+        assertEquals(Set.of(DamageType.BROKEN_SCREEN, DamageType.OXIDATION), item.getDamages());
+        assertEquals("Pino torto", item.getNotes());
+        assertEquals(operator, item.getCreatedBy());
+        assertEquals("Gustavo Macal", item.getCreatedByName());
+    }
+
+    @Test
+    void shouldRejectDamagesWhenTheItemHasNoDamages() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> item.describe("Mouse", ItemCondition.USED, false, Set.of(DamageType.OTHER), null));
+    }
+
+    @Test
+    void shouldAllowUnansweredDamagesAndKeepDamagesEmpty() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        item.describe("Mouse", null, null, null, null);
+
+        assertEquals(null, item.getHasDamages());
+        assertEquals(Set.of(), item.getDamages());
     }
 }

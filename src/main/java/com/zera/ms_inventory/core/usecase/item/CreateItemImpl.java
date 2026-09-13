@@ -29,6 +29,8 @@ public class CreateItemImpl implements CreateItem {
         Item item = new Item(UUID.randomUUID(), command.barcode(), command.status(), command.unitId(), model,
                 command.nextPredictionDate(), command.manufacturingDate(), command.usageIntensity(),
                 command.serialNumber(), command.acquiredAt());
+        item.describe(command.name(), command.condition(), command.hasDamages(), command.damages(), command.notes());
+        item.registerBy(command.actor());
         return itemRepository.save(item);
     }
 }

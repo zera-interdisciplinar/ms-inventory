@@ -7,6 +7,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -42,6 +43,7 @@ public class ActorArgumentResolver implements HandlerMethodArgumentResolver {
         }
         boolean manager = authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_MANAGER".equals(authority.getAuthority()));
-        return new Actor(UUID.fromString(authentication.getName()), manager ? ActorRole.MANAGER : ActorRole.EMPLOYEE);
+        String name = authentication instanceof JwtAuthenticationToken jwt ? jwt.getToken().getClaimAsString("name") : null;
+        return new Actor(UUID.fromString(authentication.getName()), manager ? ActorRole.MANAGER : ActorRole.EMPLOYEE, name);
     }
 }

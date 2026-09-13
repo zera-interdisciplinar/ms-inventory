@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
@@ -86,8 +87,8 @@ public class ItemController {
 
     @PostMapping
     public ResponseEntity<ItemResponse> create(@RequestHeader("X-Unit-Id") UUID unitId,
-                                        @RequestBody @Valid CreateItemRequest request) {
-        Item created = createItem.execute(request.toCommand(unitId));
+                                        @RequestBody @Valid CreateItemRequest request, Actor actor) {
+        Item created = createItem.execute(request.toCommand(unitId, actor));
         return ResponseEntity.status(HttpStatus.CREATED).body(ItemResponse.from(created));
     }
 
