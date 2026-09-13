@@ -38,6 +38,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateItemNextPredictio
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemSerialNumberRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemUsageIntensityRequest;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
@@ -82,58 +83,58 @@ public class ItemController {
     }
 
     @PostMapping
-    public ResponseEntity<Item> create(@RequestHeader("X-Unit-Id") UUID unitId,
+    public ResponseEntity<ItemResponse> create(@RequestHeader("X-Unit-Id") UUID unitId,
                                         @RequestBody @Valid CreateItemRequest request) {
         Item created = createItem.execute(request.toCommand(unitId));
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ItemResponse.from(created));
     }
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Item>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
-        return ResponseEntity.ok(findAllItems.execute(unitId));
+    public ResponseEntity<List<ItemResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
+        return ResponseEntity.ok(findAllItems.execute(unitId).stream().map(ItemResponse::from).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Item> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
-        return ResponseEntity.ok(findItemById.execute(unitId, id));
+    public ResponseEntity<ItemResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        return ResponseEntity.ok(ItemResponse.from(findItemById.execute(unitId, id)));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Item> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemStatusRequest request) {
-        return ResponseEntity.ok(updateItemStatus.execute(unitId, id, request.status()));
+    public ResponseEntity<ItemResponse> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemStatusRequest request) {
+        return ResponseEntity.ok(ItemResponse.from(updateItemStatus.execute(unitId, id, request.status())));
     }
 
     @PatchMapping("/{id}/unit")
     @PreAuthorize(Authz.MANAGER)
-    public ResponseEntity<Item> assignUnit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
-        return ResponseEntity.ok(assignItemUnit.execute(unitId, id, request.unitId()));
+    public ResponseEntity<ItemResponse> assignUnit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
+        return ResponseEntity.ok(ItemResponse.from(assignItemUnit.execute(unitId, id, request.unitId())));
     }
 
     @PatchMapping("/{id}/serial-number")
-    public ResponseEntity<Item> updateSerialNumber(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemSerialNumberRequest request) {
-        return ResponseEntity.ok(updateItemSerialNumber.execute(unitId, id, request.serialNumber()));
+    public ResponseEntity<ItemResponse> updateSerialNumber(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemSerialNumberRequest request) {
+        return ResponseEntity.ok(ItemResponse.from(updateItemSerialNumber.execute(unitId, id, request.serialNumber())));
     }
 
     @PatchMapping("/{id}/acquired-at")
-    public ResponseEntity<Item> updateAcquiredAt(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemAcquiredAtRequest request) {
-        return ResponseEntity.ok(updateItemAcquiredAt.execute(unitId, id, request.acquiredAt()));
+    public ResponseEntity<ItemResponse> updateAcquiredAt(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemAcquiredAtRequest request) {
+        return ResponseEntity.ok(ItemResponse.from(updateItemAcquiredAt.execute(unitId, id, request.acquiredAt())));
     }
 
     @PatchMapping("/{id}/next-prediction-date")
-    public ResponseEntity<Item> updateNextPredictionDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemNextPredictionDateRequest request) {
-        return ResponseEntity.ok(updateItemNextPredictionDate.execute(unitId, id, request.nextPredictionDate()));
+    public ResponseEntity<ItemResponse> updateNextPredictionDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemNextPredictionDateRequest request) {
+        return ResponseEntity.ok(ItemResponse.from(updateItemNextPredictionDate.execute(unitId, id, request.nextPredictionDate())));
     }
 
     @PatchMapping("/{id}/manufacturing-date")
-    public ResponseEntity<Item> updateManufacturingDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemManufacturingDateRequest request) {
-        return ResponseEntity.ok(updateItemManufacturingDate.execute(unitId, id, request.manufacturingDate()));
+    public ResponseEntity<ItemResponse> updateManufacturingDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemManufacturingDateRequest request) {
+        return ResponseEntity.ok(ItemResponse.from(updateItemManufacturingDate.execute(unitId, id, request.manufacturingDate())));
     }
 
     @PatchMapping("/{id}/usage-intensity")
-    public ResponseEntity<Item> updateUsageIntensity(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemUsageIntensityRequest request) {
-        return ResponseEntity.ok(updateItemUsageIntensity.execute(unitId, id, request.usageIntensity()));
+    public ResponseEntity<ItemResponse> updateUsageIntensity(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemUsageIntensityRequest request) {
+        return ResponseEntity.ok(ItemResponse.from(updateItemUsageIntensity.execute(unitId, id, request.usageIntensity())));
     }
 
     // exclusao ainda e fisica: so o gestor ate a remocao logica revisavel (ZERA-247)

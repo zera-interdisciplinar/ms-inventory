@@ -34,6 +34,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateModelHazardousMat
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturerRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
+import com.zera.ms_inventory.infrastructure.http.response.ModelResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
@@ -72,48 +73,48 @@ public class ModelController {
     }
 
     @PostMapping
-    public ResponseEntity<Model> create(@RequestHeader("X-Unit-Id") UUID unitId,
+    public ResponseEntity<ModelResponse> create(@RequestHeader("X-Unit-Id") UUID unitId,
                                          @RequestBody @Valid CreateModelRequest request) {
         Model created = createModel.execute(unitId, request.name(), request.manufacturer(), request.warrantyMonths(),
                 request.expectedLifespanMonths(), request.hazardousMaterials(), request.categoryId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ModelResponse.from(created));
     }
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Model>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
-        return ResponseEntity.ok(findAllModels.execute(unitId));
+    public ResponseEntity<List<ModelResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
+        return ResponseEntity.ok(findAllModels.execute(unitId).stream().map(ModelResponse::from).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Model> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
-        return ResponseEntity.ok(findModelById.execute(unitId, id));
+    public ResponseEntity<ModelResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        return ResponseEntity.ok(ModelResponse.from(findModelById.execute(unitId, id)));
     }
 
     @PatchMapping("/{id}/name")
-    public ResponseEntity<Model> rename(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelNameRequest request) {
-        return ResponseEntity.ok(updateModelName.execute(unitId, id, request.name()));
+    public ResponseEntity<ModelResponse> rename(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelNameRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelName.execute(unitId, id, request.name())));
     }
 
     @PatchMapping("/{id}/manufacturer")
-    public ResponseEntity<Model> updateManufacturer(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelManufacturerRequest request) {
-        return ResponseEntity.ok(updateModelManufacturer.execute(unitId, id, request.manufacturer()));
+    public ResponseEntity<ModelResponse> updateManufacturer(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelManufacturerRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelManufacturer.execute(unitId, id, request.manufacturer())));
     }
 
     @PatchMapping("/{id}/warranty-months")
-    public ResponseEntity<Model> updateWarrantyMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelWarrantyMonthsRequest request) {
-        return ResponseEntity.ok(updateModelWarrantyMonths.execute(unitId, id, request.warrantyMonths()));
+    public ResponseEntity<ModelResponse> updateWarrantyMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelWarrantyMonthsRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelWarrantyMonths.execute(unitId, id, request.warrantyMonths())));
     }
 
     @PatchMapping("/{id}/expected-lifespan-months")
-    public ResponseEntity<Model> updateExpectedLifespanMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelExpectedLifespanMonthsRequest request) {
-        return ResponseEntity.ok(updateModelExpectedLifespanMonths.execute(unitId, id, request.expectedLifespanMonths()));
+    public ResponseEntity<ModelResponse> updateExpectedLifespanMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelExpectedLifespanMonthsRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelExpectedLifespanMonths.execute(unitId, id, request.expectedLifespanMonths())));
     }
 
     @PatchMapping("/{id}/hazardous-materials")
-    public ResponseEntity<Model> updateHazardousMaterials(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelHazardousMaterialsRequest request) {
-        return ResponseEntity.ok(updateModelHazardousMaterials.execute(unitId, id, request.hazardousMaterials()));
+    public ResponseEntity<ModelResponse> updateHazardousMaterials(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelHazardousMaterialsRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelHazardousMaterials.execute(unitId, id, request.hazardousMaterials())));
     }
 
     @DeleteMapping("/{id}")
