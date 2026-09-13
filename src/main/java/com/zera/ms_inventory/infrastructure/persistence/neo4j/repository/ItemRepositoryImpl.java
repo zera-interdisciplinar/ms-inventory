@@ -4,9 +4,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.PageResult;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ItemNode;
@@ -48,6 +53,15 @@ public class ItemRepositoryImpl implements ItemRepository {
     @Override
     public List<Item> findAll(UUID unitId) {
         return neo4jRepository.findAllByUnitId(unitId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public PageResult<Item> findPage(UUID unitId, Pagination pagination) {
+        // mais recentes primeiro, como a lista do app
+        Page<ItemNode> page = neo4jRepository.findAllByUnitId(unitId,
+                PageRequest.of(pagination.page(), pagination.size(), Sort.by(Sort.Direction.DESC, "createdAt")));
+        return new PageResult<>(page.getContent().stream().map(mapper::toDomain).toList(),
+                pagination.page(), pagination.size(), page.getTotalElements());
     }
 
     @Override

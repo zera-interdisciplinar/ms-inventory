@@ -9,10 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.ai.embedding.EmbeddingModel;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.PageResult;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ModelNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.mapper.CategoryMapper;
@@ -154,5 +159,18 @@ class ModelRepositoryImplTest {
         repository.deleteById(Fixtures.UNIT, id);
 
         verify(neo4jRepository).deleteByIdAndUnitId(id, Fixtures.UNIT);
+    }
+
+    @Test
+    void shouldPageNewestFirstWithinTheUnit() {
+        PageRequest request = PageRequest.of(1, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
+        when(neo4jRepository.findAllByUnitId(Fixtures.UNIT, request))
+                .thenReturn(new PageImpl<>(List.of(mapper.toNode(Fixtures.model(Fixtures.UNIT))), request, 11));
+
+        PageResult<Model> result = repository.findPage(Fixtures.UNIT, new Pagination(1, 10));
+
+        assertEquals(1, result.content().size());
+        assertEquals(11, result.totalElements());
+        assertEquals(2, result.totalPages());
     }
 }

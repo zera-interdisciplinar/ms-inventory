@@ -1,6 +1,5 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
-import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -16,14 +15,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
-import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
+import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemAcquiredAt;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemManufacturingDate;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemNextPredictionDate;
@@ -39,6 +40,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateItemSerialNumberR
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemUsageIntensityRequest;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
+import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
@@ -47,7 +49,7 @@ import com.zera.ms_inventory.infrastructure.security.Authz;
 public class ItemController {
 
     private final CreateItem createItem;
-    private final FindAllItems findAllItems;
+    private final ListItems listItems;
     private final FindItemById findItemById;
     private final UpdateItemStatus updateItemStatus;
     private final AssignItemUnit assignItemUnit;
@@ -59,7 +61,7 @@ public class ItemController {
     private final DeleteItem deleteItem;
 
     public ItemController(CreateItem createItem,
-                           FindAllItems findAllItems,
+                           ListItems listItems,
                            FindItemById findItemById,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
@@ -70,7 +72,7 @@ public class ItemController {
                            UpdateItemUsageIntensity updateItemUsageIntensity,
                            DeleteItem deleteItem) {
         this.createItem = createItem;
-        this.findAllItems = findAllItems;
+        this.listItems = listItems;
         this.findItemById = findItemById;
         this.updateItemStatus = updateItemStatus;
         this.assignItemUnit = assignItemUnit;
@@ -91,8 +93,10 @@ public class ItemController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ItemResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
-        return ResponseEntity.ok(findAllItems.execute(unitId).stream().map(ItemResponse::from).toList());
+    public ResponseEntity<PageResponse<ItemResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                            @RequestParam(defaultValue = "0") int page,
+                                                            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(PageResponse.from(listItems.execute(unitId, new Pagination(page, size)), ItemResponse::from));
     }
 
     @GetMapping("/{id}")
