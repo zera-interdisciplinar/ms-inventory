@@ -21,6 +21,7 @@ import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.MaterialNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ModelNode;
@@ -175,7 +176,7 @@ class ModelRepositoryImplTest {
         when(neo4jRepository.findAllByUnitId(Fixtures.UNIT, request))
                 .thenReturn(new PageImpl<>(List.of(mapper.toNode(Fixtures.model(Fixtures.UNIT))), request, 11));
 
-        PageResult<Model> result = repository.findPage(Fixtures.UNIT, new Pagination(1, 10));
+        PageResult<Model> result = repository.findPage(Fixtures.UNIT, null, new Pagination(1, 10));
 
         assertEquals(1, result.content().size());
         assertEquals(11, result.totalElements());
@@ -245,5 +246,17 @@ class ModelRepositoryImplTest {
         repository.save(model);
 
         verify(neo4jRepository, never()).removeMaterialsNotIn(any(), any(), any());
+    }
+
+    @Test
+    void shouldFilterThePageByApprovalStatus() {
+        PageRequest request = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
+        when(neo4jRepository.findAllByUnitIdAndApprovalStatus(Fixtures.UNIT, ApprovalStatus.PENDING, request))
+                .thenReturn(new PageImpl<>(List.of(mapper.toNode(Fixtures.model(Fixtures.UNIT))), request, 1));
+
+        PageResult<Model> result = repository.findPage(Fixtures.UNIT, ApprovalStatus.PENDING, new Pagination(0, 20));
+
+        assertEquals(1, result.totalElements());
+        verify(neo4jRepository, never()).findAllByUnitId(any(UUID.class), any(PageRequest.class));
     }
 }
