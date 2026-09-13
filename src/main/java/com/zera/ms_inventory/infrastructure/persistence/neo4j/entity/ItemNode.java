@@ -64,6 +64,8 @@ public class ItemNode {
 
     private String notes;
 
+    private String photoKey;
+
     private UUID createdBy;
 
     private String createdByName;
@@ -214,5 +216,13 @@ public class ItemNode {
 
     public void setDisplayCode(String displayCode) {
         this.displayCode = displayCode;
+    }
+
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
+    public void setPhotoKey(String photoKey) {
+        this.photoKey = photoKey;
     }
 }

@@ -29,6 +29,7 @@ public class ItemMapper {
                 node.getNotes(), node.getCreatedBy(), node.getCreatedByName());
         item.restorePredictionUpdatedAt(node.getPredictionUpdatedAt());
         item.restoreDisplayCode(node.getDisplayCode());
+        item.restorePhotoKey(node.getPhotoKey());
         return item;
     }
     
@@ -48,6 +49,7 @@ public class ItemMapper {
         node.setCreatedByName(item.getCreatedByName());
         node.setPredictionUpdatedAt(item.getPredictionUpdatedAt());
         node.setDisplayCode(item.getDisplayCode());
+        node.setPhotoKey(item.getPhotoKey());
         return node;
     }
 }
