@@ -14,10 +14,13 @@ import com.zera.ms_inventory.core.repository.ModelRepository;
 public class CreateItemImpl implements CreateItem {
     private final ItemRepository itemRepository;
     private final ModelRepository modelRepository;
+    private final DisplayCodeGenerator displayCodeGenerator;
 
-    public CreateItemImpl(ItemRepository itemRepository, ModelRepository modelRepository) {
+    public CreateItemImpl(ItemRepository itemRepository, ModelRepository modelRepository,
+                          DisplayCodeGenerator displayCodeGenerator) {
         this.itemRepository = itemRepository;
         this.modelRepository = modelRepository;
+        this.displayCodeGenerator = displayCodeGenerator;
     }
 
     @Override
@@ -31,6 +34,7 @@ public class CreateItemImpl implements CreateItem {
                 command.serialNumber(), command.acquiredAt());
         item.describe(command.name(), command.condition(), command.hasDamages(), command.damages(), command.notes());
         item.registerBy(command.actor());
+        item.assignDisplayCode(displayCodeGenerator.next(command.unitId()));
         return itemRepository.save(item);
     }
 }

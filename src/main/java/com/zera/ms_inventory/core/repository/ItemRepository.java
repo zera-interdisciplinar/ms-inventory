@@ -16,6 +16,8 @@ public interface ItemRepository {
     PageResult<Item> findPage(UUID unitId, Pagination pagination);
     PageResult<Item> findPageByModel(UUID unitId, UUID modelId, Pagination pagination);
     boolean existsByModel(UUID unitId, UUID modelId);
+    boolean existsByDisplayCode(UUID unitId, String displayCode);
+    Optional<Item> findByBarcode(UUID unitId, String barcode);
     List<Item> findAllByModelIds(UUID unitId, List<UUID> modelIds);
     void deleteById(UUID unitId, UUID id);
 }
