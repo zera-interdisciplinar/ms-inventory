@@ -20,10 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
 import com.zera.ms_inventory.core.usecase.model.FindModelById;
+import com.zera.ms_inventory.core.usecase.model.ListModelItems;
 import com.zera.ms_inventory.core.usecase.model.ListModels;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelExpectedLifespanMonths;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelManufacturer;
@@ -36,6 +38,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturer
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelMaterialsRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
 import com.zera.ms_inventory.infrastructure.http.response.ModelResponse;
 import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
@@ -48,6 +51,7 @@ public class ModelController {
     private final CreateModel createModel;
     private final ListModels listModels;
     private final FindModelById findModelById;
+    private final ListModelItems listModelItems;
     private final UpdateModelName updateModelName;
     private final UpdateModelManufacturer updateModelManufacturer;
     private final UpdateModelWarrantyMonths updateModelWarrantyMonths;
@@ -58,6 +62,7 @@ public class ModelController {
     public ModelController(CreateModel createModel,
                             ListModels listModels,
                             FindModelById findModelById,
+                            ListModelItems listModelItems,
                             UpdateModelName updateModelName,
                             UpdateModelManufacturer updateModelManufacturer,
                             UpdateModelWarrantyMonths updateModelWarrantyMonths,
@@ -67,6 +72,7 @@ public class ModelController {
         this.createModel = createModel;
         this.listModels = listModels;
         this.findModelById = findModelById;
+        this.listModelItems = listModelItems;
         this.updateModelName = updateModelName;
         this.updateModelManufacturer = updateModelManufacturer;
         this.updateModelWarrantyMonths = updateModelWarrantyMonths;
@@ -85,15 +91,27 @@ public class ModelController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PageResponse<ModelResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                            @RequestParam(required = false) ApprovalStatus approvalStatus,
                                                             @RequestParam(defaultValue = "0") int page,
                                                             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(PageResponse.from(listModels.execute(unitId, new Pagination(page, size)), ModelResponse::from));
+        return ResponseEntity.ok(PageResponse.from(
+                listModels.execute(unitId, approvalStatus, new Pagination(page, size)), ModelResponse::from));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ModelResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
         return ResponseEntity.ok(ModelResponse.from(findModelById.execute(unitId, id)));
+    }
+
+    @GetMapping("/{id}/items")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PageResponse<ItemResponse>> findItems(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                              @PathVariable UUID id,
+                                                              @RequestParam(defaultValue = "0") int page,
+                                                              @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(PageResponse.from(
+                listModelItems.execute(unitId, id, new Pagination(page, size)), ItemResponse::from));
     }
 
     @PatchMapping("/{id}/name")

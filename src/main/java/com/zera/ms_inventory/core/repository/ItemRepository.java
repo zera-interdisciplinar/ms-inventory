@@ -14,6 +14,7 @@ public interface ItemRepository {
     Optional<Item> findById(UUID unitId, UUID id);
     List<Item> findAll(UUID unitId);
     PageResult<Item> findPage(UUID unitId, Pagination pagination);
+    PageResult<Item> findPageByModel(UUID unitId, UUID modelId, Pagination pagination);
     List<Item> findAllByModelIds(UUID unitId, List<UUID> modelIds);
     void deleteById(UUID unitId, UUID id);
 }
