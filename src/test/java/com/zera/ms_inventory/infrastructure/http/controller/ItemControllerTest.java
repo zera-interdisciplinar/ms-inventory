@@ -23,6 +23,7 @@ import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
@@ -137,7 +138,7 @@ class ItemControllerTest {
     @DisplayName("GET /api/v1/items - deve listar todos os itens")
     void shouldFindAllItems() throws Exception {
         Item item = sampleItem(UUID.randomUUID());
-        when(listItems.execute(UNIT, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(item), 0, 20, 1));
+        when(listItems.execute(UNIT, ItemFilter.none(), new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(item), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/items")
                         .header("X-Unit-Id", UNIT))
@@ -215,7 +216,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("GET /api/v1/items - deve repassar a pagina e o tamanho pedidos")
     void shouldForwardRequestedPage() throws Exception {
-        when(listItems.execute(UNIT, new Pagination(2, 50))).thenReturn(new PageResult<>(List.of(), 2, 50, 101));
+        when(listItems.execute(UNIT, ItemFilter.none(), new Pagination(2, 50))).thenReturn(new PageResult<>(List.of(), 2, 50, 101));
 
         mockMvc.perform(get("/api/v1/items")
                         .param("page", "2")
@@ -384,5 +385,23 @@ class ItemControllerTest {
                         .content("{\"id\":\"%s\",\"barcode\":\"123456\",\"modelId\":\"%s\"}".formatted(id, MODEL_ID))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items - deve repassar filtros e busca da tela Itens")
+    void shouldForwardFiltersAndSearch() throws Exception {
+        UUID categoryId = UUID.randomUUID();
+        ItemFilter filter = new ItemFilter(ItemStatus.OK, categoryId, MODEL_ID, "265964");
+        when(listItems.execute(UNIT, filter, new Pagination(0, 20)))
+                .thenReturn(new PageResult<>(List.of(sampleItem(UUID.randomUUID())), 0, 20, 1));
+
+        mockMvc.perform(get("/api/v1/items")
+                        .param("status", "OK")
+                        .param("categoryId", categoryId.toString())
+                        .param("modelId", MODEL_ID.toString())
+                        .param("q", " 265964 ")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 }
