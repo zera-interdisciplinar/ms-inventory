@@ -18,11 +18,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
+import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
@@ -72,8 +72,10 @@ public class ItemController {
     @PostMapping
     public ResponseEntity<ItemResponse> create(@RequestHeader("X-Unit-Id") UUID unitId,
                                         @RequestBody @Valid CreateItemRequest request, Actor actor) {
-        Item created = createItem.execute(request.toCommand(unitId, actor));
-        return ResponseEntity.status(HttpStatus.CREATED).body(ItemResponse.from(created));
+        CreateItemResult result = createItem.execute(request.toCommand(unitId, actor));
+        // reenvio do mesmo id (app offline) devolve o item ja cadastrado
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
+                .body(ItemResponse.from(result.item()));
     }
 
     @GetMapping
