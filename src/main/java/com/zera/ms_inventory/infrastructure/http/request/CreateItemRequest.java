@@ -2,12 +2,17 @@ package com.zera.ms_inventory.infrastructure.http.request;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
+import com.zera.ms_inventory.core.domain.valueobject.DamageType;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
 
@@ -19,11 +24,17 @@ public record CreateItemRequest(
         Integer manufacturingDate,
         Integer usageIntensity,
         String serialNumber,
-        LocalDate acquiredAt
+        LocalDate acquiredAt,
+        @Size(max = 120) String name,
+        ItemCondition condition,
+        Boolean hasDamages,
+        Set<DamageType> damages,
+        @Size(max = 500) String notes
 ) {
-    /** unitId vem do header X-Unit-Id, nunca do corpo. */
-    public CreateItemCommand toCommand(UUID unitId) {
+    /** unitId vem do header X-Unit-Id e o autor do token, nunca do corpo. */
+    public CreateItemCommand toCommand(UUID unitId, Actor actor) {
         return new CreateItemCommand(new Barcode(barcode), status, unitId, modelId, nextPredictionDate,
-                manufacturingDate, usageIntensity, serialNumber, acquiredAt);
+                manufacturingDate, usageIntensity, serialNumber, acquiredAt, name, condition, hasDamages, damages,
+                notes, actor);
     }
 }

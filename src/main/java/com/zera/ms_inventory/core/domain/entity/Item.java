@@ -2,9 +2,13 @@ package com.zera.ms_inventory.core.domain.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
+import com.zera.ms_inventory.core.domain.valueobject.DamageType;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 
 public class Item {
@@ -21,6 +25,13 @@ public class Item {
     private Integer usageIntensity;
     private String serialNumber;
     private LocalDate acquiredAt;
+    private String name;
+    private ItemCondition condition;
+    private Boolean hasDamages;
+    private Set<DamageType> damages = Set.of();
+    private String notes;
+    private UUID createdBy;
+    private String createdByName;
 
     public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
@@ -124,7 +135,72 @@ public class Item {
         return acquiredAt;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public ItemCondition getCondition() {
+        return condition;
+    }
+
+    /** Resposta do "Possui danos?"; nulo enquanto o cadastro nao respondeu. */
+    public Boolean getHasDamages() {
+        return hasDamages;
+    }
+
+    public Set<DamageType> getDamages() {
+        return damages;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public String getCreatedByName() {
+        return createdByName;
+    }
+
     // -----------------------------
+
+    /** Dados do formulario de cadastro/edicao do item. */
+    public void describe(String name, ItemCondition condition, Boolean hasDamages, Set<DamageType> damages,
+                         String notes) {
+        applyDescription(name, condition, hasDamages, damages, notes);
+        touch();
+    }
+
+    /** Guarda quem cadastrou; o nome fica gravado para o "Cadastrado por" de qualquer papel. */
+    public void registerBy(Actor actor) {
+        this.createdBy = actor.userId();
+        this.createdByName = actor.name();
+        touch();
+    }
+
+    /** Reidrata os dados de cadastro salvos. Uso exclusivo da camada de persistencia. */
+    public void restoreRegistration(String name, ItemCondition condition, Boolean hasDamages,
+                                    Set<DamageType> damages, String notes, UUID createdBy, String createdByName) {
+        applyDescription(name, condition, hasDamages, damages, notes);
+        this.createdBy = createdBy;
+        this.createdByName = createdByName;
+    }
+
+    private void applyDescription(String name, ItemCondition condition, Boolean hasDamages,
+                                  Set<DamageType> damages, String notes) {
+        Set<DamageType> safeDamages = damages == null ? Set.of() : Set.copyOf(damages);
+        if (Boolean.FALSE.equals(hasDamages) && !safeDamages.isEmpty()) {
+            throw new IllegalArgumentException("damages must be empty when hasDamages is false");
+        }
+        this.name = name;
+        this.condition = condition;
+        this.hasDamages = hasDamages;
+        this.damages = safeDamages;
+        this.notes = notes;
+    }
+
 
     public void updateStatus(ItemStatus status) {
         this.status = status;
