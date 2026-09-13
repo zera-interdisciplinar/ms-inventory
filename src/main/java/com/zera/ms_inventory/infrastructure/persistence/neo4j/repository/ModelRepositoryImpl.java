@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
@@ -52,6 +53,7 @@ public class ModelRepositoryImpl implements ModelRepository {
     }
 
     @Override
+    @Transactional
     public Model save(Model model) {
         ModelNode node = mapper.toNode(model);
 
@@ -66,6 +68,11 @@ public class ModelRepositoryImpl implements ModelRepository {
         ModelNode existing = neo4jRepository
                 .findByIdAndUnitId(model.getId(), model.getUnitId())
                 .orElse(null);
+
+        if (existing != null) {
+            neo4jRepository.removeMaterialsNotIn(model.getId(), model.getUnitId(),
+                    model.getMaterials().stream().map(material -> material.getCode().name()).toList());
+        }
 
         String text = model.toEmbeddableText();
         if (existing != null && text.equals(existing.getEmbeddedText())) {
