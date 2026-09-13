@@ -38,6 +38,7 @@ class ItemMapperTest {
         assertEquals(item.getManufacturingYear(), result.getManufacturingYear());
         assertEquals(item.getPredictedFailureDate(), result.getPredictedFailureDate());
         assertEquals(item.getUsageIntensity(), result.getUsageIntensity());
+        assertEquals(item.getPhotoKey(), result.getPhotoKey());
     }
 
     @Test
