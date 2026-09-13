@@ -1,5 +1,6 @@
 package com.zera.ms_inventory.infrastructure.persistence.neo4j.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,4 +15,6 @@ interface MaterialNeo4jRepository extends Neo4jRepository<MaterialNode, UUID> {
     List<MaterialNode> findAllByOrderByNameAsc();
 
     Optional<MaterialNode> findByCode(MaterialCode code);
+
+    List<MaterialNode> findAllByCodeIn(Collection<MaterialCode> codes);
 }

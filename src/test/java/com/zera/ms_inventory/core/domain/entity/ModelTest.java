@@ -5,8 +5,12 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
+
+import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 
 class ModelTest {
 
@@ -72,5 +76,50 @@ class ModelTest {
         Model model = new Model(UUID.randomUUID(), UUID.randomUUID(), "Notebook X", "Zera", 24, 60, Set.of(), null);
 
         assertEquals("Notebook X Zera", model.toEmbeddableText());
+    }
+
+    private Material material(MaterialCode code, String name, boolean hazardous) {
+        return new Material(UUID.randomUUID(), code, name, true, hazardous, "guia");
+    }
+
+    @Test
+    void shouldBeHazardousWhenAnyMaterialIsHazardous() {
+        UUID unitId = UUID.randomUUID();
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", null, null, Set.of(),
+                Set.of(material(MaterialCode.PLASTIC, "Plástico", false)), 2.1, "Com carregador", category(unitId));
+
+        assertFalse(model.isHazardous());
+        assertEquals(2.1, model.getEstimatedWeightKg());
+        assertEquals("Com carregador", model.getNotes());
+
+        model.changeMaterials(Set.of(material(MaterialCode.PLASTIC, "Plástico", false),
+                material(MaterialCode.BATTERY, "Pilhas e baterias", true)));
+        model.changeEstimatedWeightKg(2.4);
+        model.changeNotes(null);
+
+        assertTrue(model.isHazardous());
+        assertEquals(2, model.getMaterials().size());
+        assertEquals(2.4, model.getEstimatedWeightKg());
+        assertEquals(null, model.getNotes());
+    }
+
+    @Test
+    void shouldRejectNonPositiveWeight() {
+        UUID unitId = UUID.randomUUID();
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of(), category(unitId));
+
+        assertThrows(IllegalArgumentException.class, () -> model.changeEstimatedWeightKg(0.0));
+        assertThrows(IllegalArgumentException.class, () -> new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera",
+                24, 60, Set.of(), Set.of(), -1.0, null, category(unitId)));
+    }
+
+    @Test
+    void shouldIncludeMaterialNamesInEmbeddableTextInStableOrder() {
+        UUID unitId = UUID.randomUUID();
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of(),
+                Set.of(material(MaterialCode.PLASTIC, "Plástico", false), material(MaterialCode.METAL, "Metal", false)),
+                null, null, category(unitId));
+
+        assertEquals("Notebook X Zera Notebooks Metal Plástico", model.toEmbeddableText());
     }
 }

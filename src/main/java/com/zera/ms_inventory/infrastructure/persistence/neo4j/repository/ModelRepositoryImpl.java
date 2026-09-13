@@ -1,8 +1,10 @@
 package com.zera.ms_inventory.infrastructure.persistence.neo4j.repository;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -13,11 +15,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
+import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
+import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.repository.ModelRepository;
+import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.MaterialNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ModelNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.mapper.ModelMapper;
 
@@ -29,15 +35,18 @@ public class ModelRepositoryImpl implements ModelRepository {
 
     private final ModelNeo4jRepository neo4jRepository;
     private final CategoryNeo4jRepository categoryNeo4jRepository;
+    private final MaterialNeo4jRepository materialNeo4jRepository;
     private final ModelMapper mapper;
     private final EmbeddingModel embeddingModel;
 
     public ModelRepositoryImpl(ModelNeo4jRepository neo4jRepository,
                                 CategoryNeo4jRepository categoryNeo4jRepository,
+                                MaterialNeo4jRepository materialNeo4jRepository,
                                 ModelMapper mapper,
                                 EmbeddingModel embeddingModel) {
         this.neo4jRepository = neo4jRepository;
         this.categoryNeo4jRepository = categoryNeo4jRepository;
+        this.materialNeo4jRepository = materialNeo4jRepository;
         this.mapper = mapper;
         this.embeddingModel = embeddingModel;
     }
@@ -51,6 +60,8 @@ public class ModelRepositoryImpl implements ModelRepository {
             node.setCategory(categoryNeo4jRepository.findByIdAndUnitId(categoryId, model.getUnitId())
                     .orElseThrow(() -> new CategoryNotFoundException(categoryId)));
         }
+
+        node.setMaterials(storedMaterials(model.getMaterials()));
 
         ModelNode existing = neo4jRepository
                 .findByIdAndUnitId(model.getId(), model.getUnitId())
@@ -75,6 +86,20 @@ public class ModelRepositoryImpl implements ModelRepository {
         }
 
         return mapper.toDomain(neo4jRepository.save(node));
+    }
+
+    private Set<MaterialNode> storedMaterials(Set<Material> materials) {
+        if (materials.isEmpty()) {
+            return new HashSet<>();
+        }
+        Set<MaterialCode> codes = new HashSet<>();
+        materials.forEach(material -> codes.add(material.getCode()));
+        Set<MaterialNode> stored = new HashSet<>(materialNeo4jRepository.findAllByCodeIn(codes));
+        stored.forEach(node -> codes.remove(node.getCode()));
+        if (!codes.isEmpty()) {
+            throw new MaterialNotFoundException(codes.iterator().next());
+        }
+        return stored;
     }
 
     @Override
