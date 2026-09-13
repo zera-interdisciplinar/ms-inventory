@@ -158,4 +158,12 @@ class ItemRepositoryImplTest {
         assertEquals(1, result.content().size());
         assertEquals(2, result.totalPages());
     }
+
+    @Test
+    void shouldCheckWhetherTheModelHasItemsInTheUnit() {
+        UUID modelId = UUID.randomUUID();
+        when(neo4jRepository.existsByUnitIdAndModelId(Fixtures.UNIT, modelId)).thenReturn(true);
+
+        assertTrue(repository.existsByModel(Fixtures.UNIT, modelId));
+    }
 }

@@ -16,6 +16,7 @@ public interface ModelRepository {
     List<Model> findAll(UUID unitId);
     /** approvalStatus nulo lista todos os status. */
     PageResult<Model> findPage(UUID unitId, ApprovalStatus approvalStatus, Pagination pagination);
+    boolean existsByCategory(UUID unitId, UUID categoryId);
     List<Model> semanticSearch(UUID unitId, String query, int limit);
     void deleteById(UUID unitId, UUID id);
 }

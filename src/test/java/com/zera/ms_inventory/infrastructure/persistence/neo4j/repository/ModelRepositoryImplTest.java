@@ -259,4 +259,12 @@ class ModelRepositoryImplTest {
         assertEquals(1, result.totalElements());
         verify(neo4jRepository, never()).findAllByUnitId(any(UUID.class), any(PageRequest.class));
     }
+
+    @Test
+    void shouldCheckWhetherTheCategoryHasModelsInTheUnit() {
+        UUID categoryId = UUID.randomUUID();
+        when(neo4jRepository.existsByUnitIdAndCategoryId(Fixtures.UNIT, categoryId)).thenReturn(false);
+
+        org.junit.jupiter.api.Assertions.assertFalse(repository.existsByCategory(Fixtures.UNIT, categoryId));
+    }
 }
