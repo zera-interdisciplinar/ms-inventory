@@ -6,6 +6,10 @@ import org.junit.jupiter.api.Test;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
+import com.zera.ms_inventory.core.domain.valueobject.DamageType;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ItemNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,5 +58,25 @@ class ItemMapperTest {
     void shouldMapNullsToNull() {
         assertNull(mapper.toNode(null));
         assertNull(mapper.toDomain(null));
+    }
+
+    @Test
+    void shouldMapRegistrationDataBothWays() {
+        UUID operator = UUID.randomUUID();
+        Item item = Fixtures.item(Fixtures.UNIT);
+        item.describe("Placa de vídeo", ItemCondition.DAMAGED, true, java.util.Set.of(DamageType.DOES_NOT_POWER_ON),
+                "Não liga");
+        item.registerBy(new Actor(operator, ActorRole.EMPLOYEE, "Gustavo Macal"));
+
+        Item result = mapper.toDomain(mapper.toNode(item));
+
+        assertEquals("Placa de vídeo", result.getName());
+        assertEquals(ItemCondition.DAMAGED, result.getCondition());
+        assertEquals(Boolean.TRUE, result.getHasDamages());
+        assertEquals(java.util.Set.of(DamageType.DOES_NOT_POWER_ON), result.getDamages());
+        assertEquals("Não liga", result.getNotes());
+        assertEquals(operator, result.getCreatedBy());
+        assertEquals("Gustavo Macal", result.getCreatedByName());
+        assertEquals(item.getUpdatedAt(), result.getUpdatedAt());
     }
 }

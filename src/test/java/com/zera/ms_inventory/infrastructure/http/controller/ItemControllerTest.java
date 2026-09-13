@@ -3,6 +3,7 @@ package com.zera.ms_inventory.infrastructure.http.controller;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -20,6 +22,8 @@ import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
+import com.zera.ms_inventory.core.domain.valueobject.DamageType;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
@@ -58,6 +62,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ItemControllerTest {
 
 
+    private static final UUID OPERATOR_ID = UUID.fromString("00000000-0000-0000-0000-0000000000e1");
     private static final UUID UNIT = com.zera.ms_inventory.Fixtures.UNIT;
     private static final UUID MODEL_ID = UUID.fromString("00000000-0000-0000-0000-0000000000d4");
 
@@ -93,9 +98,10 @@ class ItemControllerTest {
         when(createItem.execute(any(CreateItemCommand.class))).thenReturn(item);
 
         CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
-                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
+                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .header("X-Unit-Id", UNIT))
@@ -111,9 +117,10 @@ class ItemControllerTest {
                 .thenThrow(new DataIntegrityViolationException("Node already exists with label `Item`"));
 
         CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
-                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
+                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .header("X-Unit-Id", UNIT))
@@ -125,9 +132,10 @@ class ItemControllerTest {
     @DisplayName("POST /api/v1/items - deve retornar 400 quando o barcode estiver em branco")
     void shouldReturn400WhenBarcodeIsBlank() throws Exception {
         CreateItemRequest request = new CreateItemRequest("", ItemStatus.OK, MODEL_ID,
-                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
+                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .header("X-Unit-Id", UNIT))
@@ -306,5 +314,32 @@ class ItemControllerTest {
                         .param("size", "500")
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve repassar os dados do cadastro e o autor do token")
+    void shouldForwardRegistrationDataAndAuthor() throws Exception {
+        Item item = sampleItem(UUID.randomUUID());
+        item.describe("Placa de vídeo", ItemCondition.SEMI_DAMAGED, true, Set.of(DamageType.OXIDATION), "Pino torto");
+        item.registerBy(new com.zera.ms_inventory.core.domain.valueobject.Actor(OPERATOR_ID,
+                com.zera.ms_inventory.core.domain.valueobject.ActorRole.EMPLOYEE, "Gustavo Macal"));
+        when(createItem.execute(org.mockito.ArgumentMatchers.argThat(command ->
+                command.actor().userId().equals(OPERATOR_ID)
+                        && command.condition() == ItemCondition.SEMI_DAMAGED
+                        && command.damages().equals(Set.of(DamageType.OXIDATION))))).thenReturn(item);
+
+        mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"barcode":"123456","status":"OK","modelId":"%s","name":"Placa de vídeo",
+                                 "condition":"SEMI_DAMAGED","hasDamages":true,"damages":["OXIDATION"],"notes":"Pino torto"}
+                                """.formatted(MODEL_ID))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Placa de vídeo"))
+                .andExpect(jsonPath("$.condition").value("SEMI_DAMAGED"))
+                .andExpect(jsonPath("$.damages[0]").value("OXIDATION"))
+                .andExpect(jsonPath("$.createdByName").value("Gustavo Macal"));
     }
 }
