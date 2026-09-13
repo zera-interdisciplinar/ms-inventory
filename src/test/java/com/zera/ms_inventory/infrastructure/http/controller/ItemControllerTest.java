@@ -29,6 +29,7 @@ import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
+import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemCommand;
@@ -67,6 +68,7 @@ class ItemControllerTest {
     @MockitoBean private CreateItem createItem;
     @MockitoBean private ListItems listItems;
     @MockitoBean private FindItemById findItemById;
+    @MockitoBean private FindItemByBarcode findItemByBarcode;
     @MockitoBean private UpdateItem updateItem;
     @MockitoBean private UpdateItemStatus updateItemStatus;
     @MockitoBean private AssignItemUnit assignItemUnit;
@@ -285,5 +287,29 @@ class ItemControllerTest {
                         .content("{\"name\":\"\"}")
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items/by-barcode/{barcode} - deve retornar o item lido pelo scanner")
+    void shouldFindItemByBarcode() throws Exception {
+        Item item = sampleItem(UUID.randomUUID());
+        item.assignDisplayCode("265964");
+        when(findItemByBarcode.execute(UNIT, "123456")).thenReturn(item);
+
+        mockMvc.perform(get("/api/v1/items/by-barcode/{barcode}", "123456")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.barcode").value("123456"))
+                .andExpect(jsonPath("$.displayCode").value("265964"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items/by-barcode/{barcode} - deve retornar 404 para barcode desconhecido")
+    void shouldReturn404ForUnknownBarcode() throws Exception {
+        when(findItemByBarcode.execute(UNIT, "111111-J")).thenThrow(ItemNotFoundException.withBarcode("111111-J"));
+
+        mockMvc.perform(get("/api/v1/items/by-barcode/{barcode}", "111111-J")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isNotFound());
     }
 }

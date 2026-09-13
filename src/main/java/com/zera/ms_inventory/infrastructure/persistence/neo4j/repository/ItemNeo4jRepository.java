@@ -23,6 +23,10 @@ interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
 
     boolean existsByUnitIdAndModelId(UUID unitId, UUID modelId);
 
+    boolean existsByUnitIdAndDisplayCode(UUID unitId, String displayCode);
+
+    Optional<ItemNode> findByUnitIdAndBarcode(UUID unitId, String barcode);
+
     Optional<ItemNode> findByIdAndUnitId(UUID id, UUID unitId);
 
     @Transactional

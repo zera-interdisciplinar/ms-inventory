@@ -24,6 +24,7 @@ import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
+import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
@@ -44,6 +45,7 @@ public class ItemController {
     private final CreateItem createItem;
     private final ListItems listItems;
     private final FindItemById findItemById;
+    private final FindItemByBarcode findItemByBarcode;
     private final UpdateItem updateItem;
     private final UpdateItemStatus updateItemStatus;
     private final AssignItemUnit assignItemUnit;
@@ -52,6 +54,7 @@ public class ItemController {
     public ItemController(CreateItem createItem,
                            ListItems listItems,
                            FindItemById findItemById,
+                           FindItemByBarcode findItemByBarcode,
                            UpdateItem updateItem,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
@@ -59,6 +62,7 @@ public class ItemController {
         this.createItem = createItem;
         this.listItems = listItems;
         this.findItemById = findItemById;
+        this.findItemByBarcode = findItemByBarcode;
         this.updateItem = updateItem;
         this.updateItemStatus = updateItemStatus;
         this.assignItemUnit = assignItemUnit;
@@ -78,6 +82,13 @@ public class ItemController {
                                                             @RequestParam(defaultValue = "0") int page,
                                                             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(PageResponse.from(listItems.execute(unitId, new Pagination(page, size)), ItemResponse::from));
+    }
+
+    @GetMapping("/by-barcode/{barcode}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ItemResponse> findByBarcode(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                      @PathVariable String barcode) {
+        return ResponseEntity.ok(ItemResponse.from(findItemByBarcode.execute(unitId, barcode)));
     }
 
     @GetMapping("/{id}")
