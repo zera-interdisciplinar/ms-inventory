@@ -178,4 +178,12 @@ class ItemRepositoryImplTest {
         assertEquals("265964", repository.findByBarcode(Fixtures.UNIT, "7891234567890").orElseThrow().getDisplayCode());
         assertTrue(repository.existsByDisplayCode(Fixtures.UNIT, "265964"));
     }
+
+    @Test
+    void shouldTellWhetherAnIdIsAlreadyTakenInAnyUnit() {
+        UUID id = UUID.randomUUID();
+        when(neo4jRepository.existsById(id)).thenReturn(true);
+
+        assertTrue(repository.existsAnyWithId(id));
+    }
 }

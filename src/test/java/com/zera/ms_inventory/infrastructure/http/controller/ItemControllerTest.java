@@ -28,6 +28,7 @@ import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
+import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
@@ -85,9 +86,9 @@ class ItemControllerTest {
     void shouldCreateItem() throws Exception {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(createItem.execute(any(CreateItemCommand.class))).thenReturn(item);
+        when(createItem.execute(any(CreateItemCommand.class))).thenReturn(new CreateItemResult(item, true));
 
-        CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.OK, MODEL_ID, null,
                 2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -106,7 +107,7 @@ class ItemControllerTest {
         when(createItem.execute(any(CreateItemCommand.class)))
                 .thenThrow(new DataIntegrityViolationException("Node already exists with label `Item`"));
 
-        CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.OK, MODEL_ID, null,
                 2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -121,7 +122,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("POST /api/v1/items - deve retornar 400 quando o barcode estiver em branco")
     void shouldReturn400WhenBarcodeIsBlank() throws Exception {
-        CreateItemRequest request = new CreateItemRequest("", ItemStatus.OK, MODEL_ID,
+        CreateItemRequest request = new CreateItemRequest(null, "", ItemStatus.OK, MODEL_ID, null,
                 2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -244,7 +245,7 @@ class ItemControllerTest {
         when(createItem.execute(org.mockito.ArgumentMatchers.argThat(command ->
                 command.actor().userId().equals(OPERATOR_ID)
                         && command.condition() == ItemCondition.SEMI_DAMAGED
-                        && command.damages().equals(Set.of(DamageType.OXIDATION))))).thenReturn(item);
+                        && command.damages().equals(Set.of(DamageType.OXIDATION))))).thenReturn(new CreateItemResult(item, true));
 
         mockMvc.perform(post("/api/v1/items")
                         .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
@@ -311,5 +312,77 @@ class ItemControllerTest {
         mockMvc.perform(get("/api/v1/items/by-barcode/{barcode}", "111111-J")
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve devolver 200 com o item ja cadastrado no reenvio do mesmo id")
+    void shouldReturn200WhenTheSameIdIsResent() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(createItem.execute(any(CreateItemCommand.class))).thenReturn(new CreateItemResult(sampleItem(id), false));
+
+        mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":\"%s\",\"barcode\":\"123456\",\"modelId\":\"%s\"}".formatted(id, MODEL_ID))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve criar o modelo junto quando vier model no lugar de modelId")
+    void shouldForwardTheNewModelToBeCreatedTogether() throws Exception {
+        UUID categoryId = UUID.randomUUID();
+        when(createItem.execute(org.mockito.ArgumentMatchers.argThat(command -> command.modelId() == null
+                && command.newModel() != null
+                && command.newModel().name().equals("Placa de vídeo")
+                && command.newModel().categoryId().equals(categoryId)
+                && command.newModel().actor().userId().equals(OPERATOR_ID))))
+                .thenReturn(new CreateItemResult(sampleItem(UUID.randomUUID()), true));
+
+        mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"barcode":"123456","model":{"name":"Placa de vídeo","manufacturer":"Nvidia",
+                                 "materials":["CIRCUIT_BOARD"],"categoryId":"%s"}}
+                                """.formatted(categoryId))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve retornar 400 sem modelo, com os dois ou com modelo novo invalido")
+    void shouldReturn400UnlessExactlyOneValidModelIsInformed() throws Exception {
+        String[] bodies = {
+                "{\"barcode\":\"123456\"}",
+                "{\"barcode\":\"123456\",\"modelId\":\"%s\",\"model\":{\"name\":\"X\",\"manufacturer\":\"Y\",\"materials\":[\"METAL\"],\"categoryId\":\"%s\"}}"
+                        .formatted(MODEL_ID, UUID.randomUUID()),
+                "{\"barcode\":\"123456\",\"model\":{\"name\":\"X\",\"manufacturer\":\"Y\",\"materials\":[],\"categoryId\":\"%s\"}}"
+                        .formatted(UUID.randomUUID())
+        };
+        for (String body : bodies) {
+            mockMvc.perform(post("/api/v1/items")
+                            .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body)
+                            .header("X-Unit-Id", UNIT))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve retornar 409 quando o id do app pertence a outra unidade")
+    void shouldReturn409ForAnIdFromAnotherUnit() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(createItem.execute(any(CreateItemCommand.class)))
+                .thenThrow(new com.zera.ms_inventory.core.domain.exception.ItemIdInUseException(id));
+
+        mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":\"%s\",\"barcode\":\"123456\",\"modelId\":\"%s\"}".formatted(id, MODEL_ID))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isConflict());
     }
 }
