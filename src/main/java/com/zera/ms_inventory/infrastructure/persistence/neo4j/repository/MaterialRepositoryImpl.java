@@ -2,6 +2,7 @@ package com.zera.ms_inventory.infrastructure.persistence.neo4j.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Repository;
 
@@ -29,5 +30,13 @@ public class MaterialRepositoryImpl implements MaterialRepository {
     @Override
     public Optional<Material> findByCode(MaterialCode code) {
         return neo4jRepository.findByCode(code).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Material> findAllByCodes(Set<MaterialCode> codes) {
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        return neo4jRepository.findAllByCodeIn(codes).stream().map(mapper::toDomain).toList();
     }
 }

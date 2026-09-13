@@ -105,14 +105,14 @@ class SecurityRbacIntegrationTest {
 
     @Test
     void employeeCanRegisterModels() throws Exception {
-        when(createModel.execute(any(), any(), any(), any(), any(), any(), any()))
+        when(createModel.execute(any()))
                 .thenReturn(Fixtures.model(Fixtures.UNIT));
 
         mockMvc.perform(asRole(post("/api/v1/models"), "EMPLOYEE")
                         .header("X-Unit-Id", Fixtures.UNIT.toString())
                         .contentType("application/json")
                         .content("{\"name\":\"Laptop X1\",\"manufacturer\":\"Acme\",\"warrantyMonths\":24,"
-                                + "\"expectedLifespanMonths\":60,\"hazardousMaterials\":[],\"categoryId\":\""
+                                + "\"expectedLifespanMonths\":60,\"materials\":[\"BATTERY\"],\"categoryId\":\""
                                 + UUID.randomUUID() + "\"}"))
                 .andExpect(status().isCreated());
     }
