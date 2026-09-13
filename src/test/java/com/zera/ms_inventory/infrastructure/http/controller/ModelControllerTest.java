@@ -17,6 +17,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.exception.ModelInUseException;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
@@ -43,6 +44,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturer
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -336,5 +338,16 @@ class ModelControllerTest {
         mockMvc.perform(get("/api/v1/models/{id}/items", id)
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/models/{id} - deve retornar 409 quando o modelo ainda tiver itens")
+    void shouldReturn409WhenDeletingAModelWithItems() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new ModelInUseException(id)).when(deleteModel).execute(UNIT, id);
+
+        mockMvc.perform(delete("/api/v1/models/{id}", id)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isConflict());
     }
 }

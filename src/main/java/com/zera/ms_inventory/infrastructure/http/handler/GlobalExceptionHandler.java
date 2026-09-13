@@ -11,9 +11,11 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.zera.ms_inventory.core.domain.exception.CategoryInUseException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
+import com.zera.ms_inventory.core.domain.exception.ModelInUseException;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.RuleNotFoundException;
 
@@ -62,6 +64,11 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 ex.getName() + " has invalid value: " + ex.getValue());
+    }
+
+    @ExceptionHandler({CategoryInUseException.class, ModelInUseException.class})
+    public ProblemDetail handleInUse(RuntimeException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     // violacao de constraint do Neo4j (ex.: codigo de barras repetido na unidade); nao expoe detalhes do banco
