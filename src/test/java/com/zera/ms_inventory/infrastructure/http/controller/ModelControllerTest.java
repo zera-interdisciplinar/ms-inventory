@@ -74,7 +74,7 @@ class ModelControllerTest {
     @DisplayName("POST /api/v1/models - deve criar model e retornar 201")
     void shouldCreateModel() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(createModel.execute(new CreateModelCommand(UNIT, "Laptop X1", "Acme", 24, 60, Set.of(MaterialCode.BATTERY),
                 2.3, "Com carregador", CATEGORY_ID))).thenReturn(model);
 
@@ -113,7 +113,7 @@ class ModelControllerTest {
     @Test
     @DisplayName("GET /api/v1/models - deve listar todos os models")
     void shouldFindAllModels() throws Exception {
-        Model model = new Model(UUID.randomUUID(), UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(UUID.randomUUID(), UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(listModels.execute(UNIT, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(model), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/models")
@@ -128,7 +128,7 @@ class ModelControllerTest {
     @DisplayName("GET /api/v1/models/{id} - deve retornar o model")
     void shouldFindModelById() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(findModelById.execute(UNIT, id)).thenReturn(model);
 
         mockMvc.perform(get("/api/v1/models/{id}", id)
@@ -152,7 +152,7 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/name - deve renomear o model")
     void shouldRenameModel() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X2", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X2", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelName.execute(UNIT, id, "Laptop X2")).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/name", id)
@@ -167,7 +167,7 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/manufacturer - deve atualizar o fabricante")
     void shouldUpdateManufacturer() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Globex", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Globex", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelManufacturer.execute(UNIT, id, "Globex")).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/manufacturer", id)
@@ -182,7 +182,7 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/warranty-months - deve atualizar a garantia")
     void shouldUpdateWarrantyMonths() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 36, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 36, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelWarrantyMonths.execute(UNIT, id, 36)).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/warranty-months", id)
@@ -197,7 +197,7 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/expected-lifespan-months - deve atualizar a vida útil esperada")
     void shouldUpdateExpectedLifespanMonths() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 72, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 72, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelExpectedLifespanMonths.execute(UNIT, id, 72)).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/expected-lifespan-months", id)
@@ -213,7 +213,7 @@ class ModelControllerTest {
     void shouldUpdateMaterials() throws Exception {
         UUID id = UUID.randomUUID();
         Material battery = new Material(UUID.randomUUID(), MaterialCode.BATTERY, "Pilhas e baterias", true, true, "guia");
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), Set.of(battery), null, null,
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of(battery), null, null,
                 com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelMaterials.execute(UNIT, id, Set.of(MaterialCode.BATTERY))).thenReturn(model);
 

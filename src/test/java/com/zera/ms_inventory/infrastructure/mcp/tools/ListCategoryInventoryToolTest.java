@@ -35,7 +35,7 @@ class ListCategoryInventoryToolTest {
     private FindAllItems findAllItems;
 
     private Model modelOf(Category category) {
-        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, Set.of(), category);
+        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, Set.of(), null, null, category);
     }
 
     private Item itemOf(Model model, ItemStatus status) {

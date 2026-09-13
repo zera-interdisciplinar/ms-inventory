@@ -23,11 +23,13 @@ class ModelTest {
         UUID id = UUID.randomUUID();
         UUID unitId = UUID.randomUUID();
         Category category = category(unitId);
-        Set<String> hazardousMaterials = Set.of("Lithium", "Mercury");
+        Set<Material> materials = Set.of(new Material(UUID.randomUUID(), MaterialCode.BATTERY, "Pilhas e baterias",
+                true, true, "guia"));
         LocalDateTime createdAt = LocalDateTime.of(2026, 8, 4, 11, 0);
         LocalDateTime updatedAt = LocalDateTime.of(2026, 8, 4, 11, 10);
 
-        Model model = new Model(id, unitId, "Notebook X", "Zera", 24, 60, hazardousMaterials, category, createdAt, updatedAt);
+        Model model = new Model(id, unitId, "Notebook X", "Zera", 24, 60, materials, 2.1, "Com carregador",
+                category, createdAt, updatedAt);
 
         assertEquals(id, model.getId());
         assertEquals(unitId, model.getUnitId());
@@ -35,7 +37,7 @@ class ModelTest {
         assertEquals("Zera", model.getManufacturer());
         assertEquals(24, model.getWarrantyMonths());
         assertEquals(60, model.getExpectedLifespanMonths());
-        assertEquals(hazardousMaterials, model.getHazardousMaterials());
+        assertEquals(materials, model.getMaterials());
         assertEquals(category, model.getCategory());
         assertEquals(createdAt, model.getCreatedAt());
         assertEquals(updatedAt, model.getUpdatedAt());
@@ -44,36 +46,26 @@ class ModelTest {
     @Test
     void shouldUpdateModelState() {
         UUID unitId = UUID.randomUUID();
-        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of("Lithium"), category(unitId));
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of(), null, null,
+                category(unitId));
         LocalDateTime beforeUpdate = model.getUpdatedAt();
 
         model.rename("Notebook Pro");
         model.changeManufacturer("Zera Labs");
         model.changeWarrantyMonths(36);
         model.changeExpectedLifespanMonths(72);
-        model.changeHazardousMaterials(Set.of("Lithium", "Cobalt"));
 
         assertEquals("Notebook Pro", model.getName());
         assertEquals("Zera Labs", model.getManufacturer());
         assertEquals(36, model.getWarrantyMonths());
         assertEquals(72, model.getExpectedLifespanMonths());
-        assertEquals(Set.of("Lithium", "Cobalt"), model.getHazardousMaterials());
         assertTrue(model.getUpdatedAt().isAfter(beforeUpdate) || model.getUpdatedAt().isEqual(beforeUpdate));
     }
 
     @Test
-    void shouldBuildEmbeddableTextWithStableHazmatOrder() {
-        UUID unitId = UUID.randomUUID();
-        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60,
-                Set.of("Mercury", "Cobalt", "Lithium"), category(unitId));
-
-        // ordenado: senao o texto mudaria a cada boot e re-embedaria sem necessidade
-        assertEquals("Notebook X Zera Notebooks Cobalt Lithium Mercury", model.toEmbeddableText());
-    }
-
-    @Test
     void shouldBuildEmbeddableTextWithoutCategory() {
-        Model model = new Model(UUID.randomUUID(), UUID.randomUUID(), "Notebook X", "Zera", 24, 60, Set.of(), null);
+        Model model = new Model(UUID.randomUUID(), UUID.randomUUID(), "Notebook X", "Zera", 24, 60, Set.of(), null,
+                null, null);
 
         assertEquals("Notebook X Zera", model.toEmbeddableText());
     }
@@ -85,7 +77,7 @@ class ModelTest {
     @Test
     void shouldBeHazardousWhenAnyMaterialIsHazardous() {
         UUID unitId = UUID.randomUUID();
-        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", null, null, Set.of(),
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", null, null,
                 Set.of(material(MaterialCode.PLASTIC, "Plástico", false)), 2.1, "Com carregador", category(unitId));
 
         assertFalse(model.isHazardous());
@@ -106,17 +98,18 @@ class ModelTest {
     @Test
     void shouldRejectNonPositiveWeight() {
         UUID unitId = UUID.randomUUID();
-        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of(), category(unitId));
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of(), null, null,
+                category(unitId));
 
         assertThrows(IllegalArgumentException.class, () -> model.changeEstimatedWeightKg(0.0));
         assertThrows(IllegalArgumentException.class, () -> new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera",
-                24, 60, Set.of(), Set.of(), -1.0, null, category(unitId)));
+                24, 60, Set.of(), -1.0, null, category(unitId)));
     }
 
     @Test
     void shouldIncludeMaterialNamesInEmbeddableTextInStableOrder() {
         UUID unitId = UUID.randomUUID();
-        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60, Set.of(),
+        Model model = new Model(UUID.randomUUID(), unitId, "Notebook X", "Zera", 24, 60,
                 Set.of(material(MaterialCode.PLASTIC, "Plástico", false), material(MaterialCode.METAL, "Metal", false)),
                 null, null, category(unitId));
 
