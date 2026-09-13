@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Repository;
 
@@ -14,6 +16,8 @@ import com.zera.ms_inventory.infrastructure.persistence.neo4j.mapper.CategoryMap
 
 @Repository
 public class CategoryRepositoryImpl implements CategoryRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(CategoryRepositoryImpl.class);
 
     private final CategoryNeo4jRepository neo4jRepository;
     private final CategoryMapper mapper;
@@ -37,9 +41,18 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         if (existing != null && text.equals(existing.getEmbeddedText())) {
             node.setEmbedding(existing.getEmbedding());
             node.setEmbeddedText(existing.getEmbeddedText());
+        } else if (text.isBlank()) {
+            node.setEmbedding(null);
+            node.setEmbeddedText(null);
         } else {
-            node.setEmbedding(embeddingModel.embed(text));
-            node.setEmbeddedText(text);
+            try {
+                node.setEmbedding(embeddingModel.embed(text));
+                node.setEmbeddedText(text);
+            } catch (RuntimeException e) {
+                log.warn("Embedding provider failed, saving category {} without embedding", category.getId(), e);
+                node.setEmbedding(null);
+                node.setEmbeddedText(null);
+            }
         }
 
         return mapper.toDomain(neo4jRepository.save(node));

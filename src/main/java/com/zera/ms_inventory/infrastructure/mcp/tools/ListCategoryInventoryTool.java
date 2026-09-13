@@ -42,7 +42,7 @@ public class ListCategoryInventoryTool {
         List<Category> categories = findAllCategories.execute(scope);
         List<Item> items = findAllItems.execute(scope);
 
-        int actualOffset = offset != null ? offset : 0;
+        int actualOffset = Math.max(0, offset != null ? offset : 0);
         int actualLimit = limit != null ? limit : 100;
 
         return categories.stream()
