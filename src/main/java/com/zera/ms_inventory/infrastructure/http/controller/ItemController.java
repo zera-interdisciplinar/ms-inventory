@@ -26,6 +26,7 @@ import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
+import com.zera.ms_inventory.core.usecase.item.UpdateItem;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemAcquiredAt;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemManufacturingDate;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemNextPredictionDate;
@@ -37,6 +38,7 @@ import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemAcquiredAtRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemManufacturingDateRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemNextPredictionDateRequest;
+import com.zera.ms_inventory.infrastructure.http.request.UpdateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemSerialNumberRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemUsageIntensityRequest;
@@ -52,6 +54,7 @@ public class ItemController {
     private final CreateItem createItem;
     private final ListItems listItems;
     private final FindItemById findItemById;
+    private final UpdateItem updateItem;
     private final UpdateItemStatus updateItemStatus;
     private final AssignItemUnit assignItemUnit;
     private final UpdateItemSerialNumber updateItemSerialNumber;
@@ -64,6 +67,7 @@ public class ItemController {
     public ItemController(CreateItem createItem,
                            ListItems listItems,
                            FindItemById findItemById,
+                           UpdateItem updateItem,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
                            UpdateItemSerialNumber updateItemSerialNumber,
@@ -75,6 +79,7 @@ public class ItemController {
         this.createItem = createItem;
         this.listItems = listItems;
         this.findItemById = findItemById;
+        this.updateItem = updateItem;
         this.updateItemStatus = updateItemStatus;
         this.assignItemUnit = assignItemUnit;
         this.updateItemSerialNumber = updateItemSerialNumber;
@@ -104,6 +109,12 @@ public class ItemController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ItemResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
         return ResponseEntity.ok(ItemResponse.from(findItemById.execute(unitId, id)));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ItemResponse> update(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                               @RequestBody @Valid UpdateItemRequest request) {
+        return ResponseEntity.ok(ItemResponse.from(updateItem.execute(request.toCommand(unitId, id))));
     }
 
     @PatchMapping("/{id}/status")
