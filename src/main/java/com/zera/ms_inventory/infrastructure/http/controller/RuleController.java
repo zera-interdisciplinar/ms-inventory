@@ -32,6 +32,7 @@ import com.zera.ms_inventory.infrastructure.http.request.CreateRuleRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateRuleLimitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateRuleNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateRuleTargetRequest;
+import com.zera.ms_inventory.infrastructure.http.response.RuleResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
@@ -70,48 +71,48 @@ public class RuleController {
     }
 
     @PostMapping
-    public ResponseEntity<Rule> create(@RequestBody @Valid CreateRuleRequest request) {
+    public ResponseEntity<RuleResponse> create(@RequestBody @Valid CreateRuleRequest request) {
         LocalDateTime now = LocalDateTime.now();
         Rule created = createRule.execute(request.name(), request.kind(), request.limitValue(), request.limitUnit(),
                 request.targetType(), request.targetId(), request.active(), now, now);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(RuleResponse.from(created));
     }
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Rule>> findAll() {
-        return ResponseEntity.ok(findAllRules.execute());
+    public ResponseEntity<List<RuleResponse>> findAll() {
+        return ResponseEntity.ok(findAllRules.execute().stream().map(RuleResponse::from).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Rule> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(findRuleById.execute(id));
+    public ResponseEntity<RuleResponse> findById(@PathVariable UUID id) {
+        return ResponseEntity.ok(RuleResponse.from(findRuleById.execute(id)));
     }
 
     @PatchMapping("/{id}/name")
-    public ResponseEntity<Rule> rename(@PathVariable UUID id, @RequestBody @Valid UpdateRuleNameRequest request) {
-        return ResponseEntity.ok(updateRuleName.execute(id, request.name()));
+    public ResponseEntity<RuleResponse> rename(@PathVariable UUID id, @RequestBody @Valid UpdateRuleNameRequest request) {
+        return ResponseEntity.ok(RuleResponse.from(updateRuleName.execute(id, request.name())));
     }
 
     @PatchMapping("/{id}/limit")
-    public ResponseEntity<Rule> updateLimit(@PathVariable UUID id, @RequestBody @Valid UpdateRuleLimitRequest request) {
-        return ResponseEntity.ok(updateRuleLimit.execute(id, request.limitValue(), request.limitUnit()));
+    public ResponseEntity<RuleResponse> updateLimit(@PathVariable UUID id, @RequestBody @Valid UpdateRuleLimitRequest request) {
+        return ResponseEntity.ok(RuleResponse.from(updateRuleLimit.execute(id, request.limitValue(), request.limitUnit())));
     }
 
     @PatchMapping("/{id}/target")
-    public ResponseEntity<Rule> updateTarget(@PathVariable UUID id, @RequestBody @Valid UpdateRuleTargetRequest request) {
-        return ResponseEntity.ok(updateRuleTarget.execute(id, request.targetType(), request.targetId()));
+    public ResponseEntity<RuleResponse> updateTarget(@PathVariable UUID id, @RequestBody @Valid UpdateRuleTargetRequest request) {
+        return ResponseEntity.ok(RuleResponse.from(updateRuleTarget.execute(id, request.targetType(), request.targetId())));
     }
 
     @PatchMapping("/{id}/activate")
-    public ResponseEntity<Rule> activate(@PathVariable UUID id) {
-        return ResponseEntity.ok(activateRule.execute(id));
+    public ResponseEntity<RuleResponse> activate(@PathVariable UUID id) {
+        return ResponseEntity.ok(RuleResponse.from(activateRule.execute(id)));
     }
 
     @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<Rule> deactivate(@PathVariable UUID id) {
-        return ResponseEntity.ok(deactivateRule.execute(id));
+    public ResponseEntity<RuleResponse> deactivate(@PathVariable UUID id) {
+        return ResponseEntity.ok(RuleResponse.from(deactivateRule.execute(id)));
     }
 
     @DeleteMapping("/{id}")
