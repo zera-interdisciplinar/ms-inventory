@@ -9,12 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
@@ -51,6 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ModelControllerTest {
 
 
+    private static final UUID OPERATOR_ID = UUID.fromString("00000000-0000-0000-0000-0000000000e1");
     private static final UUID UNIT = com.zera.ms_inventory.Fixtures.UNIT;
     private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-0000000000c3");
 
@@ -76,14 +80,18 @@ class ModelControllerTest {
         UUID id = UUID.randomUUID();
         Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(createModel.execute(new CreateModelCommand(UNIT, "Laptop X1", "Acme", 24, 60, Set.of(MaterialCode.BATTERY),
-                2.3, "Com carregador", CATEGORY_ID))).thenReturn(model);
+                2.3, "Com carregador", CATEGORY_ID, new Actor(OPERATOR_ID, ActorRole.EMPLOYEE)))).thenReturn(model);
+        model.registerBy(new Actor(OPERATOR_ID, ActorRole.EMPLOYEE));
 
         mockMvc.perform(post("/api/v1/models")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new CreateModelRequest("Laptop X1", "Acme", 24, 60, Set.of(MaterialCode.BATTERY), 2.3, "Com carregador", CATEGORY_ID)))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.approvalStatus").value("PENDING"))
+                .andExpect(jsonPath("$.createdBy").value(OPERATOR_ID.toString()))
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Laptop X1"));
     }

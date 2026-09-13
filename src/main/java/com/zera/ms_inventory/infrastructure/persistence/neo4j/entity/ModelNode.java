@@ -10,6 +10,8 @@ import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
+
 @Node("Model")
 public class ModelNode {
 
@@ -33,6 +35,16 @@ public class ModelNode {
     private Double estimatedWeightKg;
 
     private String notes;
+
+    private ApprovalStatus approvalStatus;
+
+    private String rejectionReason;
+
+    private UUID createdBy;
+
+    private UUID reviewedBy;
+
+    private LocalDateTime reviewedAt;
 
     @Relationship(type = "BELONGS_TO", direction = Relationship.Direction.OUTGOING)
     private CategoryNode category;
@@ -111,6 +123,46 @@ public class ModelNode {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public ApprovalStatus getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(ApprovalStatus approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public UUID getReviewedBy() {
+        return reviewedBy;
+    }
+
+    public void setReviewedBy(UUID reviewedBy) {
+        this.reviewedBy = reviewedBy;
+    }
+
+    public LocalDateTime getReviewedAt() {
+        return reviewedAt;
+    }
+
+    public void setReviewedAt(LocalDateTime reviewedAt) {
+        this.reviewedAt = reviewedAt;
     }
 
     public CategoryNode getCategory() {

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 
 public record ModelResponse(
         UUID id,
@@ -19,6 +20,11 @@ public record ModelResponse(
         Double estimatedWeightKg,
         String notes,
         CategoryResponse category,
+        ApprovalStatus approvalStatus,
+        String rejectionReason,
+        UUID createdBy,
+        UUID reviewedBy,
+        LocalDateTime reviewedAt,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -33,6 +39,7 @@ public record ModelResponse(
         return new ModelResponse(model.getId(), model.getUnitId(), model.getName(), model.getManufacturer(),
                 model.getWarrantyMonths(), model.getExpectedLifespanMonths(), materials, model.isHazardous(),
                 model.getEstimatedWeightKg(), model.getNotes(), CategoryResponse.from(model.getCategory()),
-                model.getCreatedAt(), model.getUpdatedAt());
+                model.getApprovalStatus(), model.getRejectionReason(), model.getCreatedBy(), model.getReviewedBy(),
+                model.getReviewedAt(), model.getCreatedAt(), model.getUpdatedAt());
     }
 }
