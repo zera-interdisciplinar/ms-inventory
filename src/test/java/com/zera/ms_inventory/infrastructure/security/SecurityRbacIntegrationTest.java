@@ -26,6 +26,7 @@ import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.usecase.category.CreateCategory;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
+import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
@@ -93,7 +94,7 @@ class SecurityRbacIntegrationTest {
 
     @Test
     void employeeCanRegisterItems() throws Exception {
-        when(createItem.execute(any())).thenReturn(Fixtures.item(Fixtures.UNIT));
+        when(createItem.execute(any())).thenReturn(new CreateItemResult(Fixtures.item(Fixtures.UNIT), true));
 
         mockMvc.perform(asRole(post("/api/v1/items"), "EMPLOYEE")
                         .header("X-Unit-Id", Fixtures.UNIT.toString())
