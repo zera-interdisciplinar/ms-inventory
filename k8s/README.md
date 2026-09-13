@@ -25,3 +25,39 @@ real é validado** — só serve para dev/testes.
 O endpoint MCP (`/mcp`) e o `/actuator/health` ficam liberados sem token: o MCP é
 consumido internamente pelo AI core (não passa pelo Kong). Restringir isso a uma
 identidade de serviço é um follow-up.
+
+## Fotos dos itens — Cloud Storage (opcional até existir o bucket)
+
+`POST /api/v1/items/{id}/photo` grava no bucket definido por `PHOTOS_BUCKET`
+(`zera.storage.photos-bucket`). Sem a variável, o serviço sobe normalmente (log `WARN`),
+o upload responde **503** e as respostas não trazem URL de foto.
+
+Credenciais pelo ADC: no GKE, a service account do workload identity do pod. Para cada
+ambiente:
+
+```sh
+PROJECT=<projeto-gcp>
+BUCKET=zera-ms-inventory-photos-qa        # -production no outro ambiente
+GSA=<service-account-do-ms-inventory>@$PROJECT.iam.gserviceaccount.com
+
+# bucket privado: as fotos são servidas só por URL assinada
+gcloud storage buckets create gs://$BUCKET --project $PROJECT --location southamerica-east1 \
+  --uniform-bucket-level-access --public-access-prevention
+
+# gravar e apagar objetos no bucket
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET \
+  --member serviceAccount:$GSA --role roles/storage.objectAdmin
+
+# assinar URLs V4 sem chave JSON (signBlob da própria service account)
+gcloud iam service-accounts add-iam-policy-binding $GSA \
+  --member serviceAccount:$GSA --role roles/iam.serviceAccountTokenCreator
+```
+
+Depois, no `deployment-qa.yaml` / `deployment.yaml`:
+
+```yaml
+        - name: PHOTOS_BUCKET
+          value: "zera-ms-inventory-photos-qa"
+```
+
+As URLs assinadas duram `zera.storage.photo-url-ttl` (padrão 15 minutos).
