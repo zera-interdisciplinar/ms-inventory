@@ -24,6 +24,8 @@ public class ItemNode {
 
     private String barcode;
 
+    private String displayCode;
+
     private ItemStatus status;
 
     private UUID unitId;
@@ -204,5 +206,13 @@ public class ItemNode {
 
     public void setCreatedByName(String createdByName) {
         this.createdByName = createdByName;
+    }
+
+    public String getDisplayCode() {
+        return displayCode;
+    }
+
+    public void setDisplayCode(String displayCode) {
+        this.displayCode = displayCode;
     }
 }

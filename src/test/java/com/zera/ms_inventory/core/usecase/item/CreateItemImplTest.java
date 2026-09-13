@@ -42,6 +42,9 @@ class CreateItemImplTest {
     @Mock
     private ModelRepository modelRepository;
 
+    @Mock
+    private DisplayCodeGenerator displayCodeGenerator;
+
     private CreateItemCommand command(UUID modelId, UUID unitId) {
         return new CreateItemCommand(new Barcode("7891234567890"), ItemStatus.OK, unitId, modelId,
                 2024, UsageIntensity.HIGH, "SN-001", LocalDate.of(2026, 8, 4), "Placa de vídeo",
@@ -55,13 +58,15 @@ class CreateItemImplTest {
         when(modelRepository.findById(Fixtures.UNIT, modelId))
                 .thenReturn(Optional.of(Fixtures.model(modelId, Fixtures.UNIT)));
         when(itemRepository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(displayCodeGenerator.next(Fixtures.UNIT)).thenReturn("265964");
 
-        CreateItemImpl useCase = new CreateItemImpl(itemRepository, modelRepository);
+        CreateItemImpl useCase = new CreateItemImpl(itemRepository, modelRepository, displayCodeGenerator);
         Item result = useCase.execute(command(modelId, Fixtures.UNIT));
 
         assertNotNull(result.getId());
         assertEquals(Fixtures.UNIT, result.getUnitId());
         assertEquals(modelId, result.getModel().getId());
+        assertEquals("265964", result.getDisplayCode());
         assertEquals("Placa de vídeo", result.getName());
         assertEquals(ItemCondition.SEMI_DAMAGED, result.getCondition());
         assertEquals(Set.of(DamageType.OXIDATION), result.getDamages());
@@ -76,7 +81,7 @@ class CreateItemImplTest {
         UUID modelId = UUID.randomUUID();
         when(modelRepository.findById(Fixtures.UNIT, modelId)).thenReturn(Optional.empty());
 
-        CreateItemImpl useCase = new CreateItemImpl(itemRepository, modelRepository);
+        CreateItemImpl useCase = new CreateItemImpl(itemRepository, modelRepository, displayCodeGenerator);
         CreateItemCommand command = command(modelId, Fixtures.UNIT);
 
         assertThrows(ModelNotFoundException.class, () -> useCase.execute(command));

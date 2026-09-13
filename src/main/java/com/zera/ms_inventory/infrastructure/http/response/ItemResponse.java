@@ -14,6 +14,7 @@ import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 public record ItemResponse(
         UUID id,
         String barcode,
+        String displayCode,
         String name,
         ItemStatus status,
         ItemCondition condition,
@@ -38,7 +39,7 @@ public record ItemResponse(
         if (item == null) {
             return null;
         }
-        return new ItemResponse(item.getId(), item.getBarcode().getValue(), item.getName(), item.getStatus(),
+        return new ItemResponse(item.getId(), item.getBarcode().getValue(), item.getDisplayCode(), item.getName(), item.getStatus(),
                 item.getCondition(), item.getHasDamages(), item.getDamages(), item.getNotes(), item.getUnitId(),
                 ModelResponse.from(item.getModel()), item.getSerialNumber(), item.getAcquiredAt(),
                 item.getManufacturingYear(), item.getUsageIntensity(), item.getPredictedFailureDate(),

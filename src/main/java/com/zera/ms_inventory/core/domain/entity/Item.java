@@ -15,6 +15,7 @@ import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 public class Item {
     private final UUID id;
     private final Barcode barcode;
+    private String displayCode;
     private ItemStatus status;
     private UUID unitId;
     private final Model model;
@@ -94,6 +95,11 @@ public class Item {
 
     public Barcode getBarcode() {
         return barcode;
+    }
+
+    /** Codigo curto de 6 digitos exibido no app ("ID 265964"), unico dentro da unidade. */
+    public String getDisplayCode() {
+        return displayCode;
     }
 
     public ItemStatus getStatus() {
@@ -181,6 +187,22 @@ public class Item {
                          String notes) {
         applyDescription(name, condition, hasDamages, damages, notes);
         touch();
+    }
+
+    /** O codigo e atribuido uma unica vez, no cadastro, e nao muda depois. */
+    public void assignDisplayCode(String displayCode) {
+        if (this.displayCode != null) {
+            throw new IllegalStateException("Item " + id + " already has a display code");
+        }
+        if (displayCode == null || !displayCode.matches("\\d{6}")) {
+            throw new IllegalArgumentException("displayCode must have exactly 6 digits");
+        }
+        this.displayCode = displayCode;
+    }
+
+    /** Reidrata o codigo salvo. Uso exclusivo da camada de persistencia. */
+    public void restoreDisplayCode(String displayCode) {
+        this.displayCode = displayCode;
     }
 
     /** Guarda quem cadastrou; o nome fica gravado para o "Cadastrado por" de qualquer papel. */

@@ -71,6 +71,16 @@ public class ItemRepositoryImpl implements ItemRepository {
         return neo4jRepository.existsByUnitIdAndModelId(unitId, modelId);
     }
 
+    @Override
+    public boolean existsByDisplayCode(UUID unitId, String displayCode) {
+        return neo4jRepository.existsByUnitIdAndDisplayCode(unitId, displayCode);
+    }
+
+    @Override
+    public Optional<Item> findByBarcode(UUID unitId, String barcode) {
+        return neo4jRepository.findByUnitIdAndBarcode(unitId, barcode).map(mapper::toDomain);
+    }
+
     // mais recentes primeiro, como a lista do app
     private static PageRequest newestFirst(Pagination pagination) {
         return PageRequest.of(pagination.page(), pagination.size(), Sort.by(Sort.Direction.DESC, "createdAt"));
