@@ -66,6 +66,11 @@ public class ItemRepositoryImpl implements ItemRepository {
                 pagination);
     }
 
+    @Override
+    public boolean existsByModel(UUID unitId, UUID modelId) {
+        return neo4jRepository.existsByUnitIdAndModelId(unitId, modelId);
+    }
+
     // mais recentes primeiro, como a lista do app
     private static PageRequest newestFirst(Pagination pagination) {
         return PageRequest.of(pagination.page(), pagination.size(), Sort.by(Sort.Direction.DESC, "createdAt"));

@@ -133,6 +133,11 @@ public class ModelRepositoryImpl implements ModelRepository {
     }
 
     @Override
+    public boolean existsByCategory(UUID unitId, UUID categoryId) {
+        return neo4jRepository.existsByUnitIdAndCategoryId(unitId, categoryId);
+    }
+
+    @Override
     public List<Model> semanticSearch(UUID unitId, String query, int limit) {
         float[] embedded = embeddingModel.embed(query);
         List<Float> queryVector = new ArrayList<>(embedded.length);

@@ -23,6 +23,8 @@ interface ModelNeo4jRepository extends Neo4jRepository<ModelNode, UUID> {
 
     Page<ModelNode> findAllByUnitIdAndApprovalStatus(UUID unitId, ApprovalStatus approvalStatus, Pageable pageable);
 
+    boolean existsByUnitIdAndCategoryId(UUID unitId, UUID categoryId);
+
     Optional<ModelNode> findByIdAndUnitId(UUID id, UUID unitId);
 
     @Transactional
