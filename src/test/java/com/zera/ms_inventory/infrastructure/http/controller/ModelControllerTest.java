@@ -14,18 +14,21 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
+import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
-import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.CreateModelCommand;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
 import com.zera.ms_inventory.core.usecase.model.FindModelById;
+import com.zera.ms_inventory.core.usecase.model.ListModelItems;
 import com.zera.ms_inventory.core.usecase.model.ListModels;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelExpectedLifespanMonths;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelMaterials;
@@ -66,6 +69,7 @@ class ModelControllerTest {
 
     @MockitoBean private CreateModel createModel;
     @MockitoBean private ListModels listModels;
+    @MockitoBean private ListModelItems listModelItems;
     @MockitoBean private FindModelById findModelById;
     @MockitoBean private UpdateModelName updateModelName;
     @MockitoBean private UpdateModelManufacturer updateModelManufacturer;
@@ -122,7 +126,7 @@ class ModelControllerTest {
     @DisplayName("GET /api/v1/models - deve listar todos os models")
     void shouldFindAllModels() throws Exception {
         Model model = new Model(UUID.randomUUID(), UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
-        when(listModels.execute(UNIT, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(model), 0, 20, 1));
+        when(listModels.execute(UNIT, null, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(model), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/models")
                         .header("X-Unit-Id", UNIT))
@@ -276,7 +280,7 @@ class ModelControllerTest {
     @Test
     @DisplayName("GET /api/v1/models - deve repassar a pagina e o tamanho pedidos")
     void shouldForwardRequestedPage() throws Exception {
-        when(listModels.execute(UNIT, new Pagination(2, 50))).thenReturn(new PageResult<>(List.of(), 2, 50, 101));
+        when(listModels.execute(UNIT, null, new Pagination(2, 50))).thenReturn(new PageResult<>(List.of(), 2, 50, 101));
 
         mockMvc.perform(get("/api/v1/models")
                         .param("page", "2")
@@ -294,5 +298,43 @@ class ModelControllerTest {
                         .param("size", "500")
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/models?approvalStatus=PENDING - deve filtrar os modelos pendentes")
+    void shouldFilterModelsByApprovalStatus() throws Exception {
+        when(listModels.execute(UNIT, ApprovalStatus.PENDING, new Pagination(0, 20)))
+                .thenReturn(new PageResult<>(List.of(com.zera.ms_inventory.Fixtures.model(UNIT)), 0, 20, 1));
+
+        mockMvc.perform(get("/api/v1/models")
+                        .param("approvalStatus", "PENDING")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/models/{id}/items - deve listar os itens do modelo")
+    void shouldListTheItemsOfAModel() throws Exception {
+        UUID id = UUID.randomUUID();
+        Item item = com.zera.ms_inventory.Fixtures.item(UNIT);
+        when(listModelItems.execute(UNIT, id, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(item), 0, 20, 1));
+
+        mockMvc.perform(get("/api/v1/models/{id}/items", id)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].barcode").value("7891234567890"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/models/{id}/items - deve retornar 404 para modelo de outra unidade")
+    void shouldReturn404ForItemsOfAMissingModel() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(listModelItems.execute(UNIT, id, new Pagination(0, 20))).thenThrow(new ModelNotFoundException(id));
+
+        mockMvc.perform(get("/api/v1/models/{id}/items", id)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isNotFound());
     }
 }
