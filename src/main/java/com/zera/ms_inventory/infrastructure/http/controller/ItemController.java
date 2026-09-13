@@ -27,21 +27,11 @@ import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemAcquiredAt;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemManufacturingDate;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemNextPredictionDate;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemSerialNumber;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemUsageIntensity;
 import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemAcquiredAtRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemManufacturingDateRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemNextPredictionDateRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemSerialNumberRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemUsageIntensityRequest;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
 import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
@@ -57,11 +47,6 @@ public class ItemController {
     private final UpdateItem updateItem;
     private final UpdateItemStatus updateItemStatus;
     private final AssignItemUnit assignItemUnit;
-    private final UpdateItemSerialNumber updateItemSerialNumber;
-    private final UpdateItemAcquiredAt updateItemAcquiredAt;
-    private final UpdateItemNextPredictionDate updateItemNextPredictionDate;
-    private final UpdateItemManufacturingDate updateItemManufacturingDate;
-    private final UpdateItemUsageIntensity updateItemUsageIntensity;
     private final DeleteItem deleteItem;
 
     public ItemController(CreateItem createItem,
@@ -70,11 +55,6 @@ public class ItemController {
                            UpdateItem updateItem,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
-                           UpdateItemSerialNumber updateItemSerialNumber,
-                           UpdateItemAcquiredAt updateItemAcquiredAt,
-                           UpdateItemNextPredictionDate updateItemNextPredictionDate,
-                           UpdateItemManufacturingDate updateItemManufacturingDate,
-                           UpdateItemUsageIntensity updateItemUsageIntensity,
                            DeleteItem deleteItem) {
         this.createItem = createItem;
         this.listItems = listItems;
@@ -82,11 +62,6 @@ public class ItemController {
         this.updateItem = updateItem;
         this.updateItemStatus = updateItemStatus;
         this.assignItemUnit = assignItemUnit;
-        this.updateItemSerialNumber = updateItemSerialNumber;
-        this.updateItemAcquiredAt = updateItemAcquiredAt;
-        this.updateItemNextPredictionDate = updateItemNextPredictionDate;
-        this.updateItemManufacturingDate = updateItemManufacturingDate;
-        this.updateItemUsageIntensity = updateItemUsageIntensity;
         this.deleteItem = deleteItem;
     }
 
@@ -126,31 +101,6 @@ public class ItemController {
     @PreAuthorize(Authz.MANAGER)
     public ResponseEntity<ItemResponse> assignUnit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
         return ResponseEntity.ok(ItemResponse.from(assignItemUnit.execute(unitId, id, request.unitId())));
-    }
-
-    @PatchMapping("/{id}/serial-number")
-    public ResponseEntity<ItemResponse> updateSerialNumber(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemSerialNumberRequest request) {
-        return ResponseEntity.ok(ItemResponse.from(updateItemSerialNumber.execute(unitId, id, request.serialNumber())));
-    }
-
-    @PatchMapping("/{id}/acquired-at")
-    public ResponseEntity<ItemResponse> updateAcquiredAt(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemAcquiredAtRequest request) {
-        return ResponseEntity.ok(ItemResponse.from(updateItemAcquiredAt.execute(unitId, id, request.acquiredAt())));
-    }
-
-    @PatchMapping("/{id}/next-prediction-date")
-    public ResponseEntity<ItemResponse> updateNextPredictionDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemNextPredictionDateRequest request) {
-        return ResponseEntity.ok(ItemResponse.from(updateItemNextPredictionDate.execute(unitId, id, request.nextPredictionDate())));
-    }
-
-    @PatchMapping("/{id}/manufacturing-date")
-    public ResponseEntity<ItemResponse> updateManufacturingDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemManufacturingDateRequest request) {
-        return ResponseEntity.ok(ItemResponse.from(updateItemManufacturingDate.execute(unitId, id, request.manufacturingDate())));
-    }
-
-    @PatchMapping("/{id}/usage-intensity")
-    public ResponseEntity<ItemResponse> updateUsageIntensity(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemUsageIntensityRequest request) {
-        return ResponseEntity.ok(ItemResponse.from(updateItemUsageIntensity.execute(unitId, id, request.usageIntensity())));
     }
 
     // exclusao ainda e fisica: so o gestor ate a remocao logica revisavel (ZERA-247)

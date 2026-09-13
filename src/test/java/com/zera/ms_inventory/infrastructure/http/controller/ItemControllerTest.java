@@ -33,21 +33,11 @@ import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemCommand;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemAcquiredAt;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemManufacturingDate;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemNextPredictionDate;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemSerialNumber;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemUsageIntensity;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
 import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemAcquiredAtRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemManufacturingDateRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemNextPredictionDateRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemSerialNumberRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemUsageIntensityRequest;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -80,11 +70,6 @@ class ItemControllerTest {
     @MockitoBean private UpdateItem updateItem;
     @MockitoBean private UpdateItemStatus updateItemStatus;
     @MockitoBean private AssignItemUnit assignItemUnit;
-    @MockitoBean private UpdateItemSerialNumber updateItemSerialNumber;
-    @MockitoBean private UpdateItemAcquiredAt updateItemAcquiredAt;
-    @MockitoBean private UpdateItemNextPredictionDate updateItemNextPredictionDate;
-    @MockitoBean private UpdateItemManufacturingDate updateItemManufacturingDate;
-    @MockitoBean private UpdateItemUsageIntensity updateItemUsageIntensity;
     @MockitoBean private DeleteItem deleteItem;
 
     private Item sampleItem(UUID id) {
@@ -208,78 +193,6 @@ class ItemControllerTest {
         mockMvc.perform(patch("/api/v1/items/{id}/unit", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new AssignItemUnitRequest(unitId)))
-                        .header("X-Unit-Id", UNIT))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("PATCH /api/v1/items/{id}/serial-number - deve atualizar o número de série")
-    void shouldUpdateSerialNumber() throws Exception {
-        UUID id = UUID.randomUUID();
-        Item item = sampleItem(id);
-        when(updateItemSerialNumber.execute(UNIT, id, "SN-002")).thenReturn(item);
-
-        mockMvc.perform(patch("/api/v1/items/{id}/serial-number", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemSerialNumberRequest("SN-002")))
-                        .header("X-Unit-Id", UNIT))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("PATCH /api/v1/items/{id}/acquired-at - deve atualizar a data de aquisição")
-    void shouldUpdateAcquiredAt() throws Exception {
-        UUID id = UUID.randomUUID();
-        Item item = sampleItem(id);
-        LocalDate newDate = LocalDate.now();
-        when(updateItemAcquiredAt.execute(UNIT, id, newDate)).thenReturn(item);
-
-        mockMvc.perform(patch("/api/v1/items/{id}/acquired-at", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemAcquiredAtRequest(newDate)))
-                        .header("X-Unit-Id", UNIT))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("PATCH /api/v1/items/{id}/next-prediction-date - deve atualizar a data de previsão")
-    void shouldUpdateNextPredictionDate() throws Exception {
-        UUID id = UUID.randomUUID();
-        Item item = sampleItem(id);
-        LocalDateTime newDate = LocalDateTime.now();
-        when(updateItemNextPredictionDate.execute(UNIT, id, newDate)).thenReturn(item);
-
-        mockMvc.perform(patch("/api/v1/items/{id}/next-prediction-date", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemNextPredictionDateRequest(newDate)))
-                        .header("X-Unit-Id", UNIT))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("PATCH /api/v1/items/{id}/manufacturing-date - deve atualizar o ano de fabricação")
-    void shouldUpdateManufacturingDate() throws Exception {
-        UUID id = UUID.randomUUID();
-        Item item = sampleItem(id);
-        when(updateItemManufacturingDate.execute(UNIT, id, 2024)).thenReturn(item);
-
-        mockMvc.perform(patch("/api/v1/items/{id}/manufacturing-date", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemManufacturingDateRequest(2024)))
-                        .header("X-Unit-Id", UNIT))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("PATCH /api/v1/items/{id}/usage-intensity - deve atualizar a intensidade de uso")
-    void shouldUpdateUsageIntensity() throws Exception {
-        UUID id = UUID.randomUUID();
-        Item item = sampleItem(id);
-        when(updateItemUsageIntensity.execute(UNIT, id, 8)).thenReturn(item);
-
-        mockMvc.perform(patch("/api/v1/items/{id}/usage-intensity", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemUsageIntensityRequest(8)))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
