@@ -39,6 +39,7 @@ import com.zera.ms_inventory.core.usecase.item.UpdateItemCommand;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
 import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
@@ -55,7 +56,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ItemController.class)
-@org.springframework.context.annotation.Import(GlobalExceptionHandler.class)
+@org.springframework.context.annotation.Import({GlobalExceptionHandler.class, ItemResponses.class})
 class ItemControllerTest {
 
 
@@ -68,6 +69,8 @@ class ItemControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockitoBean private com.zera.ms_inventory.core.repository.PhotoStorage photoStorage;
 
     @MockitoBean private CreateItem createItem;
     @MockitoBean private ListItems listItems;
@@ -434,5 +437,21 @@ class ItemControllerTest {
                         .file(new org.springframework.mock.web.MockMultipartFile("photo", "p.png", "image/png", new byte[] {1}))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isServiceUnavailable());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items/{id} - deve trazer a URL assinada da foto")
+    void shouldExposeTheSignedPhotoUrl() throws Exception {
+        UUID id = UUID.randomUUID();
+        Item item = sampleItem(id);
+        item.attachPhoto("units/u/items/i/p.jpg");
+        when(findItemById.execute(UNIT, id)).thenReturn(item);
+        when(photoStorage.signedUrl("units/u/items/i/p.jpg"))
+                .thenReturn(java.util.Optional.of(java.net.URI.create("https://storage.googleapis.com/b/p.jpg?sig=1").toURL()));
+
+        mockMvc.perform(get("/api/v1/items/{id}", id)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.photoUrl").value("https://storage.googleapis.com/b/p.jpg?sig=1"));
     }
 }
