@@ -37,6 +37,7 @@ import com.zera.ms_inventory.core.usecase.model.UpdateModelManufacturer;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelName;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelWarrantyMonths;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
 import com.zera.ms_inventory.infrastructure.http.request.CreateModelRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelExpectedLifespanMonthsRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelMaterialsRequest;
@@ -55,7 +56,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ModelController.class)
-@org.springframework.context.annotation.Import(GlobalExceptionHandler.class)
+@org.springframework.context.annotation.Import({GlobalExceptionHandler.class, ItemResponses.class})
 class ModelControllerTest {
 
 
@@ -68,6 +69,8 @@ class ModelControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockitoBean private com.zera.ms_inventory.core.repository.PhotoStorage photoStorage;
 
     @MockitoBean private CreateModel createModel;
     @MockitoBean private ListModels listModels;
