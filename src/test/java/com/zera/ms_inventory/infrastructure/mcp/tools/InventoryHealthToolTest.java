@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +13,7 @@ import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,7 +29,7 @@ class InventoryHealthToolTest {
 
     private Item item(ItemStatus status, String serialNumber) {
         return new Item(UUID.randomUUID(), new Barcode("123456"), status, Fixtures.UNIT,
-                Fixtures.model(Fixtures.UNIT), LocalDateTime.now(), 2024, 7, serialNumber, LocalDate.now());
+                Fixtures.model(Fixtures.UNIT), null, 2024, UsageIntensity.MEDIUM, serialNumber, LocalDate.now());
     }
 
     @Test

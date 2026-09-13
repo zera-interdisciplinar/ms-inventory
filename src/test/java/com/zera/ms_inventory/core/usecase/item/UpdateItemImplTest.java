@@ -15,6 +15,7 @@ import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,15 +85,15 @@ class UpdateItemImplTest {
 
         Item result = new UpdateItemImpl(itemRepository).execute(new UpdateItemCommand(Fixtures.UNIT, id,
                 "Placa de vídeo RTX", null, null, Set.of(DamageType.OXIDATION, DamageType.MISSING_PART), "", " ",
-                LocalDate.of(2025, 1, 10), 2023, 3));
+                LocalDate.of(2025, 1, 10), 2023, UsageIntensity.LOW));
 
         assertEquals("Placa de vídeo RTX", result.getName());
         assertEquals(Set.of(DamageType.OXIDATION, DamageType.MISSING_PART), result.getDamages());
         assertNull(result.getNotes());
         assertNull(result.getSerialNumber());
         assertEquals(LocalDate.of(2025, 1, 10), result.getAcquiredAt());
-        assertEquals(2023, result.getManufacturingDate());
-        assertEquals(3, result.getUsageIntensity());
+        assertEquals(2023, result.getManufacturingYear());
+        assertEquals(UsageIntensity.LOW, result.getUsageIntensity());
     }
 
     @Test

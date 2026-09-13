@@ -35,7 +35,8 @@ class ItemMapperTest {
         assertEquals(item.getStatus(), result.getStatus());
         assertEquals(item.getSerialNumber(), result.getSerialNumber());
         assertEquals(item.getAcquiredAt(), result.getAcquiredAt());
-        assertEquals(item.getManufacturingDate(), result.getManufacturingDate());
+        assertEquals(item.getManufacturingYear(), result.getManufacturingYear());
+        assertEquals(item.getPredictedFailureDate(), result.getPredictedFailureDate());
         assertEquals(item.getUsageIntensity(), result.getUsageIntensity());
     }
 
