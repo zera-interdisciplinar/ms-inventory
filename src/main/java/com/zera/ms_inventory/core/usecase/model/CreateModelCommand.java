@@ -3,6 +3,7 @@ package com.zera.ms_inventory.core.usecase.model;
 import java.util.Set;
 import java.util.UUID;
 
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 
 public record CreateModelCommand(
@@ -14,5 +15,6 @@ public record CreateModelCommand(
         Set<MaterialCode> materials,
         Double estimatedWeightKg,
         String notes,
-        UUID categoryId
+        UUID categoryId,
+        Actor actor
 ) {}

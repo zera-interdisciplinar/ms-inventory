@@ -36,6 +36,7 @@ public class CreateModelImpl implements CreateModel {
         Model model = new Model(UUID.randomUUID(), command.unitId(), command.name(), command.manufacturer(),
                 command.warrantyMonths(), command.expectedLifespanMonths(), materials,
                 command.estimatedWeightKg(), command.notes(), category);
+        model.registerBy(command.actor());
         return modelRepository.save(model);
     }
 }

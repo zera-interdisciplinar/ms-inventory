@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.MaterialNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ModelNode;
@@ -75,5 +78,21 @@ class ModelMapperTest {
         assertEquals(1.8, result.getEstimatedWeightKg());
         assertEquals("Sem bateria", result.getNotes());
         assertEquals(MaterialCode.METAL, result.getMaterials().iterator().next().getCode());
+    }
+
+    @Test
+    void shouldMapApprovalBothWays() {
+        UUID operator = UUID.randomUUID();
+        Model model = Fixtures.model(Fixtures.UNIT);
+        model.registerBy(new Actor(operator, ActorRole.EMPLOYEE));
+
+        ModelNode node = mapper.toNode(model);
+        assertEquals(ApprovalStatus.PENDING, node.getApprovalStatus());
+        assertEquals(operator, node.getCreatedBy());
+
+        Model result = mapper.toDomain(node);
+        assertEquals(ApprovalStatus.PENDING, result.getApprovalStatus());
+        assertEquals(operator, result.getCreatedBy());
+        assertNull(result.getReviewedBy());
     }
 }

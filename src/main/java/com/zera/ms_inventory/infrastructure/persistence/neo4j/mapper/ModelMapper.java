@@ -25,10 +25,13 @@ public class ModelMapper {
         }
         Set<Material> materials = node.getMaterials() == null ? Set.of()
                 : node.getMaterials().stream().map(materialMapper::toDomain).collect(Collectors.toSet());
-        return new Model(node.getId(), node.getUnitId(), node.getName(), node.getManufacturer(),
+        Model model = new Model(node.getId(), node.getUnitId(), node.getName(), node.getManufacturer(),
                 node.getWarrantyMonths(), node.getExpectedLifespanMonths(), materials,
                 node.getEstimatedWeightKg(), node.getNotes(), categoryMapper.toDomain(node.getCategory()),
                 node.getCreatedAt(), node.getUpdatedAt());
+        model.restoreApproval(node.getApprovalStatus(), node.getRejectionReason(), node.getCreatedBy(),
+                node.getReviewedBy(), node.getReviewedAt());
+        return model;
     }
 
     /**
@@ -44,6 +47,11 @@ public class ModelMapper {
                 model.getUpdatedAt());
         node.setEstimatedWeightKg(model.getEstimatedWeightKg());
         node.setNotes(model.getNotes());
+        node.setApprovalStatus(model.getApprovalStatus());
+        node.setRejectionReason(model.getRejectionReason());
+        node.setCreatedBy(model.getCreatedBy());
+        node.setReviewedBy(model.getReviewedBy());
+        node.setReviewedAt(model.getReviewedAt());
         return node;
     }
 }
