@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 
@@ -16,7 +17,7 @@ public interface ItemRepository {
     Item save(Item item);
     Optional<Item> findById(UUID unitId, UUID id);
     List<Item> findAll(UUID unitId);
-    PageResult<Item> findPage(UUID unitId, Pagination pagination);
+    PageResult<Item> findPage(UUID unitId, ItemFilter filter, Pagination pagination);
     PageResult<Item> findPageByModel(UUID unitId, UUID modelId, Pagination pagination);
     boolean existsByModel(UUID unitId, UUID modelId);
     boolean existsByDisplayCode(UUID unitId, String displayCode);

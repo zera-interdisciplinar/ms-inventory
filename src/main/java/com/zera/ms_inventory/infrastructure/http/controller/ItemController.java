@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
+import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
@@ -81,9 +83,15 @@ public class ItemController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PageResponse<ItemResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                            @RequestParam(required = false) ItemStatus status,
+                                                            @RequestParam(required = false) UUID categoryId,
+                                                            @RequestParam(required = false) UUID modelId,
+                                                            @RequestParam(required = false) String q,
                                                             @RequestParam(defaultValue = "0") int page,
                                                             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(PageResponse.from(listItems.execute(unitId, new Pagination(page, size)), ItemResponse::from));
+        ItemFilter filter = new ItemFilter(status, categoryId, modelId, q);
+        return ResponseEntity.ok(PageResponse.from(listItems.execute(unitId, filter, new Pagination(page, size)),
+                ItemResponse::from));
     }
 
     @GetMapping("/by-barcode/{barcode}")
