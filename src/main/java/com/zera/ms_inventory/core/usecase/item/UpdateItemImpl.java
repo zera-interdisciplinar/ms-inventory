@@ -42,8 +42,8 @@ public class UpdateItemImpl implements UpdateItem {
         if (command.acquiredAt() != null) {
             item.updateAcquiredAt(command.acquiredAt());
         }
-        if (command.manufacturingDate() != null) {
-            item.updateManufacturingDate(command.manufacturingDate());
+        if (command.manufacturingYear() != null) {
+            item.updateManufacturingYear(command.manufacturingYear());
         }
         if (command.usageIntensity() != null) {
             item.updateUsageIntensity(command.usageIntensity());
