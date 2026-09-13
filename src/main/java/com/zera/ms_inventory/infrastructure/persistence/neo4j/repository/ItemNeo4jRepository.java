@@ -17,7 +17,39 @@ interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
 
     List<ItemNode> findAllByUnitId(UUID unitId);
 
-    Page<ItemNode> findAllByUnitId(UUID unitId, Pageable pageable);
+    String FILTER = """
+            MATCH (i:Item)-[r:IS_MODEL]->(m:Model)
+            WHERE i.unitId = $unitId
+              AND ($status IS NULL OR i.status = $status)
+              AND ($modelId IS NULL OR m.id = $modelId)
+              AND ($categoryId IS NULL OR EXISTS { (m)-[:BELONGS_TO]->(:Category {id: $categoryId}) })
+              AND ($query IS NULL
+                   OR i.displayCode STARTS WITH $query
+                   OR toLower(coalesce(i.name, '')) CONTAINS toLower($query)
+                   OR toLower(m.name) CONTAINS toLower($query)
+                   OR EXISTS { (m)-[:MADE_OF]->(filterMaterial:Material)
+                               WHERE toLower(filterMaterial.name) CONTAINS toLower($query) })
+            """;
+
+    /** Pagina filtrada, mais recentes primeiro, com modelo, categoria e materiais carregados. */
+    @Query(FILTER + """
+            WITH i, r, m ORDER BY i.createdAt DESC SKIP $skip LIMIT $limit
+            OPTIONAL MATCH (m)-[bt:BELONGS_TO]->(c:Category)
+            OPTIONAL MATCH (m)-[mo:MADE_OF]->(mat:Material)
+            WITH i, r, m, collect(DISTINCT bt) AS bts, collect(DISTINCT c) AS cs,
+                 collect(DISTINCT mo) AS mos, collect(DISTINCT mat) AS mats
+            ORDER BY i.createdAt DESC
+            RETURN i, collect(r), collect(m), bts, cs, mos, mats
+            """)
+    List<ItemNode> findFilteredPage(@Param("unitId") UUID unitId, @Param("status") String status,
+                                    @Param("categoryId") UUID categoryId, @Param("modelId") UUID modelId,
+                                    @Param("query") String query, @Param("skip") long skip,
+                                    @Param("limit") int limit);
+
+    @Query(FILTER + "RETURN count(DISTINCT i)")
+    long countFiltered(@Param("unitId") UUID unitId, @Param("status") String status,
+                       @Param("categoryId") UUID categoryId, @Param("modelId") UUID modelId,
+                       @Param("query") String query);
 
     Page<ItemNode> findAllByUnitIdAndModelId(UUID unitId, UUID modelId, Pageable pageable);
 

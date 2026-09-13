@@ -15,6 +15,8 @@ import org.springframework.data.domain.Sort;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
+import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.entity.Model;
@@ -134,16 +136,28 @@ class ItemRepositoryImplTest {
     }
 
     @Test
-    void shouldPageNewestFirstWithinTheUnit() {
-        PageRequest request = PageRequest.of(1, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
-        when(neo4jRepository.findAllByUnitId(Fixtures.UNIT, request))
-                .thenReturn(new PageImpl<>(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))), request, 11));
+    void shouldPageTheFilteredItemsWithinTheUnit() {
+        UUID categoryId = UUID.randomUUID();
+        ItemFilter filter = new ItemFilter(ItemStatus.OK, categoryId, null, "placa");
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, "OK", categoryId, null, "placa")).thenReturn(11L);
+        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, "OK", categoryId, null, "placa", 10L, 10))
+                .thenReturn(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))));
 
-        PageResult<Item> result = repository.findPage(Fixtures.UNIT, new Pagination(1, 10));
+        PageResult<Item> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(1, 10));
 
         assertEquals(1, result.content().size());
         assertEquals(11, result.totalElements());
         assertEquals(2, result.totalPages());
+    }
+
+    @Test
+    void shouldSkipThePageQueryWhenNothingMatches() {
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null)).thenReturn(0L);
+
+        PageResult<Item> result = repository.findPage(Fixtures.UNIT, ItemFilter.none(), new Pagination(0, 20));
+
+        assertTrue(result.content().isEmpty());
+        verify(neo4jRepository, never()).findFilteredPage(any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyInt());
     }
 
     @Test
