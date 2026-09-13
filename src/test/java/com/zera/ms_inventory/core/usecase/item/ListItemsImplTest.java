@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.repository.ItemRepository;
@@ -26,9 +27,10 @@ class ListItemsImplTest {
     void shouldReturnTheRequestedPageOfTheUnit() {
         Pagination pagination = new Pagination(0, 20);
         PageResult<Item> page = new PageResult<>(List.of(Fixtures.item(Fixtures.UNIT)), 0, 20, 1);
-        when(itemRepository.findPage(Fixtures.UNIT, pagination)).thenReturn(page);
+        ItemFilter filter = new ItemFilter(null, null, null, "placa");
+        when(itemRepository.findPage(Fixtures.UNIT, filter, pagination)).thenReturn(page);
 
-        PageResult<Item> result = new ListItemsImpl(itemRepository).execute(Fixtures.UNIT, pagination);
+        PageResult<Item> result = new ListItemsImpl(itemRepository).execute(Fixtures.UNIT, filter, pagination);
 
         assertEquals(page, result);
     }
