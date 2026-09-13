@@ -33,6 +33,7 @@ public class Item {
     private Boolean hasDamages;
     private Set<DamageType> damages = Set.of();
     private String notes;
+    private String photoKey;
     private UUID createdBy;
     private String createdByName;
 
@@ -172,6 +173,11 @@ public class Item {
         return notes;
     }
 
+    /** Chave da foto no armazenamento; a URL para exibir e gerada na resposta. */
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
     public UUID getCreatedBy() {
         return createdBy;
     }
@@ -187,6 +193,19 @@ public class Item {
                          String notes) {
         applyDescription(name, condition, hasDamages, damages, notes);
         touch();
+    }
+
+    public void attachPhoto(String photoKey) {
+        if (photoKey == null || photoKey.isBlank()) {
+            throw new IllegalArgumentException("photoKey is required");
+        }
+        this.photoKey = photoKey;
+        touch();
+    }
+
+    /** Reidrata a chave da foto salva. Uso exclusivo da camada de persistencia. */
+    public void restorePhotoKey(String photoKey) {
+        this.photoKey = photoKey;
     }
 
     /** O codigo e atribuido uma unica vez, no cadastro, e nao muda depois. */
