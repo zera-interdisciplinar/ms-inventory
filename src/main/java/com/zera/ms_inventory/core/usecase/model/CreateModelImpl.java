@@ -34,7 +34,7 @@ public class CreateModelImpl implements CreateModel {
         Set<Material> materials = materialResolver.resolve(command.materials());
 
         Model model = new Model(UUID.randomUUID(), command.unitId(), command.name(), command.manufacturer(),
-                command.warrantyMonths(), command.expectedLifespanMonths(), Set.of(), materials,
+                command.warrantyMonths(), command.expectedLifespanMonths(), materials,
                 command.estimatedWeightKg(), command.notes(), category);
         return modelRepository.save(model);
     }
