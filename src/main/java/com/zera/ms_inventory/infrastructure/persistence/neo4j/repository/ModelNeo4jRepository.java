@@ -32,7 +32,8 @@ interface ModelNeo4jRepository extends Neo4jRepository<ModelNode, UUID> {
             ORDER BY score DESC
             LIMIT $limit
             OPTIONAL MATCH (node)-[r:BELONGS_TO]->(c:Category)
-            RETURN node, collect(r), collect(c)
+            OPTIONAL MATCH (node)-[mo:MADE_OF]->(mat:Material)
+            RETURN node, collect(DISTINCT r), collect(DISTINCT c), collect(DISTINCT mo), collect(DISTINCT mat)
             """)
     List<ModelNode> semanticSearch(@Param("queryVector") List<Float> queryVector,
                                    @Param("unitId") UUID unitId,

@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
+import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.MaterialNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ModelNode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,5 +58,23 @@ class ModelMapperTest {
     void shouldMapNullsToNull() {
         assertNull(mapper.toNode(null));
         assertNull(mapper.toDomain(null));
+    }
+
+    @Test
+    void shouldMapWeightNotesAndMaterials() {
+        Model model = new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", null, null, java.util.Set.of(),
+                java.util.Set.of(), 1.8, "Sem bateria", null);
+
+        ModelNode node = mapper.toNode(model);
+        assertEquals(1.8, node.getEstimatedWeightKg());
+        assertEquals("Sem bateria", node.getNotes());
+        assertEquals(0, node.getMaterials().size());
+
+        node.setMaterials(java.util.Set.of(new MaterialNode(UUID.randomUUID(), MaterialCode.METAL, "Metal", true, false, "g")));
+        Model result = mapper.toDomain(node);
+
+        assertEquals(1.8, result.getEstimatedWeightKg());
+        assertEquals("Sem bateria", result.getNotes());
+        assertEquals(MaterialCode.METAL, result.getMaterials().iterator().next().getCode());
     }
 }
