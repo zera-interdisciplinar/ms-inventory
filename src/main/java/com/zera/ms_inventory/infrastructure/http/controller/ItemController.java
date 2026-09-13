@@ -41,6 +41,7 @@ import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
 import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
@@ -49,6 +50,7 @@ import com.zera.ms_inventory.infrastructure.security.Authz;
 @PreAuthorize(Authz.INVENTORY_OPERATOR)
 public class ItemController {
 
+    private final ItemResponses itemResponses;
     private final CreateItem createItem;
     private final ListItems listItems;
     private final FindItemById findItemById;
@@ -67,7 +69,9 @@ public class ItemController {
                            UploadItemPhoto uploadItemPhoto,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
-                           DeleteItem deleteItem) {
+                           DeleteItem deleteItem,
+                           ItemResponses itemResponses) {
+        this.itemResponses = itemResponses;
         this.createItem = createItem;
         this.listItems = listItems;
         this.findItemById = findItemById;
@@ -85,7 +89,7 @@ public class ItemController {
         CreateItemResult result = createItem.execute(request.toCommand(unitId, actor));
         // reenvio do mesmo id (app offline) devolve o item ja cadastrado
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
-                .body(ItemResponse.from(result.item()));
+                .body(itemResponses.from(result.item()));
     }
 
     @GetMapping
@@ -99,44 +103,44 @@ public class ItemController {
                                                             @RequestParam(defaultValue = "20") int size) {
         ItemFilter filter = new ItemFilter(status, categoryId, modelId, q);
         return ResponseEntity.ok(PageResponse.from(listItems.execute(unitId, filter, new Pagination(page, size)),
-                ItemResponse::from));
+                itemResponses::from));
     }
 
     @GetMapping("/by-barcode/{barcode}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ItemResponse> findByBarcode(@RequestHeader("X-Unit-Id") UUID unitId,
                                                       @PathVariable String barcode) {
-        return ResponseEntity.ok(ItemResponse.from(findItemByBarcode.execute(unitId, barcode)));
+        return ResponseEntity.ok(itemResponses.from(findItemByBarcode.execute(unitId, barcode)));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ItemResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
-        return ResponseEntity.ok(ItemResponse.from(findItemById.execute(unitId, id)));
+        return ResponseEntity.ok(itemResponses.from(findItemById.execute(unitId, id)));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<ItemResponse> update(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
                                                @RequestBody @Valid UpdateItemRequest request) {
-        return ResponseEntity.ok(ItemResponse.from(updateItem.execute(request.toCommand(unitId, id))));
+        return ResponseEntity.ok(itemResponses.from(updateItem.execute(request.toCommand(unitId, id))));
     }
 
     @PostMapping(path = "/{id}/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ItemResponse> uploadPhoto(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
                                                     @RequestPart("photo") MultipartFile photo) throws IOException {
-        return ResponseEntity.ok(ItemResponse.from(
+        return ResponseEntity.ok(itemResponses.from(
                 uploadItemPhoto.execute(unitId, id, photo.getBytes(), photo.getContentType())));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<ItemResponse> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemStatusRequest request) {
-        return ResponseEntity.ok(ItemResponse.from(updateItemStatus.execute(unitId, id, request.status())));
+        return ResponseEntity.ok(itemResponses.from(updateItemStatus.execute(unitId, id, request.status())));
     }
 
     @PatchMapping("/{id}/unit")
     @PreAuthorize(Authz.MANAGER)
     public ResponseEntity<ItemResponse> assignUnit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
-        return ResponseEntity.ok(ItemResponse.from(assignItemUnit.execute(unitId, id, request.unitId())));
+        return ResponseEntity.ok(itemResponses.from(assignItemUnit.execute(unitId, id, request.unitId())));
     }
 
     // exclusao ainda e fisica: so o gestor ate a remocao logica revisavel (ZERA-247)
