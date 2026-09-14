@@ -14,11 +14,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.PageResult;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
-import com.zera.ms_inventory.core.usecase.model.FindAllModels;
 import com.zera.ms_inventory.core.usecase.model.FindModelById;
+import com.zera.ms_inventory.core.usecase.model.ListModels;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelExpectedLifespanMonths;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelHazardousMaterials;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelManufacturer;
@@ -57,7 +59,7 @@ class ModelControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean private CreateModel createModel;
-    @MockitoBean private FindAllModels findAllModels;
+    @MockitoBean private ListModels listModels;
     @MockitoBean private FindModelById findModelById;
     @MockitoBean private UpdateModelName updateModelName;
     @MockitoBean private UpdateModelManufacturer updateModelManufacturer;
@@ -110,12 +112,14 @@ class ModelControllerTest {
     @DisplayName("GET /api/v1/models - deve listar todos os models")
     void shouldFindAllModels() throws Exception {
         Model model = new Model(UUID.randomUUID(), UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
-        when(findAllModels.execute(UNIT)).thenReturn(List.of(model));
+        when(listModels.execute(UNIT, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(model), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/models")
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Laptop X1"));
+                .andExpect(jsonPath("$.content[0].name").value("Laptop X1"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     @Test
@@ -227,5 +231,28 @@ class ModelControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(deleteModel).execute(UNIT, id);
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/models - deve repassar a pagina e o tamanho pedidos")
+    void shouldForwardRequestedPage() throws Exception {
+        when(listModels.execute(UNIT, new Pagination(2, 50))).thenReturn(new PageResult<>(List.of(), 2, 50, 101));
+
+        mockMvc.perform(get("/api/v1/models")
+                        .param("page", "2")
+                        .param("size", "50")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/models - deve retornar 400 quando o tamanho passar do maximo")
+    void shouldRejectPageSizeAboveTheMaximum() throws Exception {
+        mockMvc.perform(get("/api/v1/models")
+                        .param("size", "500")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
     }
 }
