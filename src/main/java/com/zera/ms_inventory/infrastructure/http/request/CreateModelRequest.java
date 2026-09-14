@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.usecase.model.CreateModelCommand;
 
@@ -23,9 +24,9 @@ public record CreateModelRequest(
         @Size(max = 500) String notes,
         @NotNull UUID categoryId
 ) {
-    /** unitId vem do header X-Unit-Id, nunca do corpo. */
-    public CreateModelCommand toCommand(UUID unitId) {
+    /** unitId vem do header X-Unit-Id e o autor do token, nunca do corpo. */
+    public CreateModelCommand toCommand(UUID unitId, Actor actor) {
         return new CreateModelCommand(unitId, name, manufacturer, warrantyMonths, expectedLifespanMonths,
-                materials, estimatedWeightKg, notes, categoryId);
+                materials, estimatedWeightKg, notes, categoryId, actor);
     }
 }
