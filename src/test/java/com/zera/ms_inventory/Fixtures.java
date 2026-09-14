@@ -33,7 +33,7 @@ public final class Fixtures {
     }
 
     public static Model model(UUID id, UUID unitId) {
-        return new Model(id, unitId, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), category(unitId));
+        return new Model(id, unitId, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, category(unitId));
     }
 
     public static Item item(UUID unitId) {

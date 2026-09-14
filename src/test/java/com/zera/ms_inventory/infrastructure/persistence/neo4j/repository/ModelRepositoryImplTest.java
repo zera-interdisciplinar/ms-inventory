@@ -114,7 +114,7 @@ class ModelRepositoryImplTest {
 
     @Test
     void shouldSaveModelWithoutCategory() {
-        Model model = new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, java.util.Set.of(), null);
+        Model model = new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, java.util.Set.of(), null, null, null);
         when(neo4jRepository.findByIdAndUnitId(model.getId(), Fixtures.UNIT)).thenReturn(Optional.empty());
         when(embeddingModel.embed(model.toEmbeddableText())).thenReturn(VECTOR);
         when(neo4jRepository.save(any(ModelNode.class))).thenAnswer(i -> i.getArgument(0));
@@ -187,7 +187,7 @@ class ModelRepositoryImplTest {
         for (MaterialCode code : codes) {
             materials.add(new Material(UUID.randomUUID(), code, code.name(), true, code == MaterialCode.BATTERY, "guia"));
         }
-        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, java.util.Set.of(), materials,
+        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, materials,
                 2.5, "Com carregador", null);
     }
 

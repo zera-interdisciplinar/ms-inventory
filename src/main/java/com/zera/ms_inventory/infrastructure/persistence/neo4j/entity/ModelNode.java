@@ -26,8 +26,6 @@ public class ModelNode {
 
     private Integer expectedLifespanMonths;
 
-    private Set<String> hazardousMaterials;
-
     /** Anexado pelo ModelRepositoryImpl com os MaterialNode ja persistidos do catalogo. */
     @Relationship(type = "MADE_OF", direction = Relationship.Direction.OUTGOING)
     private Set<MaterialNode> materials = new HashSet<>();
@@ -55,7 +53,7 @@ public class ModelNode {
     }
 
     public ModelNode(UUID id, UUID unitId, String name, String manufacturer, Integer warrantyMonths,
-                      Integer expectedLifespanMonths, Set<String> hazardousMaterials,
+                      Integer expectedLifespanMonths,
                       LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.unitId = unitId;
@@ -63,7 +61,6 @@ public class ModelNode {
         this.manufacturer = manufacturer;
         this.warrantyMonths = warrantyMonths;
         this.expectedLifespanMonths = expectedLifespanMonths;
-        this.hazardousMaterials = hazardousMaterials;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -90,10 +87,6 @@ public class ModelNode {
 
     public Integer getExpectedLifespanMonths() {
         return expectedLifespanMonths;
-    }
-
-    public Set<String> getHazardousMaterials() {
-        return hazardousMaterials;
     }
 
     public Set<MaterialNode> getMaterials() {
