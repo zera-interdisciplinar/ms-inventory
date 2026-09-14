@@ -42,7 +42,7 @@ import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
 @RequestMapping("/api/v1/items")
-@PreAuthorize(Authz.MANAGER)
+@PreAuthorize(Authz.INVENTORY_OPERATOR)
 public class ItemController {
 
     private final CreateItem createItem;
@@ -106,6 +106,7 @@ public class ItemController {
     }
 
     @PatchMapping("/{id}/unit")
+    @PreAuthorize(Authz.MANAGER)
     public ResponseEntity<Item> assignUnit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
         return ResponseEntity.ok(assignItemUnit.execute(unitId, id, request.unitId()));
     }
@@ -135,7 +136,9 @@ public class ItemController {
         return ResponseEntity.ok(updateItemUsageIntensity.execute(unitId, id, request.usageIntensity()));
     }
 
+    // exclusao ainda e fisica: so o gestor ate a remocao logica revisavel (ZERA-247)
     @DeleteMapping("/{id}")
+    @PreAuthorize(Authz.MANAGER)
     public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
         deleteItem.execute(unitId, id);
         return ResponseEntity.noContent().build();

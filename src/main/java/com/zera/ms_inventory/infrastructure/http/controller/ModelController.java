@@ -38,7 +38,7 @@ import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
 @RequestMapping("/api/v1/models")
-@PreAuthorize(Authz.MANAGER)
+@PreAuthorize(Authz.INVENTORY_OPERATOR)
 public class ModelController {
 
     private final CreateModel createModel;
@@ -117,6 +117,7 @@ public class ModelController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize(Authz.MANAGER)
     public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
         deleteModel.execute(unitId, id);
         return ResponseEntity.noContent().build();
