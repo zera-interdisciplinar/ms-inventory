@@ -58,4 +58,13 @@ class MaterialRepositoryImplTest {
         assertNull(mapper.toDomain(null));
         assertNull(mapper.toNode(null));
     }
+
+    @Test
+    void shouldFindAllByCodesAndSkipTheQueryWhenEmpty() {
+        when(neo4jRepository.findAllByCodeIn(java.util.Set.of(MaterialCode.PLASTIC))).thenReturn(List.of(plastic));
+        MaterialRepositoryImpl repository = new MaterialRepositoryImpl(neo4jRepository, mapper);
+
+        assertEquals(1, repository.findAllByCodes(java.util.Set.of(MaterialCode.PLASTIC)).size());
+        assertTrue(repository.findAllByCodes(java.util.Set.of()).isEmpty());
+    }
 }

@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.usecase.model.FindAllModels;
 
@@ -24,7 +25,7 @@ public class HazmatInventoryTool {
 
     @McpTool(
         name = "hazmat_inventory",
-        description = "Audit inventory for hazardous materials - lists all models containing hazmat and their details",
+        description = "Audit inventory for hazardous materials - lists models made of hazardous catalog materials (batteries, circuit boards, screens) and their details",
         annotations = @McpTool.McpAnnotations(
             readOnlyHint = true,
             title = "Hazmat Inventory"
@@ -41,7 +42,7 @@ public class HazmatInventoryTool {
         List<Model> models = findAllModels.execute(McpToolScope.require(unitId));
 
         return models.stream()
-            .filter(model -> model.getHazardousMaterials() != null && !model.getHazardousMaterials().isEmpty())
+            .filter(Model::isHazardous)
             .skip(actualOffset)
             .limit(actualLimit)
             .map(model -> new HazmatModel(
@@ -49,7 +50,10 @@ public class HazmatInventoryTool {
                 model.getName(),
                 model.getManufacturer(),
                 model.getCategory() != null ? model.getCategory().getName() : null,
-                model.getHazardousMaterials()
+                model.getMaterials().stream()
+                    .filter(Material::isHazardous)
+                    .map(Material::getName)
+                    .collect(Collectors.toSet())
             ))
             .collect(Collectors.toList());
     }
