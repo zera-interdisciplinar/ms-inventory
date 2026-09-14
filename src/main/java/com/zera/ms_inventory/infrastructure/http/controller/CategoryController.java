@@ -29,6 +29,7 @@ import com.zera.ms_inventory.core.usecase.category.UpdateCategoryName;
 import com.zera.ms_inventory.infrastructure.http.request.CreateCategoryRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateCategoryDescriptionRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateCategoryNameRequest;
+import com.zera.ms_inventory.infrastructure.http.response.CategoryResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
@@ -58,33 +59,33 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<Category> create(@RequestHeader("X-Unit-Id") UUID unitId,
+    public ResponseEntity<CategoryResponse> create(@RequestHeader("X-Unit-Id") UUID unitId,
                                             @RequestBody @Valid CreateCategoryRequest request) {
         LocalDateTime now = LocalDateTime.now();
         Category created = createCategory.execute(unitId, request.name(), request.description(), now, now);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(CategoryResponse.from(created));
     }
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Category>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
-        return ResponseEntity.ok(findAllCategories.execute(unitId));
+    public ResponseEntity<List<CategoryResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
+        return ResponseEntity.ok(findAllCategories.execute(unitId).stream().map(CategoryResponse::from).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Category> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
-        return ResponseEntity.ok(findCategoryById.execute(unitId, id));
+    public ResponseEntity<CategoryResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        return ResponseEntity.ok(CategoryResponse.from(findCategoryById.execute(unitId, id)));
     }
 
     @PatchMapping("/{id}/name")
-    public ResponseEntity<Category> rename(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateCategoryNameRequest request) {
-        return ResponseEntity.ok(updateCategoryName.execute(unitId, id, request.name()));
+    public ResponseEntity<CategoryResponse> rename(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateCategoryNameRequest request) {
+        return ResponseEntity.ok(CategoryResponse.from(updateCategoryName.execute(unitId, id, request.name())));
     }
 
     @PatchMapping("/{id}/description")
-    public ResponseEntity<Category> updateDescription(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateCategoryDescriptionRequest request) {
-        return ResponseEntity.ok(updateCategoryDescription.execute(unitId, id, request.description()));
+    public ResponseEntity<CategoryResponse> updateDescription(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateCategoryDescriptionRequest request) {
+        return ResponseEntity.ok(CategoryResponse.from(updateCategoryDescription.execute(unitId, id, request.description())));
     }
 
     @DeleteMapping("/{id}")
