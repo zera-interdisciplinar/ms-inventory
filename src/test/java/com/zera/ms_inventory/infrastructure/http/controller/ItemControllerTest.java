@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -101,6 +102,23 @@ class ItemControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.barcode").value("123456"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve retornar 409 quando o barcode ja existir na unidade")
+    void shouldReturn409WhenBarcodeAlreadyExistsInTheUnit() throws Exception {
+        when(createItem.execute(any(CreateItemCommand.class)))
+                .thenThrow(new DataIntegrityViolationException("Node already exists with label `Item`"));
+
+        CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
+                LocalDateTime.now(), 12, 5, "SN-001", LocalDate.now());
+
+        mockMvc.perform(post("/api/v1/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("A record with the same unique value already exists"));
     }
 
     @Test

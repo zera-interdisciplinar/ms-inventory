@@ -2,6 +2,7 @@ package com.zera.ms_inventory.infrastructure.http.handler;
 
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -55,6 +56,13 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 ex.getName() + " has invalid value: " + ex.getValue());
+    }
+
+    // violacao de constraint do Neo4j (ex.: codigo de barras repetido na unidade); nao expoe detalhes do banco
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "A record with the same unique value already exists");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
