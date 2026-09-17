@@ -34,6 +34,7 @@ import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
+import com.zera.ms_inventory.core.usecase.item.UploadItemPhoto;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemCommand;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
@@ -47,6 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -72,6 +74,7 @@ class ItemControllerTest {
     @MockitoBean private FindItemById findItemById;
     @MockitoBean private FindItemByBarcode findItemByBarcode;
     @MockitoBean private UpdateItem updateItem;
+    @MockitoBean private UploadItemPhoto uploadItemPhoto;
     @MockitoBean private UpdateItemStatus updateItemStatus;
     @MockitoBean private AssignItemUnit assignItemUnit;
     @MockitoBean private DeleteItem deleteItem;
@@ -403,5 +406,33 @@ class ItemControllerTest {
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/photo - deve enviar a foto do item")
+    void shouldUploadThePhoto() throws Exception {
+        UUID id = UUID.randomUUID();
+        byte[] content = {(byte) 0xFF, (byte) 0xD8};
+        when(uploadItemPhoto.execute(UNIT, id, content, "image/jpeg")).thenReturn(sampleItem(id));
+
+        mockMvc.perform(multipart("/api/v1/items/{id}/photo", id)
+                        .file(new org.springframework.mock.web.MockMultipartFile("photo", "placa.jpg", "image/jpeg", content))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/photo - deve retornar 503 sem armazenamento configurado")
+    void shouldReturn503WhenStorageIsNotConfigured() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(uploadItemPhoto.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                any(), org.mockito.ArgumentMatchers.eq("image/png")))
+                .thenThrow(new com.zera.ms_inventory.core.domain.exception.PhotoStorageUnavailableException("not configured"));
+
+        mockMvc.perform(multipart("/api/v1/items/{id}/photo", id)
+                        .file(new org.springframework.mock.web.MockMultipartFile("photo", "p.png", "image/png", new byte[] {1}))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isServiceUnavailable());
     }
 }

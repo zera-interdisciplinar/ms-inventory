@@ -1,10 +1,12 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
@@ -30,6 +34,7 @@ import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
+import com.zera.ms_inventory.core.usecase.item.UploadItemPhoto;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
 import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
@@ -49,6 +54,7 @@ public class ItemController {
     private final FindItemById findItemById;
     private final FindItemByBarcode findItemByBarcode;
     private final UpdateItem updateItem;
+    private final UploadItemPhoto uploadItemPhoto;
     private final UpdateItemStatus updateItemStatus;
     private final AssignItemUnit assignItemUnit;
     private final DeleteItem deleteItem;
@@ -58,6 +64,7 @@ public class ItemController {
                            FindItemById findItemById,
                            FindItemByBarcode findItemByBarcode,
                            UpdateItem updateItem,
+                           UploadItemPhoto uploadItemPhoto,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
                            DeleteItem deleteItem) {
@@ -66,6 +73,7 @@ public class ItemController {
         this.findItemById = findItemById;
         this.findItemByBarcode = findItemByBarcode;
         this.updateItem = updateItem;
+        this.uploadItemPhoto = uploadItemPhoto;
         this.updateItemStatus = updateItemStatus;
         this.assignItemUnit = assignItemUnit;
         this.deleteItem = deleteItem;
@@ -111,6 +119,13 @@ public class ItemController {
     public ResponseEntity<ItemResponse> update(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
                                                @RequestBody @Valid UpdateItemRequest request) {
         return ResponseEntity.ok(ItemResponse.from(updateItem.execute(request.toCommand(unitId, id))));
+    }
+
+    @PostMapping(path = "/{id}/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ItemResponse> uploadPhoto(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                    @RequestPart("photo") MultipartFile photo) throws IOException {
+        return ResponseEntity.ok(ItemResponse.from(
+                uploadItemPhoto.execute(unitId, id, photo.getBytes(), photo.getContentType())));
     }
 
     @PatchMapping("/{id}/status")

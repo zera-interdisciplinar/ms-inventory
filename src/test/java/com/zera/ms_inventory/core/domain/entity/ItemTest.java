@@ -165,4 +165,16 @@ class ItemTest {
         assertEquals("265964", item.getDisplayCode());
         org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> item.assignDisplayCode("481516"));
     }
+
+    @Test
+    void shouldAttachAPhotoKey() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> item.attachPhoto(" "));
+        item.attachPhoto("units/u/items/i/p.jpg");
+
+        assertEquals("units/u/items/i/p.jpg", item.getPhotoKey());
+    }
 }
