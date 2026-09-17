@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.zera.ms_inventory.core.domain.exception.CategoryInUseException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
+import com.zera.ms_inventory.core.domain.exception.ItemIdInUseException;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.ModelInUseException;
@@ -66,7 +67,7 @@ public class GlobalExceptionHandler {
                 ex.getName() + " has invalid value: " + ex.getValue());
     }
 
-    @ExceptionHandler({CategoryInUseException.class, ModelInUseException.class})
+    @ExceptionHandler({CategoryInUseException.class, ModelInUseException.class, ItemIdInUseException.class})
     public ProblemDetail handleInUse(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }

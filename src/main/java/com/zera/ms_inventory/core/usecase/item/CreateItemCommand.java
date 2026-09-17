@@ -10,12 +10,19 @@ import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
+import com.zera.ms_inventory.core.usecase.model.CreateModelCommand;
 
+/**
+ * Cadastro de item. {@code id} opcional vem do app (reenvio offline e idempotente). O modelo e um
+ * existente ({@code modelId}) ou um novo criado junto ({@code newModel}), nunca os dois.
+ */
 public record CreateItemCommand(
+        UUID id,
         Barcode barcode,
         ItemStatus status,
         UUID unitId,
         UUID modelId,
+        CreateModelCommand newModel,
         Integer manufacturingYear,
         UsageIntensity usageIntensity,
         String serialNumber,
