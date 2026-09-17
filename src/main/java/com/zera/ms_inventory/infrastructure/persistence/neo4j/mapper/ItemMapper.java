@@ -28,6 +28,7 @@ public class ItemMapper {
         item.restoreRegistration(node.getName(), node.getCondition(), node.getHasDamages(), node.getDamages(),
                 node.getNotes(), node.getCreatedBy(), node.getCreatedByName());
         item.restorePredictionUpdatedAt(node.getPredictionUpdatedAt());
+        item.restoreDisplayCode(node.getDisplayCode());
         return item;
     }
     
@@ -46,6 +47,7 @@ public class ItemMapper {
         node.setCreatedBy(item.getCreatedBy());
         node.setCreatedByName(item.getCreatedByName());
         node.setPredictionUpdatedAt(item.getPredictionUpdatedAt());
+        node.setDisplayCode(item.getDisplayCode());
         return node;
     }
 }

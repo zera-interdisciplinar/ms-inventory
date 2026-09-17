@@ -166,4 +166,16 @@ class ItemRepositoryImplTest {
 
         assertTrue(repository.existsByModel(Fixtures.UNIT, modelId));
     }
+
+    @Test
+    void shouldFindByBarcodeAndCheckDisplayCodesWithinTheUnit() {
+        Item item = Fixtures.item(Fixtures.UNIT);
+        item.assignDisplayCode("265964");
+        when(neo4jRepository.findByUnitIdAndBarcode(Fixtures.UNIT, "7891234567890"))
+                .thenReturn(Optional.of(mapper.toNode(item)));
+        when(neo4jRepository.existsByUnitIdAndDisplayCode(Fixtures.UNIT, "265964")).thenReturn(true);
+
+        assertEquals("265964", repository.findByBarcode(Fixtures.UNIT, "7891234567890").orElseThrow().getDisplayCode());
+        assertTrue(repository.existsByDisplayCode(Fixtures.UNIT, "265964"));
+    }
 }
