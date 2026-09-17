@@ -145,4 +145,17 @@ class ItemRepositoryImplTest {
         assertEquals(11, result.totalElements());
         assertEquals(2, result.totalPages());
     }
+
+    @Test
+    void shouldPageTheItemsOfAModelWithinTheUnit() {
+        UUID modelId = UUID.randomUUID();
+        PageRequest request = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+        when(neo4jRepository.findAllByUnitIdAndModelId(Fixtures.UNIT, modelId, request))
+                .thenReturn(new PageImpl<>(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))), request, 6));
+
+        PageResult<Item> result = repository.findPageByModel(Fixtures.UNIT, modelId, new Pagination(0, 5));
+
+        assertEquals(1, result.content().size());
+        assertEquals(2, result.totalPages());
+    }
 }
