@@ -30,6 +30,8 @@ import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
+import com.zera.ms_inventory.core.usecase.item.UpdateItem;
+import com.zera.ms_inventory.core.usecase.item.UpdateItemCommand;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemAcquiredAt;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemManufacturingDate;
@@ -75,6 +77,7 @@ class ItemControllerTest {
     @MockitoBean private CreateItem createItem;
     @MockitoBean private ListItems listItems;
     @MockitoBean private FindItemById findItemById;
+    @MockitoBean private UpdateItem updateItem;
     @MockitoBean private UpdateItemStatus updateItemStatus;
     @MockitoBean private AssignItemUnit assignItemUnit;
     @MockitoBean private UpdateItemSerialNumber updateItemSerialNumber;
@@ -341,5 +344,33 @@ class ItemControllerTest {
                 .andExpect(jsonPath("$.condition").value("SEMI_DAMAGED"))
                 .andExpect(jsonPath("$.damages[0]").value("OXIDATION"))
                 .andExpect(jsonPath("$.createdByName").value("Gustavo Macal"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/items/{id} - deve editar so os campos enviados")
+    void shouldPartiallyUpdateTheItem() throws Exception {
+        UUID id = UUID.randomUUID();
+        Item item = sampleItem(id);
+        item.describe("Placa de vídeo", ItemCondition.DAMAGED, true, Set.of(DamageType.DOES_NOT_POWER_ON), null);
+        when(updateItem.execute(new UpdateItemCommand(UNIT, id, null, ItemCondition.DAMAGED, true,
+                Set.of(DamageType.DOES_NOT_POWER_ON), null, null, null, null, null))).thenReturn(item);
+
+        mockMvc.perform(patch("/api/v1/items/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"condition\":\"DAMAGED\",\"hasDamages\":true,\"damages\":[\"DOES_NOT_POWER_ON\"]}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.condition").value("DAMAGED"))
+                .andExpect(jsonPath("$.damages[0]").value("DOES_NOT_POWER_ON"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/items/{id} - deve retornar 400 para nome vazio")
+    void shouldReturn400ForAnEmptyName() throws Exception {
+        mockMvc.perform(patch("/api/v1/items/{id}", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"\"}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
     }
 }
