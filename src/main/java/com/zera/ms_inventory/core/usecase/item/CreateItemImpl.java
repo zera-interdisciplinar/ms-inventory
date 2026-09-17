@@ -27,7 +27,7 @@ public class CreateItemImpl implements CreateItem {
                 .orElseThrow(() -> new ModelNotFoundException(command.modelId()));
 
         Item item = new Item(UUID.randomUUID(), command.barcode(), command.status(), command.unitId(), model,
-                command.nextPredictionDate(), command.manufacturingDate(), command.usageIntensity(),
+                null, command.manufacturingYear(), command.usageIntensity(),
                 command.serialNumber(), command.acquiredAt());
         item.describe(command.name(), command.condition(), command.hasDamages(), command.damages(), command.notes());
         item.registerBy(command.actor());

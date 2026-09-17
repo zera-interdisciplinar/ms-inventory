@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.infrastructure.http.request;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
@@ -14,15 +13,15 @@ import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
 
 public record CreateItemRequest(
         @NotBlank String barcode,
         @NotNull ItemStatus status,
         @NotNull UUID modelId,
-        LocalDateTime nextPredictionDate,
-        Integer manufacturingDate,
-        Integer usageIntensity,
+        Integer manufacturingYear,
+        UsageIntensity usageIntensity,
         String serialNumber,
         LocalDate acquiredAt,
         @Size(max = 120) String name,
@@ -33,8 +32,8 @@ public record CreateItemRequest(
 ) {
     /** unitId vem do header X-Unit-Id e o autor do token, nunca do corpo. */
     public CreateItemCommand toCommand(UUID unitId, Actor actor) {
-        return new CreateItemCommand(new Barcode(barcode), status, unitId, modelId, nextPredictionDate,
-                manufacturingDate, usageIntensity, serialNumber, acquiredAt, name, condition, hasDamages, damages,
+        return new CreateItemCommand(new Barcode(barcode), status, unitId, modelId, manufacturingYear,
+                usageIntensity, serialNumber, acquiredAt, name, condition, hasDamages, damages,
                 notes, actor);
     }
 }

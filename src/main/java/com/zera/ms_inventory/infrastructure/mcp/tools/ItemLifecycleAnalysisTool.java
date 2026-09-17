@@ -23,7 +23,7 @@ public class ItemLifecycleAnalysisTool {
 
     @McpTool(
         name = "item_lifecycle_analysis",
-        description = "Analyze the lifecycle of a specific item including age, usage intensity, and maintenance timeline",
+        description = "Analyze the lifecycle of a specific item including age, usage intensity (LOW/MEDIUM/HIGH), manufacturing year and predicted failure date",
         annotations = @McpTool.McpAnnotations(
             readOnlyHint = true,
             title = "Item Lifecycle Analysis"
@@ -47,8 +47,9 @@ public class ItemLifecycleAnalysisTool {
             item.getStatus().name(),
             item.getAcquiredAt(),
             ageInDays,
-            item.getUsageIntensity() != null ? item.getUsageIntensity() : 0,
-            item.getManufacturingDate(),
+            item.getUsageIntensity() != null ? item.getUsageIntensity().name() : null,
+            item.getManufacturingYear(),
+            item.getPredictedFailureDate(),
             item.getUnitId()
         );
     }
@@ -59,19 +60,22 @@ public class ItemLifecycleAnalysisTool {
         public final String currentStatus;
         public final LocalDate acquiredAt;
         public final long ageInDays;
-        public final Integer usageIntensity;
-        public final Integer manufacturingDate;
+        public final String usageIntensity;
+        public final Integer manufacturingYear;
+        public final LocalDate predictedFailureDate;
         public final UUID unitId;
 
         public ItemLifecycleReport(UUID itemId, String serialNumber, String currentStatus, LocalDate acquiredAt,
-                                  long ageInDays, Integer usageIntensity, Integer manufacturingDate, UUID unitId) {
+                                  long ageInDays, String usageIntensity, Integer manufacturingYear,
+                                  LocalDate predictedFailureDate, UUID unitId) {
             this.itemId = itemId;
             this.serialNumber = serialNumber;
             this.currentStatus = currentStatus;
             this.acquiredAt = acquiredAt;
             this.ageInDays = ageInDays;
             this.usageIntensity = usageIntensity;
-            this.manufacturingDate = manufacturingDate;
+            this.manufacturingYear = manufacturingYear;
+            this.predictedFailureDate = predictedFailureDate;
             this.unitId = unitId;
         }
     }
