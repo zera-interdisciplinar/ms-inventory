@@ -21,7 +21,7 @@ class ResponseMappingTest {
     void shouldMapItemWithNestedModelAndCategory() {
         Item item = Fixtures.item(Fixtures.UNIT);
 
-        ItemResponse response = ItemResponse.from(item);
+        ItemResponse response = ItemResponse.from(item, null);
 
         assertEquals(item.getId(), response.id());
         assertEquals("7891234567890", response.barcode());
@@ -47,7 +47,7 @@ class ResponseMappingTest {
     void shouldReturnNullForMissingDomainObjects() {
         assertNull(CategoryResponse.from(null));
         assertNull(ModelResponse.from(null));
-        assertNull(ItemResponse.from(null));
+        assertNull(ItemResponse.from(null, null));
         assertNull(RuleResponse.from(null));
     }
 }
