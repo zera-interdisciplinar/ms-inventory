@@ -10,7 +10,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.zera.ms_inventory.Fixtures;
+import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.usecase.model.FindAllModels;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,16 +26,21 @@ class HazmatInventoryToolTest {
     @Mock
     private FindAllModels findAllModels;
 
-    private Model model(String name, Set<String> hazmat) {
-        return new Model(UUID.randomUUID(), Fixtures.UNIT, name, "Acme", 24, 60, hazmat,
-                Fixtures.category(Fixtures.UNIT));
+    private static final Material BATTERY = new Material(UUID.randomUUID(), MaterialCode.BATTERY,
+            "Pilhas e baterias", true, true, "guia");
+    private static final Material PLASTIC = new Material(UUID.randomUUID(), MaterialCode.PLASTIC,
+            "Plástico", true, false, "guia");
+
+    private Model model(String name, Material... materials) {
+        return new Model(UUID.randomUUID(), Fixtures.UNIT, name, "Acme", 24, 60, Set.of(materials),
+                null, null, Fixtures.category(Fixtures.UNIT));
     }
 
     @Test
     void shouldListOnlyModelsWithHazardousMaterials() {
         when(findAllModels.execute(Fixtures.UNIT)).thenReturn(List.of(
-                model("Laptop", Set.of("Lithium")),
-                model("Cadeira", Set.of())));
+                model("Laptop", BATTERY, PLASTIC),
+                model("Cadeira", PLASTIC)));
 
         List<HazmatInventoryTool.HazmatModel> result =
                 new HazmatInventoryTool(findAllModels).getHazmatInventory(Fixtures.UNIT, null, null);
@@ -41,14 +48,15 @@ class HazmatInventoryToolTest {
         assertEquals(1, result.size());
         assertEquals("Laptop", result.get(0).modelName);
         assertEquals("Electronics", result.get(0).categoryName);
+        assertEquals(Set.of("Pilhas e baterias"), result.get(0).hazardousMaterials);
     }
 
     @Test
     void shouldApplyLimitAndOffset() {
         when(findAllModels.execute(Fixtures.UNIT)).thenReturn(List.of(
-                model("A", Set.of("Lithium")),
-                model("B", Set.of("Mercury")),
-                model("C", Set.of("Cobalt"))));
+                model("A", BATTERY),
+                model("B", BATTERY),
+                model("C", BATTERY)));
 
         List<HazmatInventoryTool.HazmatModel> result =
                 new HazmatInventoryTool(findAllModels).getHazmatInventory(Fixtures.UNIT, 1, 1);

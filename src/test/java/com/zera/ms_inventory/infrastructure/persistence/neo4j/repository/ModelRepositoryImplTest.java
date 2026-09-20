@@ -18,7 +18,11 @@ import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
+import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
+import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
+import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
+import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.MaterialNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ModelNode;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.mapper.CategoryMapper;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.mapper.ModelMapper;
@@ -46,6 +50,9 @@ class ModelRepositoryImplTest {
     private CategoryNeo4jRepository categoryNeo4jRepository;
 
     @Mock
+    private MaterialNeo4jRepository materialNeo4jRepository;
+
+    @Mock
     private EmbeddingModel embeddingModel;
 
     private final CategoryMapper categoryMapper = new CategoryMapper();
@@ -55,7 +62,8 @@ class ModelRepositoryImplTest {
 
     @BeforeEach
     void setUp() {
-        repository = new ModelRepositoryImpl(neo4jRepository, categoryNeo4jRepository, mapper, embeddingModel);
+        repository = new ModelRepositoryImpl(neo4jRepository, categoryNeo4jRepository, materialNeo4jRepository, mapper,
+                embeddingModel);
     }
 
     @Test
@@ -106,7 +114,7 @@ class ModelRepositoryImplTest {
 
     @Test
     void shouldSaveModelWithoutCategory() {
-        Model model = new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, java.util.Set.of(), null);
+        Model model = new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, java.util.Set.of(), null, null, null);
         when(neo4jRepository.findByIdAndUnitId(model.getId(), Fixtures.UNIT)).thenReturn(Optional.empty());
         when(embeddingModel.embed(model.toEmbeddableText())).thenReturn(VECTOR);
         when(neo4jRepository.save(any(ModelNode.class))).thenAnswer(i -> i.getArgument(0));
@@ -172,5 +180,70 @@ class ModelRepositoryImplTest {
         assertEquals(1, result.content().size());
         assertEquals(11, result.totalElements());
         assertEquals(2, result.totalPages());
+    }
+
+    private Model modelMadeOf(MaterialCode... codes) {
+        java.util.Set<Material> materials = new java.util.HashSet<>();
+        for (MaterialCode code : codes) {
+            materials.add(new Material(UUID.randomUUID(), code, code.name(), true, code == MaterialCode.BATTERY, "guia"));
+        }
+        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", 24, 60, materials,
+                2.5, "Com carregador", null);
+    }
+
+    @Test
+    void shouldAttachTheStoredCatalogMaterialsOnSave() {
+        Model model = modelMadeOf(MaterialCode.BATTERY, MaterialCode.PLASTIC);
+        MaterialNode battery = new MaterialNode(UUID.randomUUID(), MaterialCode.BATTERY, "Pilhas e baterias", true, true, "g");
+        MaterialNode plastic = new MaterialNode(UUID.randomUUID(), MaterialCode.PLASTIC, "Plástico", true, false, "g");
+        when(materialNeo4jRepository.findAllByCodeIn(java.util.Set.of(MaterialCode.BATTERY, MaterialCode.PLASTIC)))
+                .thenReturn(List.of(battery, plastic));
+        when(neo4jRepository.findByIdAndUnitId(model.getId(), Fixtures.UNIT)).thenReturn(Optional.empty());
+        when(embeddingModel.embed(anyString())).thenReturn(VECTOR);
+        when(neo4jRepository.save(any(ModelNode.class))).thenAnswer(i -> i.getArgument(0));
+
+        Model result = repository.save(model);
+
+        assertEquals(2, result.getMaterials().size());
+        assertTrue(result.isHazardous());
+        assertEquals(2.5, result.getEstimatedWeightKg());
+        assertEquals("Com carregador", result.getNotes());
+    }
+
+    @Test
+    void shouldRejectMaterialsMissingFromTheCatalog() {
+        Model model = modelMadeOf(MaterialCode.GLASS);
+        when(materialNeo4jRepository.findAllByCodeIn(java.util.Set.of(MaterialCode.GLASS))).thenReturn(List.of());
+
+        assertThrows(MaterialNotFoundException.class, () -> repository.save(model));
+        verify(neo4jRepository, never()).save(any(ModelNode.class));
+    }
+
+    @Test
+    void shouldDropMaterialsNoLongerInTheModelWhenUpdating() {
+        Model model = modelMadeOf(MaterialCode.PLASTIC);
+        MaterialNode plastic = new MaterialNode(UUID.randomUUID(), MaterialCode.PLASTIC, "Plástico", true, false, "g");
+        when(materialNeo4jRepository.findAllByCodeIn(java.util.Set.of(MaterialCode.PLASTIC))).thenReturn(List.of(plastic));
+        when(neo4jRepository.findByIdAndUnitId(model.getId(), Fixtures.UNIT)).thenReturn(Optional.of(mapper.toNode(model)));
+        when(embeddingModel.embed(anyString())).thenReturn(VECTOR);
+        when(neo4jRepository.save(any(ModelNode.class))).thenAnswer(i -> i.getArgument(0));
+
+        repository.save(model);
+
+        verify(neo4jRepository).removeMaterialsNotIn(model.getId(), Fixtures.UNIT, List.of("PLASTIC"));
+    }
+
+    @Test
+    void shouldNotTouchRelationshipsOnFirstSave() {
+        Model model = modelMadeOf(MaterialCode.PLASTIC);
+        MaterialNode plastic = new MaterialNode(UUID.randomUUID(), MaterialCode.PLASTIC, "Plástico", true, false, "g");
+        when(materialNeo4jRepository.findAllByCodeIn(java.util.Set.of(MaterialCode.PLASTIC))).thenReturn(List.of(plastic));
+        when(neo4jRepository.findByIdAndUnitId(model.getId(), Fixtures.UNIT)).thenReturn(Optional.empty());
+        when(embeddingModel.embed(anyString())).thenReturn(VECTOR);
+        when(neo4jRepository.save(any(ModelNode.class))).thenAnswer(i -> i.getArgument(0));
+
+        repository.save(model);
+
+        verify(neo4jRepository, never()).removeMaterialsNotIn(any(), any(), any());
     }
 }

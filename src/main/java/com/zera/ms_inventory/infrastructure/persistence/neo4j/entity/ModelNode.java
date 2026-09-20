@@ -1,6 +1,7 @@
 package com.zera.ms_inventory.infrastructure.persistence.neo4j.entity;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -8,6 +9,8 @@ import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
 import org.springframework.data.neo4j.core.schema.Relationship;
+
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 
 @Node("Model")
 public class ModelNode {
@@ -25,7 +28,23 @@ public class ModelNode {
 
     private Integer expectedLifespanMonths;
 
-    private Set<String> hazardousMaterials;
+    /** Anexado pelo ModelRepositoryImpl com os MaterialNode ja persistidos do catalogo. */
+    @Relationship(type = "MADE_OF", direction = Relationship.Direction.OUTGOING)
+    private Set<MaterialNode> materials = new HashSet<>();
+
+    private Double estimatedWeightKg;
+
+    private String notes;
+
+    private ApprovalStatus approvalStatus;
+
+    private String rejectionReason;
+
+    private UUID createdBy;
+
+    private UUID reviewedBy;
+
+    private LocalDateTime reviewedAt;
 
     @Relationship(type = "BELONGS_TO", direction = Relationship.Direction.OUTGOING)
     private CategoryNode category;
@@ -46,7 +65,7 @@ public class ModelNode {
     }
 
     public ModelNode(UUID id, UUID unitId, String name, String manufacturer, Integer warrantyMonths,
-                      Integer expectedLifespanMonths, Set<String> hazardousMaterials,
+                      Integer expectedLifespanMonths,
                       LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.unitId = unitId;
@@ -54,7 +73,6 @@ public class ModelNode {
         this.manufacturer = manufacturer;
         this.warrantyMonths = warrantyMonths;
         this.expectedLifespanMonths = expectedLifespanMonths;
-        this.hazardousMaterials = hazardousMaterials;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -83,8 +101,68 @@ public class ModelNode {
         return expectedLifespanMonths;
     }
 
-    public Set<String> getHazardousMaterials() {
-        return hazardousMaterials;
+    public Set<MaterialNode> getMaterials() {
+        return materials;
+    }
+
+    public void setMaterials(Set<MaterialNode> materials) {
+        this.materials = materials;
+    }
+
+    public Double getEstimatedWeightKg() {
+        return estimatedWeightKg;
+    }
+
+    public void setEstimatedWeightKg(Double estimatedWeightKg) {
+        this.estimatedWeightKg = estimatedWeightKg;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public ApprovalStatus getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(ApprovalStatus approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public UUID getReviewedBy() {
+        return reviewedBy;
+    }
+
+    public void setReviewedBy(UUID reviewedBy) {
+        this.reviewedBy = reviewedBy;
+    }
+
+    public LocalDateTime getReviewedAt() {
+        return reviewedAt;
+    }
+
+    public void setReviewedAt(LocalDateTime reviewedAt) {
+        this.reviewedAt = reviewedAt;
     }
 
     public CategoryNode getCategory() {

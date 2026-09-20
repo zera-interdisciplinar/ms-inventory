@@ -31,7 +31,7 @@ class WarrantyExpirationReportToolTest {
     private FindAllItems findAllItems;
 
     private Model modelWithWarranty(Integer months) {
-        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", months, 60, Set.of(),
+        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", months, 60, Set.of(), null, null,
                 Fixtures.category(Fixtures.UNIT));
     }
 

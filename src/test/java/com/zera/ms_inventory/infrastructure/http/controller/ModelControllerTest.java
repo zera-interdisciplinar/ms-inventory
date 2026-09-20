@@ -9,32 +9,37 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
+import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
+import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
+import com.zera.ms_inventory.core.usecase.model.CreateModelCommand;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
 import com.zera.ms_inventory.core.usecase.model.FindModelById;
 import com.zera.ms_inventory.core.usecase.model.ListModels;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelExpectedLifespanMonths;
-import com.zera.ms_inventory.core.usecase.model.UpdateModelHazardousMaterials;
+import com.zera.ms_inventory.core.usecase.model.UpdateModelMaterials;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelManufacturer;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelName;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelWarrantyMonths;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
 import com.zera.ms_inventory.infrastructure.http.request.CreateModelRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelExpectedLifespanMonthsRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateModelHazardousMaterialsRequest;
+import com.zera.ms_inventory.infrastructure.http.request.UpdateModelMaterialsRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturerRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -49,6 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ModelControllerTest {
 
 
+    private static final UUID OPERATOR_ID = UUID.fromString("00000000-0000-0000-0000-0000000000e1");
     private static final UUID UNIT = com.zera.ms_inventory.Fixtures.UNIT;
     private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-0000000000c3");
 
@@ -65,23 +71,27 @@ class ModelControllerTest {
     @MockitoBean private UpdateModelManufacturer updateModelManufacturer;
     @MockitoBean private UpdateModelWarrantyMonths updateModelWarrantyMonths;
     @MockitoBean private UpdateModelExpectedLifespanMonths updateModelExpectedLifespanMonths;
-    @MockitoBean private UpdateModelHazardousMaterials updateModelHazardousMaterials;
+    @MockitoBean private UpdateModelMaterials updateModelMaterials;
     @MockitoBean private DeleteModel deleteModel;
 
     @Test
     @DisplayName("POST /api/v1/models - deve criar model e retornar 201")
     void shouldCreateModel() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
-        when(createModel.execute(eq(UNIT), eq("Laptop X1"), eq("Acme"), eq(24), eq(60), eq(Set.of("Lithium")), eq(CATEGORY_ID)))
-                .thenReturn(model);
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(createModel.execute(new CreateModelCommand(UNIT, "Laptop X1", "Acme", 24, 60, Set.of(MaterialCode.BATTERY),
+                2.3, "Com carregador", CATEGORY_ID, new Actor(OPERATOR_ID, ActorRole.EMPLOYEE)))).thenReturn(model);
+        model.registerBy(new Actor(OPERATOR_ID, ActorRole.EMPLOYEE));
 
         mockMvc.perform(post("/api/v1/models")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateModelRequest("Laptop X1", "Acme", 24, 60, Set.of("Lithium"), CATEGORY_ID)))
+                                new CreateModelRequest("Laptop X1", "Acme", 24, 60, Set.of(MaterialCode.BATTERY), 2.3, "Com carregador", CATEGORY_ID)))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.approvalStatus").value("PENDING"))
+                .andExpect(jsonPath("$.createdBy").value(OPERATOR_ID.toString()))
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Laptop X1"));
     }
@@ -92,7 +102,7 @@ class ModelControllerTest {
         mockMvc.perform(post("/api/v1/models")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateModelRequest("", "Acme", 24, 60, Set.of("Lithium"), CATEGORY_ID)))
+                                new CreateModelRequest("", "Acme", 24, 60, Set.of(MaterialCode.BATTERY), null, null, CATEGORY_ID)))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
     }
@@ -103,7 +113,7 @@ class ModelControllerTest {
         mockMvc.perform(post("/api/v1/models")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateModelRequest("Laptop X1", "Acme", 0, 60, Set.of("Lithium"), CATEGORY_ID)))
+                                new CreateModelRequest("Laptop X1", "Acme", 0, 60, Set.of(MaterialCode.BATTERY), null, null, CATEGORY_ID)))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
     }
@@ -111,7 +121,7 @@ class ModelControllerTest {
     @Test
     @DisplayName("GET /api/v1/models - deve listar todos os models")
     void shouldFindAllModels() throws Exception {
-        Model model = new Model(UUID.randomUUID(), UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(UUID.randomUUID(), UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(listModels.execute(UNIT, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(model), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/models")
@@ -126,7 +136,7 @@ class ModelControllerTest {
     @DisplayName("GET /api/v1/models/{id} - deve retornar o model")
     void shouldFindModelById() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(findModelById.execute(UNIT, id)).thenReturn(model);
 
         mockMvc.perform(get("/api/v1/models/{id}", id)
@@ -150,7 +160,7 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/name - deve renomear o model")
     void shouldRenameModel() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X2", "Acme", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X2", "Acme", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelName.execute(UNIT, id, "Laptop X2")).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/name", id)
@@ -165,7 +175,7 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/manufacturer - deve atualizar o fabricante")
     void shouldUpdateManufacturer() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Globex", 24, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Globex", 24, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelManufacturer.execute(UNIT, id, "Globex")).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/manufacturer", id)
@@ -180,7 +190,7 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/warranty-months - deve atualizar a garantia")
     void shouldUpdateWarrantyMonths() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 36, 60, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 36, 60, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelWarrantyMonths.execute(UNIT, id, 36)).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/warranty-months", id)
@@ -195,7 +205,7 @@ class ModelControllerTest {
     @DisplayName("PATCH /api/v1/models/{id}/expected-lifespan-months - deve atualizar a vida útil esperada")
     void shouldUpdateExpectedLifespanMonths() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 72, Set.of("Lithium"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 72, Set.of(), null, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
         when(updateModelExpectedLifespanMonths.execute(UNIT, id, 72)).thenReturn(model);
 
         mockMvc.perform(patch("/api/v1/models/{id}/expected-lifespan-months", id)
@@ -207,18 +217,48 @@ class ModelControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/models/{id}/hazardous-materials - deve atualizar os materiais perigosos")
-    void shouldUpdateHazardousMaterials() throws Exception {
+    @DisplayName("PATCH /api/v1/models/{id}/materials - deve trocar os materiais do catalogo")
+    void shouldUpdateMaterials() throws Exception {
         UUID id = UUID.randomUUID();
-        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of("Mercury"), com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
-        when(updateModelHazardousMaterials.execute(UNIT, id, Set.of("Mercury"))).thenReturn(model);
+        Material battery = new Material(UUID.randomUUID(), MaterialCode.BATTERY, "Pilhas e baterias", true, true, "guia");
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 24, 60, Set.of(battery), null, null,
+                com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(updateModelMaterials.execute(UNIT, id, Set.of(MaterialCode.BATTERY))).thenReturn(model);
 
-        mockMvc.perform(patch("/api/v1/models/{id}/hazardous-materials", id)
+        mockMvc.perform(patch("/api/v1/models/{id}/materials", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateModelHazardousMaterialsRequest(Set.of("Mercury"))))
+                        .content(objectMapper.writeValueAsString(new UpdateModelMaterialsRequest(Set.of(MaterialCode.BATTERY))))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.hazardousMaterials[0]").value("Mercury"));
+                .andExpect(jsonPath("$.materials[0].code").value("BATTERY"))
+                .andExpect(jsonPath("$.hazardous").value(true));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/models/{id}/materials - deve retornar 400 sem materiais")
+    void shouldReturn400WhenMaterialsAreEmpty() throws Exception {
+        mockMvc.perform(patch("/api/v1/models/{id}/materials", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"materials\":[]}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/models - deve retornar 400 sem materiais e com peso nao positivo")
+    void shouldReturn400WithoutMaterialsOrWithNonPositiveWeight() throws Exception {
+        mockMvc.perform(post("/api/v1/models")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new CreateModelRequest("Laptop X1", "Acme", null, null, Set.of(), null, null, CATEGORY_ID)))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/v1/models")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new CreateModelRequest("Laptop X1", "Acme", null, null, Set.of(MaterialCode.METAL), 0.0, null, CATEGORY_ID)))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
