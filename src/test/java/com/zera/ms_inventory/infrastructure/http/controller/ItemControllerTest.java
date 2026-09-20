@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.PageResult;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
@@ -22,8 +24,8 @@ import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
-import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
+import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemAcquiredAt;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemManufacturingDate;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemNextPredictionDate;
@@ -65,7 +67,7 @@ class ItemControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean private CreateItem createItem;
-    @MockitoBean private FindAllItems findAllItems;
+    @MockitoBean private ListItems listItems;
     @MockitoBean private FindItemById findItemById;
     @MockitoBean private UpdateItemStatus updateItemStatus;
     @MockitoBean private AssignItemUnit assignItemUnit;
@@ -118,12 +120,14 @@ class ItemControllerTest {
     @DisplayName("GET /api/v1/items - deve listar todos os itens")
     void shouldFindAllItems() throws Exception {
         Item item = sampleItem(UUID.randomUUID());
-        when(findAllItems.execute(UNIT)).thenReturn(List.of(item));
+        when(listItems.execute(UNIT, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(item), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/items")
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].barcode").value("123456"));
+                .andExpect(jsonPath("$.content[0].barcode").value("123456"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     @Test
@@ -261,5 +265,28 @@ class ItemControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(deleteItem).execute(UNIT, id);
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items - deve repassar a pagina e o tamanho pedidos")
+    void shouldForwardRequestedPage() throws Exception {
+        when(listItems.execute(UNIT, new Pagination(2, 50))).thenReturn(new PageResult<>(List.of(), 2, 50, 101));
+
+        mockMvc.perform(get("/api/v1/items")
+                        .param("page", "2")
+                        .param("size", "50")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items - deve retornar 400 quando o tamanho passar do maximo")
+    void shouldRejectPageSizeAboveTheMaximum() throws Exception {
+        mockMvc.perform(get("/api/v1/items")
+                        .param("size", "500")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
     }
 }
