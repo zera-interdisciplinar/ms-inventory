@@ -22,6 +22,7 @@ import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.MaterialNode;
@@ -120,12 +121,20 @@ public class ModelRepositoryImpl implements ModelRepository {
     }
 
     @Override
-    public PageResult<Model> findPage(UUID unitId, Pagination pagination) {
+    public PageResult<Model> findPage(UUID unitId, ApprovalStatus approvalStatus, Pagination pagination) {
         // mais recentes primeiro, como a lista do app
-        Page<ModelNode> page = neo4jRepository.findAllByUnitId(unitId,
-                PageRequest.of(pagination.page(), pagination.size(), Sort.by(Sort.Direction.DESC, "createdAt")));
+        PageRequest request = PageRequest.of(pagination.page(), pagination.size(),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ModelNode> page = approvalStatus == null
+                ? neo4jRepository.findAllByUnitId(unitId, request)
+                : neo4jRepository.findAllByUnitIdAndApprovalStatus(unitId, approvalStatus, request);
         return new PageResult<>(page.getContent().stream().map(mapper::toDomain).toList(),
                 pagination.page(), pagination.size(), page.getTotalElements());
+    }
+
+    @Override
+    public boolean existsByCategory(UUID unitId, UUID categoryId) {
+        return neo4jRepository.existsByUnitIdAndCategoryId(unitId, categoryId);
     }
 
     @Override

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ModelNode;
 
 interface ModelNeo4jRepository extends Neo4jRepository<ModelNode, UUID> {
@@ -19,6 +20,10 @@ interface ModelNeo4jRepository extends Neo4jRepository<ModelNode, UUID> {
     List<ModelNode> findAllByUnitId(UUID unitId);
 
     Page<ModelNode> findAllByUnitId(UUID unitId, Pageable pageable);
+
+    Page<ModelNode> findAllByUnitIdAndApprovalStatus(UUID unitId, ApprovalStatus approvalStatus, Pageable pageable);
+
+    boolean existsByUnitIdAndCategoryId(UUID unitId, UUID categoryId);
 
     Optional<ModelNode> findByIdAndUnitId(UUID id, UUID unitId);
 

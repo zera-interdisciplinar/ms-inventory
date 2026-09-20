@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 
@@ -13,7 +14,9 @@ public interface ModelRepository {
     Model save(Model model);
     Optional<Model> findById(UUID unitId, UUID id);
     List<Model> findAll(UUID unitId);
-    PageResult<Model> findPage(UUID unitId, Pagination pagination);
+    /** approvalStatus nulo lista todos os status. */
+    PageResult<Model> findPage(UUID unitId, ApprovalStatus approvalStatus, Pagination pagination);
+    boolean existsByCategory(UUID unitId, UUID categoryId);
     List<Model> semanticSearch(UUID unitId, String query, int limit);
     void deleteById(UUID unitId, UUID id);
 }

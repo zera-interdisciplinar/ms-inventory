@@ -57,9 +57,26 @@ public class ItemRepositoryImpl implements ItemRepository {
 
     @Override
     public PageResult<Item> findPage(UUID unitId, Pagination pagination) {
-        // mais recentes primeiro, como a lista do app
-        Page<ItemNode> page = neo4jRepository.findAllByUnitId(unitId,
-                PageRequest.of(pagination.page(), pagination.size(), Sort.by(Sort.Direction.DESC, "createdAt")));
+        return toPageResult(neo4jRepository.findAllByUnitId(unitId, newestFirst(pagination)), pagination);
+    }
+
+    @Override
+    public PageResult<Item> findPageByModel(UUID unitId, UUID modelId, Pagination pagination) {
+        return toPageResult(neo4jRepository.findAllByUnitIdAndModelId(unitId, modelId, newestFirst(pagination)),
+                pagination);
+    }
+
+    @Override
+    public boolean existsByModel(UUID unitId, UUID modelId) {
+        return neo4jRepository.existsByUnitIdAndModelId(unitId, modelId);
+    }
+
+    // mais recentes primeiro, como a lista do app
+    private static PageRequest newestFirst(Pagination pagination) {
+        return PageRequest.of(pagination.page(), pagination.size(), Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    private PageResult<Item> toPageResult(Page<ItemNode> page, Pagination pagination) {
         return new PageResult<>(page.getContent().stream().map(mapper::toDomain).toList(),
                 pagination.page(), pagination.size(), page.getTotalElements());
     }

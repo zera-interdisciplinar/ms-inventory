@@ -19,6 +19,10 @@ interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
 
     Page<ItemNode> findAllByUnitId(UUID unitId, Pageable pageable);
 
+    Page<ItemNode> findAllByUnitIdAndModelId(UUID unitId, UUID modelId, Pageable pageable);
+
+    boolean existsByUnitIdAndModelId(UUID unitId, UUID modelId);
+
     Optional<ItemNode> findByIdAndUnitId(UUID id, UUID unitId);
 
     @Transactional
