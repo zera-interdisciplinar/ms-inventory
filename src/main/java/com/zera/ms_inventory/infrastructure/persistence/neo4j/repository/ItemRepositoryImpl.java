@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
+import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
@@ -20,6 +21,12 @@ import com.zera.ms_inventory.infrastructure.persistence.neo4j.mapper.ItemMapper;
 
 @Repository
 public class ItemRepositoryImpl implements ItemRepository {
+
+    /** Elegivel para descarte e o que a maquina de estados deixa ir para DISPOSED. */
+    private static final List<String> DISPOSABLE_STATUSES = java.util.Arrays.stream(ItemStatus.values())
+            .filter(status -> status.canTransitionTo(ItemStatus.DISPOSED))
+            .map(ItemStatus::name)
+            .toList();
 
     private final ItemNeo4jRepository neo4jRepository;
     private final ModelNeo4jRepository modelNeo4jRepository;
@@ -59,13 +66,15 @@ public class ItemRepositoryImpl implements ItemRepository {
     @Override
     public PageResult<Item> findPage(UUID unitId, ItemFilter filter, Pagination pagination) {
         String status = filter.status() == null ? null : filter.status().name();
+        boolean eligible = filter.onlyEligibleForDisposal();
         long total = neo4jRepository.countFiltered(unitId, status, filter.categoryId(), filter.modelId(),
-                filter.query());
+                filter.query(), eligible, DISPOSABLE_STATUSES);
         if (total == 0) {
             return new PageResult<>(List.of(), pagination.page(), pagination.size(), 0);
         }
         List<ItemNode> nodes = neo4jRepository.findFilteredPage(unitId, status, filter.categoryId(),
-                filter.modelId(), filter.query(), (long) pagination.page() * pagination.size(), pagination.size());
+                filter.modelId(), filter.query(), eligible, DISPOSABLE_STATUSES,
+                (long) pagination.page() * pagination.size(), pagination.size());
         return new PageResult<>(nodes.stream().map(mapper::toDomain).toList(), pagination.page(), pagination.size(),
                 total);
     }
