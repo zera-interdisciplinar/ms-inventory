@@ -1,7 +1,6 @@
 package com.zera.ms_inventory;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
@@ -10,6 +9,7 @@ import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 /** Objetos de dominio prontos. UNIT e OTHER_UNIT existem para provar o isolamento entre unidades. */
 public final class Fixtures {
@@ -46,6 +46,6 @@ public final class Fixtures {
 
     public static Item item(UUID id, UUID unitId, Model model) {
         return new Item(id, new Barcode("7891234567890"), ItemStatus.OK, unitId, model,
-                LocalDateTime.of(2026, 8, 10, 8, 0), 2024, 7, "SN-001", LocalDate.of(2026, 8, 4));
+                LocalDate.of(2026, 11, 10), 2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.of(2026, 8, 4));
     }
 }

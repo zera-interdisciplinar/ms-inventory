@@ -2,6 +2,8 @@ package com.zera.ms_inventory.infrastructure.persistence.neo4j.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.data.neo4j.core.schema.Id;
@@ -9,7 +11,10 @@ import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
+import com.zera.ms_inventory.core.domain.valueobject.DamageType;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 @Node("Item")
 public class ItemNode {
@@ -35,23 +40,38 @@ public class ItemNode {
     @Property("lastEventAt")
     private LocalDateTime lastEventAt;
 
-    @Property("nextPredictionDate")
-    private LocalDateTime nextPredictionDate;
+    private LocalDate predictedFailureDate;
 
-    private Integer manufacturingDate;
+    private LocalDateTime predictionUpdatedAt;
 
-    private Integer usageIntensity;
+    private Integer manufacturingYear;
+
+    private UsageIntensity usageIntensity;
 
     private String serialNumber;
 
     private LocalDate acquiredAt;
 
+    private String name;
+
+    private ItemCondition condition;
+
+    private Boolean hasDamages;
+
+    private Set<DamageType> damages = new HashSet<>();
+
+    private String notes;
+
+    private UUID createdBy;
+
+    private String createdByName;
+
     public ItemNode() {
     }
 
     public ItemNode(UUID id, String barcode, ItemStatus status, UUID unitId, LocalDateTime createdAt,
-                     LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate,
-                     Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
+                     LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDate predictedFailureDate,
+                     Integer manufacturingYear, UsageIntensity usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -59,8 +79,8 @@ public class ItemNode {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.lastEventAt = lastEventAt;
-        this.nextPredictionDate = nextPredictionDate;
-        this.manufacturingDate = manufacturingDate;
+        this.predictedFailureDate = predictedFailureDate;
+        this.manufacturingYear = manufacturingYear;
         this.usageIntensity = usageIntensity;
         this.serialNumber = serialNumber;
         this.acquiredAt = acquiredAt;
@@ -102,15 +122,23 @@ public class ItemNode {
         return lastEventAt;
     }
 
-    public LocalDateTime getNextPredictionDate() {
-        return nextPredictionDate;
+    public LocalDate getPredictedFailureDate() {
+        return predictedFailureDate;
     }
 
-    public Integer getManufacturingDate() {
-        return manufacturingDate;
+    public LocalDateTime getPredictionUpdatedAt() {
+        return predictionUpdatedAt;
     }
 
-    public Integer getUsageIntensity() {
+    public void setPredictionUpdatedAt(LocalDateTime predictionUpdatedAt) {
+        this.predictionUpdatedAt = predictionUpdatedAt;
+    }
+
+    public Integer getManufacturingYear() {
+        return manufacturingYear;
+    }
+
+    public UsageIntensity getUsageIntensity() {
         return usageIntensity;
     }
 
@@ -120,5 +148,61 @@ public class ItemNode {
 
     public LocalDate getAcquiredAt() {
         return acquiredAt;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public ItemCondition getCondition() {
+        return condition;
+    }
+
+    public void setCondition(ItemCondition condition) {
+        this.condition = condition;
+    }
+
+    public Boolean getHasDamages() {
+        return hasDamages;
+    }
+
+    public void setHasDamages(Boolean hasDamages) {
+        this.hasDamages = hasDamages;
+    }
+
+    public Set<DamageType> getDamages() {
+        return damages;
+    }
+
+    public void setDamages(Set<DamageType> damages) {
+        this.damages = damages;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getCreatedByName() {
+        return createdByName;
+    }
+
+    public void setCreatedByName(String createdByName) {
+        this.createdByName = createdByName;
     }
 }

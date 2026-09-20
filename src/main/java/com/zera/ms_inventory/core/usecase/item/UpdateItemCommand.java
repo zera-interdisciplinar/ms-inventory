@@ -4,26 +4,21 @@ import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
-import com.zera.ms_inventory.core.domain.valueobject.Actor;
-import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
-import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
-public record CreateItemCommand(
-        Barcode barcode,
-        ItemStatus status,
+/** Edicao parcial do item: campo nulo significa "nao alterar". */
+public record UpdateItemCommand(
         UUID unitId,
-        UUID modelId,
-        Integer manufacturingYear,
-        UsageIntensity usageIntensity,
-        String serialNumber,
-        LocalDate acquiredAt,
+        UUID id,
         String name,
         ItemCondition condition,
         Boolean hasDamages,
         Set<DamageType> damages,
         String notes,
-        Actor actor
+        String serialNumber,
+        LocalDate acquiredAt,
+        Integer manufacturingYear,
+        UsageIntensity usageIntensity
 ) {}
