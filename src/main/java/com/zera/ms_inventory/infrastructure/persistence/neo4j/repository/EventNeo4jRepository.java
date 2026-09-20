@@ -1,6 +1,7 @@
 package com.zera.ms_inventory.infrastructure.persistence.neo4j.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.neo4j.repository.Neo4jRepository;
@@ -29,6 +30,15 @@ interface EventNeo4jRepository extends Neo4jRepository<EventNode, UUID> {
             ORDER BY e.occurredAt DESC, e.id DESC
             """)
     List<EventNode> findAllByItem(@Param("unitId") UUID unitId, @Param("itemId") UUID itemId);
+
+    @Query("""
+            MATCH (e:Event {unitId: $unitId, itemId: $itemId, type: $type})
+            RETURN e
+            ORDER BY e.occurredAt DESC, e.id DESC
+            LIMIT 1
+            """)
+    Optional<EventNode> findLastByItemAndType(@Param("unitId") UUID unitId, @Param("itemId") UUID itemId,
+                                              @Param("type") String type);
 
     /** Liga o evento ao item depois do save; o item nao mapeia a relacao para nao carregar o historico. */
     @Query("""

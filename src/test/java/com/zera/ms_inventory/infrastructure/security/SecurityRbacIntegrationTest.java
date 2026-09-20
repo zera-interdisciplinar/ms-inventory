@@ -28,6 +28,7 @@ import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
+import com.zera.ms_inventory.core.usecase.item.RestoreItem;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
 import com.zera.ms_inventory.core.usecase.rule.FindAllRules;
@@ -44,6 +45,7 @@ class SecurityRbacIntegrationTest {
     @MockitoBean private FindAllRules findAllRules;
     @MockitoBean private CreateItem createItem;
     @MockitoBean private DeleteItem deleteItem;
+    @MockitoBean private RestoreItem restoreItem;
     @MockitoBean private AssignItemUnit assignItemUnit;
     @MockitoBean private CreateModel createModel;
     @MockitoBean private DeleteModel deleteModel;
@@ -118,13 +120,30 @@ class SecurityRbacIntegrationTest {
                 .andExpect(status().isCreated());
     }
 
+    /** A exclusao do item virou remocao logica na ZERA-247: o operario remove, o gestor restaura. */
     @Test
-    void employeeCannotDeleteItemsOrModels() throws Exception {
+    void employeeCanRemoveItemsButNotDeleteModels() throws Exception {
         mockMvc.perform(asRole(delete("/api/v1/items/" + UUID.randomUUID()), "EMPLOYEE")
                         .header("X-Unit-Id", Fixtures.UNIT.toString()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNoContent());
         mockMvc.perform(asRole(delete("/api/v1/models/" + UUID.randomUUID()), "EMPLOYEE")
                         .header("X-Unit-Id", Fixtures.UNIT.toString()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void employeeCannotRestoreOrDecideOnItems() throws Exception {
+        UUID id = UUID.randomUUID();
+        mockMvc.perform(asRole(post("/api/v1/items/" + id + "/restore"), "EMPLOYEE")
+                        .header("X-Unit-Id", Fixtures.UNIT.toString()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(asRole(post("/api/v1/items/" + id + "/approve"), "EMPLOYEE")
+                        .header("X-Unit-Id", Fixtures.UNIT.toString()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(asRole(post("/api/v1/items/" + id + "/reject"), "EMPLOYEE")
+                        .header("X-Unit-Id", Fixtures.UNIT.toString())
+                        .contentType("application/json")
+                        .content("{\"reason\":\"motivo\"}"))
                 .andExpect(status().isForbidden());
     }
 
