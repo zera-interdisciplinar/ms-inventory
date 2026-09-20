@@ -15,7 +15,6 @@ import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
-import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +36,7 @@ class WarrantyExpirationReportToolTest {
 
     private Item item(Model model, LocalDate acquiredAt) {
         return new Item(UUID.randomUUID(), new Barcode("123456"), ItemStatus.OK, Fixtures.UNIT, model,
-                null, 2024, UsageIntensity.MEDIUM, "SN-001", acquiredAt);
+                null, 2024, 6, "SN-001", acquiredAt);
     }
 
     @Test

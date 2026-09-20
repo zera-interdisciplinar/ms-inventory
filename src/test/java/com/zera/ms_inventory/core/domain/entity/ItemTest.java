@@ -15,7 +15,6 @@ import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
-import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 class ItemTest {
 
@@ -37,7 +36,7 @@ class ItemTest {
         LocalDate acquiredAt = LocalDate.of(2026, 8, 4);
 
         Item item = new Item(id, barcode, ItemStatus.OK, unitId, model, createdAt, updatedAt, lastEventAt,
-                predictedFailureDate, 2024, UsageIntensity.MEDIUM, "SN-001", acquiredAt);
+                predictedFailureDate, 2024, 6, "SN-001", acquiredAt);
 
         assertEquals(id, item.getId());
         assertEquals(barcode, item.getBarcode());
@@ -49,7 +48,7 @@ class ItemTest {
         assertEquals(lastEventAt, item.getLastEventAt());
         assertEquals(predictedFailureDate, item.getPredictedFailureDate());
         assertEquals(2024, item.getManufacturingYear());
-        assertEquals(UsageIntensity.MEDIUM, item.getUsageIntensity());
+        assertEquals(6, item.getUsageIntensity());
         assertEquals("SN-001", item.getSerialNumber());
         assertEquals(acquiredAt, item.getAcquiredAt());
     }
@@ -66,7 +65,7 @@ class ItemTest {
                 LocalDateTime.of(2026, 8, 4, 12, 10),
                 LocalDate.of(2026, 11, 10),
                 2024,
-                UsageIntensity.MEDIUM,
+                6,
                 "SN-001",
                 LocalDate.of(2026, 8, 4)
         );
@@ -83,7 +82,7 @@ class ItemTest {
         item.updateAcquiredAt(newAcquiredAt);
         item.recordPrediction(newPredictionDate);
         item.updateManufacturingYear(2025);
-        item.updateUsageIntensity(UsageIntensity.HIGH);
+        item.updateUsageIntensity(9);
 
         assertEquals(ItemStatus.DAMAGED, item.getStatus());
         assertEquals(newUnitId, item.getUnitId());
@@ -92,7 +91,7 @@ class ItemTest {
         assertEquals(newPredictionDate, item.getPredictedFailureDate());
         org.junit.jupiter.api.Assertions.assertNotNull(item.getPredictionUpdatedAt());
         assertEquals(2025, item.getManufacturingYear());
-        assertEquals(UsageIntensity.HIGH, item.getUsageIntensity());
+        assertEquals(9, item.getUsageIntensity());
         assertTrue(item.getUpdatedAt().isAfter(beforeUpdate) || item.getUpdatedAt().isEqual(beforeUpdate));
     }
 
@@ -136,6 +135,37 @@ class ItemTest {
 
         assertEquals(null, item.getHasDamages());
         assertEquals(Set.of(), item.getDamages());
+    }
+
+    @Test
+    void shouldRejectAUsageIntensityOutsideTheZeroToTenScale() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> item.updateUsageIntensity(11));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> item.updateUsageIntensity(-1));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> new Item(UUID.randomUUID(), new Barcode("222222-J"), ItemStatus.OK, unitId, model(unitId),
+                        null, 2024, 42, null, null));
+    }
+
+    @Test
+    void shouldAcceptTheEndsOfTheUsageIntensityScaleAndNoAnswer() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        item.updateUsageIntensity(0);
+        assertEquals(0, item.getUsageIntensity());
+
+        item.updateUsageIntensity(10);
+        assertEquals(10, item.getUsageIntensity());
+
+        item.updateUsageIntensity(null);
+        assertEquals(null, item.getUsageIntensity());
     }
 
     @Test

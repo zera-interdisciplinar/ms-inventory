@@ -14,7 +14,6 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
-import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 @Node("Item")
 public class ItemNode {
@@ -48,7 +47,7 @@ public class ItemNode {
 
     private Integer manufacturingYear;
 
-    private UsageIntensity usageIntensity;
+    private Integer usageIntensity;
 
     private String serialNumber;
 
@@ -75,7 +74,7 @@ public class ItemNode {
 
     public ItemNode(UUID id, String barcode, ItemStatus status, UUID unitId, LocalDateTime createdAt,
                      LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDate predictedFailureDate,
-                     Integer manufacturingYear, UsageIntensity usageIntensity, String serialNumber, LocalDate acquiredAt) {
+                     Integer manufacturingYear, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -142,7 +141,7 @@ public class ItemNode {
         return manufacturingYear;
     }
 
-    public UsageIntensity getUsageIntensity() {
+    public Integer getUsageIntensity() {
         return usageIntensity;
     }
 

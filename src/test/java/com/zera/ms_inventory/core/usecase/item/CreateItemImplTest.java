@@ -22,7 +22,6 @@ import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
-import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
@@ -64,7 +63,7 @@ class CreateItemImplTest {
 
     private CreateItemCommand command(UUID id, UUID modelId, CreateModelCommand newModel) {
         return new CreateItemCommand(id, new Barcode("7891234567890"), ItemStatus.OK, Fixtures.UNIT, modelId, newModel,
-                2024, UsageIntensity.HIGH, "SN-001", LocalDate.of(2026, 8, 4), "Placa de vídeo",
+                2024, 9, "SN-001", LocalDate.of(2026, 8, 4), "Placa de vídeo",
                 ItemCondition.SEMI_DAMAGED, true, Set.of(DamageType.OXIDATION), "Pino torto", ACTOR);
     }
 
