@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
@@ -56,8 +57,17 @@ public class ItemRepositoryImpl implements ItemRepository {
     }
 
     @Override
-    public PageResult<Item> findPage(UUID unitId, Pagination pagination) {
-        return toPageResult(neo4jRepository.findAllByUnitId(unitId, newestFirst(pagination)), pagination);
+    public PageResult<Item> findPage(UUID unitId, ItemFilter filter, Pagination pagination) {
+        String status = filter.status() == null ? null : filter.status().name();
+        long total = neo4jRepository.countFiltered(unitId, status, filter.categoryId(), filter.modelId(),
+                filter.query());
+        if (total == 0) {
+            return new PageResult<>(List.of(), pagination.page(), pagination.size(), 0);
+        }
+        List<ItemNode> nodes = neo4jRepository.findFilteredPage(unitId, status, filter.categoryId(),
+                filter.modelId(), filter.query(), (long) pagination.page() * pagination.size(), pagination.size());
+        return new PageResult<>(nodes.stream().map(mapper::toDomain).toList(), pagination.page(), pagination.size(),
+                total);
     }
 
     @Override
@@ -69,6 +79,21 @@ public class ItemRepositoryImpl implements ItemRepository {
     @Override
     public boolean existsByModel(UUID unitId, UUID modelId) {
         return neo4jRepository.existsByUnitIdAndModelId(unitId, modelId);
+    }
+
+    @Override
+    public boolean existsAnyWithId(UUID id) {
+        return neo4jRepository.existsById(id);
+    }
+
+    @Override
+    public boolean existsByDisplayCode(UUID unitId, String displayCode) {
+        return neo4jRepository.existsByUnitIdAndDisplayCode(unitId, displayCode);
+    }
+
+    @Override
+    public Optional<Item> findByBarcode(UUID unitId, String barcode) {
+        return neo4jRepository.findByUnitIdAndBarcode(unitId, barcode).map(mapper::toDomain);
     }
 
     // mais recentes primeiro, como a lista do app

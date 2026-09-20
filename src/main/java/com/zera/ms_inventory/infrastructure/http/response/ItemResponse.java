@@ -14,12 +14,14 @@ import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 public record ItemResponse(
         UUID id,
         String barcode,
+        String displayCode,
         String name,
         ItemStatus status,
         ItemCondition condition,
         Boolean hasDamages,
         Set<DamageType> damages,
         String notes,
+        String photoUrl,
         UUID unitId,
         ModelResponse model,
         String serialNumber,
@@ -34,12 +36,13 @@ public record ItemResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
-    public static ItemResponse from(Item item) {
+    /** photoUrl ja resolvida pelo {@link ItemResponses}; nula quando o item nao tem foto servivel. */
+    public static ItemResponse from(Item item, String photoUrl) {
         if (item == null) {
             return null;
         }
-        return new ItemResponse(item.getId(), item.getBarcode().getValue(), item.getName(), item.getStatus(),
-                item.getCondition(), item.getHasDamages(), item.getDamages(), item.getNotes(), item.getUnitId(),
+        return new ItemResponse(item.getId(), item.getBarcode().getValue(), item.getDisplayCode(), item.getName(), item.getStatus(),
+                item.getCondition(), item.getHasDamages(), item.getDamages(), item.getNotes(), photoUrl, item.getUnitId(),
                 ModelResponse.from(item.getModel()), item.getSerialNumber(), item.getAcquiredAt(),
                 item.getManufacturingYear(), item.getUsageIntensity(), item.getPredictedFailureDate(),
                 item.getPredictionUpdatedAt(),

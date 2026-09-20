@@ -15,6 +15,7 @@ import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 public class Item {
     private final UUID id;
     private final Barcode barcode;
+    private String displayCode;
     private ItemStatus status;
     private UUID unitId;
     private final Model model;
@@ -32,6 +33,7 @@ public class Item {
     private Boolean hasDamages;
     private Set<DamageType> damages = Set.of();
     private String notes;
+    private String photoKey;
     private UUID createdBy;
     private String createdByName;
 
@@ -94,6 +96,11 @@ public class Item {
 
     public Barcode getBarcode() {
         return barcode;
+    }
+
+    /** Codigo curto de 6 digitos exibido no app ("ID 265964"), unico dentro da unidade. */
+    public String getDisplayCode() {
+        return displayCode;
     }
 
     public ItemStatus getStatus() {
@@ -166,6 +173,11 @@ public class Item {
         return notes;
     }
 
+    /** Chave da foto no armazenamento; a URL para exibir e gerada na resposta. */
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
     public UUID getCreatedBy() {
         return createdBy;
     }
@@ -181,6 +193,35 @@ public class Item {
                          String notes) {
         applyDescription(name, condition, hasDamages, damages, notes);
         touch();
+    }
+
+    public void attachPhoto(String photoKey) {
+        if (photoKey == null || photoKey.isBlank()) {
+            throw new IllegalArgumentException("photoKey is required");
+        }
+        this.photoKey = photoKey;
+        touch();
+    }
+
+    /** Reidrata a chave da foto salva. Uso exclusivo da camada de persistencia. */
+    public void restorePhotoKey(String photoKey) {
+        this.photoKey = photoKey;
+    }
+
+    /** O codigo e atribuido uma unica vez, no cadastro, e nao muda depois. */
+    public void assignDisplayCode(String displayCode) {
+        if (this.displayCode != null) {
+            throw new IllegalStateException("Item " + id + " already has a display code");
+        }
+        if (displayCode == null || !displayCode.matches("\\d{6}")) {
+            throw new IllegalArgumentException("displayCode must have exactly 6 digits");
+        }
+        this.displayCode = displayCode;
+    }
+
+    /** Reidrata o codigo salvo. Uso exclusivo da camada de persistencia. */
+    public void restoreDisplayCode(String displayCode) {
+        this.displayCode = displayCode;
     }
 
     /** Guarda quem cadastrou; o nome fica gravado para o "Cadastrado por" de qualquer papel. */

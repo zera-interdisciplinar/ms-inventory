@@ -13,10 +13,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.zera.ms_inventory.core.domain.exception.CategoryInUseException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
+import com.zera.ms_inventory.core.domain.exception.ItemIdInUseException;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.ModelInUseException;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
+import com.zera.ms_inventory.core.domain.exception.PhotoStorageUnavailableException;
 import com.zera.ms_inventory.core.domain.exception.RuleNotFoundException;
 
 @RestControllerAdvice
@@ -66,7 +68,7 @@ public class GlobalExceptionHandler {
                 ex.getName() + " has invalid value: " + ex.getValue());
     }
 
-    @ExceptionHandler({CategoryInUseException.class, ModelInUseException.class})
+    @ExceptionHandler({CategoryInUseException.class, ModelInUseException.class, ItemIdInUseException.class})
     public ProblemDetail handleInUse(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
@@ -76,6 +78,17 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
                 "A record with the same unique value already exists");
+    }
+
+    @ExceptionHandler(PhotoStorageUnavailableException.class)
+    public ProblemDetail handlePhotoStorageUnavailable(PhotoStorageUnavailableException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
+    // multipart acima de spring.servlet.multipart.max-file-size
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ProblemDetail handleMaxUploadSize(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONTENT_TOO_LARGE, "photo must have up to 5 MB");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

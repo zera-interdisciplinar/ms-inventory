@@ -152,4 +152,29 @@ class ItemTest {
                 () -> new Item(UUID.randomUUID(), new Barcode("222222-J"), ItemStatus.OK, unitId, model(unitId),
                         null, 1800, null, null, null));
     }
+
+    @Test
+    void shouldAssignTheDisplayCodeOnlyOnceAndWithSixDigits() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> item.assignDisplayCode("12AB"));
+        item.assignDisplayCode("265964");
+
+        assertEquals("265964", item.getDisplayCode());
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> item.assignDisplayCode("481516"));
+    }
+
+    @Test
+    void shouldAttachAPhotoKey() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.OK, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> item.attachPhoto(" "));
+        item.attachPhoto("units/u/items/i/p.jpg");
+
+        assertEquals("units/u/items/i/p.jpg", item.getPhotoKey());
+    }
 }

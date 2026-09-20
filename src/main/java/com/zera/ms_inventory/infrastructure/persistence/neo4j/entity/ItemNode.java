@@ -24,6 +24,8 @@ public class ItemNode {
 
     private String barcode;
 
+    private String displayCode;
+
     private ItemStatus status;
 
     private UUID unitId;
@@ -61,6 +63,8 @@ public class ItemNode {
     private Set<DamageType> damages = new HashSet<>();
 
     private String notes;
+
+    private String photoKey;
 
     private UUID createdBy;
 
@@ -204,5 +208,21 @@ public class ItemNode {
 
     public void setCreatedByName(String createdByName) {
         this.createdByName = createdByName;
+    }
+
+    public String getDisplayCode() {
+        return displayCode;
+    }
+
+    public void setDisplayCode(String displayCode) {
+        this.displayCode = displayCode;
+    }
+
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
+    public void setPhotoKey(String photoKey) {
+        this.photoKey = photoKey;
     }
 }

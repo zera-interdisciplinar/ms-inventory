@@ -23,18 +23,23 @@ import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
+import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
+import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
+import com.zera.ms_inventory.core.usecase.item.UploadItemPhoto;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemCommand;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
 import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
@@ -44,13 +49,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ItemController.class)
-@org.springframework.context.annotation.Import(GlobalExceptionHandler.class)
+@org.springframework.context.annotation.Import({GlobalExceptionHandler.class, ItemResponses.class})
 class ItemControllerTest {
 
 
@@ -64,10 +70,14 @@ class ItemControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockitoBean private com.zera.ms_inventory.core.repository.PhotoStorage photoStorage;
+
     @MockitoBean private CreateItem createItem;
     @MockitoBean private ListItems listItems;
     @MockitoBean private FindItemById findItemById;
+    @MockitoBean private FindItemByBarcode findItemByBarcode;
     @MockitoBean private UpdateItem updateItem;
+    @MockitoBean private UploadItemPhoto uploadItemPhoto;
     @MockitoBean private UpdateItemStatus updateItemStatus;
     @MockitoBean private AssignItemUnit assignItemUnit;
     @MockitoBean private DeleteItem deleteItem;
@@ -83,9 +93,9 @@ class ItemControllerTest {
     void shouldCreateItem() throws Exception {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(createItem.execute(any(CreateItemCommand.class))).thenReturn(item);
+        when(createItem.execute(any(CreateItemCommand.class))).thenReturn(new CreateItemResult(item, true));
 
-        CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.OK, MODEL_ID, null,
                 2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -104,7 +114,7 @@ class ItemControllerTest {
         when(createItem.execute(any(CreateItemCommand.class)))
                 .thenThrow(new DataIntegrityViolationException("Node already exists with label `Item`"));
 
-        CreateItemRequest request = new CreateItemRequest("123456", ItemStatus.OK, MODEL_ID,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.OK, MODEL_ID, null,
                 2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -119,7 +129,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("POST /api/v1/items - deve retornar 400 quando o barcode estiver em branco")
     void shouldReturn400WhenBarcodeIsBlank() throws Exception {
-        CreateItemRequest request = new CreateItemRequest("", ItemStatus.OK, MODEL_ID,
+        CreateItemRequest request = new CreateItemRequest(null, "", ItemStatus.OK, MODEL_ID, null,
                 2024, UsageIntensity.MEDIUM, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -134,7 +144,7 @@ class ItemControllerTest {
     @DisplayName("GET /api/v1/items - deve listar todos os itens")
     void shouldFindAllItems() throws Exception {
         Item item = sampleItem(UUID.randomUUID());
-        when(listItems.execute(UNIT, new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(item), 0, 20, 1));
+        when(listItems.execute(UNIT, ItemFilter.none(), new Pagination(0, 20))).thenReturn(new PageResult<>(List.of(item), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/items")
                         .header("X-Unit-Id", UNIT))
@@ -212,7 +222,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("GET /api/v1/items - deve repassar a pagina e o tamanho pedidos")
     void shouldForwardRequestedPage() throws Exception {
-        when(listItems.execute(UNIT, new Pagination(2, 50))).thenReturn(new PageResult<>(List.of(), 2, 50, 101));
+        when(listItems.execute(UNIT, ItemFilter.none(), new Pagination(2, 50))).thenReturn(new PageResult<>(List.of(), 2, 50, 101));
 
         mockMvc.perform(get("/api/v1/items")
                         .param("page", "2")
@@ -242,7 +252,7 @@ class ItemControllerTest {
         when(createItem.execute(org.mockito.ArgumentMatchers.argThat(command ->
                 command.actor().userId().equals(OPERATOR_ID)
                         && command.condition() == ItemCondition.SEMI_DAMAGED
-                        && command.damages().equals(Set.of(DamageType.OXIDATION))))).thenReturn(item);
+                        && command.damages().equals(Set.of(DamageType.OXIDATION))))).thenReturn(new CreateItemResult(item, true));
 
         mockMvc.perform(post("/api/v1/items")
                         .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
@@ -285,5 +295,163 @@ class ItemControllerTest {
                         .content("{\"name\":\"\"}")
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items/by-barcode/{barcode} - deve retornar o item lido pelo scanner")
+    void shouldFindItemByBarcode() throws Exception {
+        Item item = sampleItem(UUID.randomUUID());
+        item.assignDisplayCode("265964");
+        when(findItemByBarcode.execute(UNIT, "123456")).thenReturn(item);
+
+        mockMvc.perform(get("/api/v1/items/by-barcode/{barcode}", "123456")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.barcode").value("123456"))
+                .andExpect(jsonPath("$.displayCode").value("265964"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items/by-barcode/{barcode} - deve retornar 404 para barcode desconhecido")
+    void shouldReturn404ForUnknownBarcode() throws Exception {
+        when(findItemByBarcode.execute(UNIT, "111111-J")).thenThrow(ItemNotFoundException.withBarcode("111111-J"));
+
+        mockMvc.perform(get("/api/v1/items/by-barcode/{barcode}", "111111-J")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve devolver 200 com o item ja cadastrado no reenvio do mesmo id")
+    void shouldReturn200WhenTheSameIdIsResent() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(createItem.execute(any(CreateItemCommand.class))).thenReturn(new CreateItemResult(sampleItem(id), false));
+
+        mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":\"%s\",\"barcode\":\"123456\",\"modelId\":\"%s\"}".formatted(id, MODEL_ID))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve criar o modelo junto quando vier model no lugar de modelId")
+    void shouldForwardTheNewModelToBeCreatedTogether() throws Exception {
+        UUID categoryId = UUID.randomUUID();
+        when(createItem.execute(org.mockito.ArgumentMatchers.argThat(command -> command.modelId() == null
+                && command.newModel() != null
+                && command.newModel().name().equals("Placa de vídeo")
+                && command.newModel().categoryId().equals(categoryId)
+                && command.newModel().actor().userId().equals(OPERATOR_ID))))
+                .thenReturn(new CreateItemResult(sampleItem(UUID.randomUUID()), true));
+
+        mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"barcode":"123456","model":{"name":"Placa de vídeo","manufacturer":"Nvidia",
+                                 "materials":["CIRCUIT_BOARD"],"categoryId":"%s"}}
+                                """.formatted(categoryId))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve retornar 400 sem modelo, com os dois ou com modelo novo invalido")
+    void shouldReturn400UnlessExactlyOneValidModelIsInformed() throws Exception {
+        String[] bodies = {
+                "{\"barcode\":\"123456\"}",
+                "{\"barcode\":\"123456\",\"modelId\":\"%s\",\"model\":{\"name\":\"X\",\"manufacturer\":\"Y\",\"materials\":[\"METAL\"],\"categoryId\":\"%s\"}}"
+                        .formatted(MODEL_ID, UUID.randomUUID()),
+                "{\"barcode\":\"123456\",\"model\":{\"name\":\"X\",\"manufacturer\":\"Y\",\"materials\":[],\"categoryId\":\"%s\"}}"
+                        .formatted(UUID.randomUUID())
+        };
+        for (String body : bodies) {
+            mockMvc.perform(post("/api/v1/items")
+                            .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body)
+                            .header("X-Unit-Id", UNIT))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items - deve retornar 409 quando o id do app pertence a outra unidade")
+    void shouldReturn409ForAnIdFromAnotherUnit() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(createItem.execute(any(CreateItemCommand.class)))
+                .thenThrow(new com.zera.ms_inventory.core.domain.exception.ItemIdInUseException(id));
+
+        mockMvc.perform(post("/api/v1/items")
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":\"%s\",\"barcode\":\"123456\",\"modelId\":\"%s\"}".formatted(id, MODEL_ID))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items - deve repassar filtros e busca da tela Itens")
+    void shouldForwardFiltersAndSearch() throws Exception {
+        UUID categoryId = UUID.randomUUID();
+        ItemFilter filter = new ItemFilter(ItemStatus.OK, categoryId, MODEL_ID, "265964");
+        when(listItems.execute(UNIT, filter, new Pagination(0, 20)))
+                .thenReturn(new PageResult<>(List.of(sampleItem(UUID.randomUUID())), 0, 20, 1));
+
+        mockMvc.perform(get("/api/v1/items")
+                        .param("status", "OK")
+                        .param("categoryId", categoryId.toString())
+                        .param("modelId", MODEL_ID.toString())
+                        .param("q", " 265964 ")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/photo - deve enviar a foto do item")
+    void shouldUploadThePhoto() throws Exception {
+        UUID id = UUID.randomUUID();
+        byte[] content = {(byte) 0xFF, (byte) 0xD8};
+        when(uploadItemPhoto.execute(UNIT, id, content, "image/jpeg")).thenReturn(sampleItem(id));
+
+        mockMvc.perform(multipart("/api/v1/items/{id}/photo", id)
+                        .file(new org.springframework.mock.web.MockMultipartFile("photo", "placa.jpg", "image/jpeg", content))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/photo - deve retornar 503 sem armazenamento configurado")
+    void shouldReturn503WhenStorageIsNotConfigured() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(uploadItemPhoto.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                any(), org.mockito.ArgumentMatchers.eq("image/png")))
+                .thenThrow(new com.zera.ms_inventory.core.domain.exception.PhotoStorageUnavailableException("not configured"));
+
+        mockMvc.perform(multipart("/api/v1/items/{id}/photo", id)
+                        .file(new org.springframework.mock.web.MockMultipartFile("photo", "p.png", "image/png", new byte[] {1}))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isServiceUnavailable());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items/{id} - deve trazer a URL assinada da foto")
+    void shouldExposeTheSignedPhotoUrl() throws Exception {
+        UUID id = UUID.randomUUID();
+        Item item = sampleItem(id);
+        item.attachPhoto("units/u/items/i/p.jpg");
+        when(findItemById.execute(UNIT, id)).thenReturn(item);
+        when(photoStorage.signedUrl("units/u/items/i/p.jpg"))
+                .thenReturn(java.util.Optional.of(java.net.URI.create("https://storage.googleapis.com/b/p.jpg?sig=1").toURL()));
+
+        mockMvc.perform(get("/api/v1/items/{id}", id)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.photoUrl").value("https://storage.googleapis.com/b/p.jpg?sig=1"));
     }
 }
