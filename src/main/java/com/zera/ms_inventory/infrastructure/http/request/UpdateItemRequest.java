@@ -4,11 +4,12 @@ import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
-import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemCommand;
 
 /** Todos opcionais: campo ausente (ou null) nao e alterado; texto vazio apaga notes e serialNumber. */
@@ -21,7 +22,7 @@ public record UpdateItemRequest(
         @Size(max = 120) String serialNumber,
         LocalDate acquiredAt,
         Integer manufacturingYear,
-        UsageIntensity usageIntensity
+        @Min(0) @Max(10) Integer usageIntensity
 ) {
     public UpdateItemCommand toCommand(UUID unitId, UUID id) {
         return new UpdateItemCommand(unitId, id, name, condition, hasDamages, damages, notes, serialNumber,

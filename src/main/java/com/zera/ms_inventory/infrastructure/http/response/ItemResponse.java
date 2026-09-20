@@ -9,7 +9,6 @@ import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
-import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 public record ItemResponse(
         UUID id,
@@ -27,7 +26,7 @@ public record ItemResponse(
         String serialNumber,
         LocalDate acquiredAt,
         Integer manufacturingYear,
-        UsageIntensity usageIntensity,
+        Integer usageIntensity,
         LocalDate predictedFailureDate,
         LocalDateTime predictionUpdatedAt,
         LocalDateTime lastEventAt,

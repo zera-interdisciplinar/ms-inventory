@@ -10,7 +10,6 @@ import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
-import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 
 public class Item {
     private final UUID id;
@@ -25,7 +24,7 @@ public class Item {
     private LocalDate predictedFailureDate;
     private LocalDateTime predictionUpdatedAt;
     private Integer manufacturingYear;
-    private UsageIntensity usageIntensity;
+    private Integer usageIntensity;
     private String serialNumber;
     private LocalDate acquiredAt;
     private String name;
@@ -37,7 +36,7 @@ public class Item {
     private UUID createdBy;
     private String createdByName;
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDate predictedFailureDate, Integer manufacturingYear, UsageIntensity usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDate predictedFailureDate, Integer manufacturingYear, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -47,6 +46,7 @@ public class Item {
         this.updatedAt = updatedAt;
         this.lastEventAt = lastEventAt;
         validateManufacturingYear(manufacturingYear);
+        validateUsageIntensity(usageIntensity);
         this.predictedFailureDate = predictedFailureDate;
         this.manufacturingYear = manufacturingYear;
         this.usageIntensity = usageIntensity;
@@ -54,7 +54,7 @@ public class Item {
         this.acquiredAt = acquiredAt;
     }
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime lastEventAt, LocalDate predictedFailureDate, Integer manufacturingYear, UsageIntensity usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime lastEventAt, LocalDate predictedFailureDate, Integer manufacturingYear, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -64,6 +64,7 @@ public class Item {
         this.updatedAt = LocalDateTime.now();
         this.lastEventAt = lastEventAt;
         validateManufacturingYear(manufacturingYear);
+        validateUsageIntensity(usageIntensity);
         this.predictedFailureDate = predictedFailureDate;
         this.manufacturingYear = manufacturingYear;
         this.usageIntensity = usageIntensity;
@@ -71,7 +72,7 @@ public class Item {
         this.acquiredAt = acquiredAt;
     }
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDate predictedFailureDate, Integer manufacturingYear, UsageIntensity usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDate predictedFailureDate, Integer manufacturingYear, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -81,6 +82,7 @@ public class Item {
         this.updatedAt = LocalDateTime.now();
         this.lastEventAt = LocalDateTime.now();
         validateManufacturingYear(manufacturingYear);
+        validateUsageIntensity(usageIntensity);
         this.predictedFailureDate = predictedFailureDate;
         this.manufacturingYear = manufacturingYear;
         this.usageIntensity = usageIntensity;
@@ -140,7 +142,8 @@ public class Item {
         return manufacturingYear;
     }
 
-    public UsageIntensity getUsageIntensity() {
+    /** Intensidade de uso na escala de 0 a 10. */
+    public Integer getUsageIntensity() {
         return usageIntensity;
     }
 
@@ -291,9 +294,17 @@ public class Item {
         touch();
     }
 
-    public void updateUsageIntensity(UsageIntensity usageIntensity) {
+    public void updateUsageIntensity(Integer usageIntensity) {
+        validateUsageIntensity(usageIntensity);
         this.usageIntensity = usageIntensity;
         touch();
+    }
+
+    /** Escala de 0 a 10 informada no cadastro; e o formato que o sistema preditivo consome. */
+    private static void validateUsageIntensity(Integer usageIntensity) {
+        if (usageIntensity != null && (usageIntensity < 0 || usageIntensity > 10)) {
+            throw new IllegalArgumentException("usageIntensity must be between 0 and 10");
+        }
     }
 
     private static void validateManufacturingYear(Integer year) {

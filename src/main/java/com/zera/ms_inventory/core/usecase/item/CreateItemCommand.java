@@ -9,7 +9,6 @@ import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
-import com.zera.ms_inventory.core.domain.valueobject.UsageIntensity;
 import com.zera.ms_inventory.core.usecase.model.CreateModelCommand;
 
 /**
@@ -24,7 +23,7 @@ public record CreateItemCommand(
         UUID modelId,
         CreateModelCommand newModel,
         Integer manufacturingYear,
-        UsageIntensity usageIntensity,
+        Integer usageIntensity,
         String serialNumber,
         LocalDate acquiredAt,
         String name,

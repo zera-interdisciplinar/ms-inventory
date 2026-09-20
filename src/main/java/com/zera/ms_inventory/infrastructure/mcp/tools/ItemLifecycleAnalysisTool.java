@@ -47,7 +47,7 @@ public class ItemLifecycleAnalysisTool {
             item.getStatus().name(),
             item.getAcquiredAt(),
             ageInDays,
-            item.getUsageIntensity() != null ? item.getUsageIntensity().name() : null,
+            item.getUsageIntensity(),
             item.getManufacturingYear(),
             item.getPredictedFailureDate(),
             item.getUnitId()
@@ -60,13 +60,13 @@ public class ItemLifecycleAnalysisTool {
         public final String currentStatus;
         public final LocalDate acquiredAt;
         public final long ageInDays;
-        public final String usageIntensity;
+        public final Integer usageIntensity;
         public final Integer manufacturingYear;
         public final LocalDate predictedFailureDate;
         public final UUID unitId;
 
         public ItemLifecycleReport(UUID itemId, String serialNumber, String currentStatus, LocalDate acquiredAt,
-                                  long ageInDays, String usageIntensity, Integer manufacturingYear,
+                                  long ageInDays, Integer usageIntensity, Integer manufacturingYear,
                                   LocalDate predictedFailureDate, UUID unitId) {
             this.itemId = itemId;
             this.serialNumber = serialNumber;
