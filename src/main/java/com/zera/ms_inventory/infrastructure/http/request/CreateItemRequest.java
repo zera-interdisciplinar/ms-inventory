@@ -42,8 +42,8 @@ public record CreateItemRequest(
     }
 
     public CreateItemCommand toCommand(UUID unitId, Actor actor) {
-        // status vira maquina de estados na ZERA-242; ate la o cadastro assume OK
-        return new CreateItemCommand(id, new Barcode(barcode), status != null ? status : ItemStatus.OK, unitId,
+        // o rascunho e a aprovacao entram na ZERA-244; ate la o cadastro ja nasce no estoque
+        return new CreateItemCommand(id, new Barcode(barcode), status != null ? status : ItemStatus.IN_STOCK, unitId,
                 modelId, model != null ? model.toCommand(unitId, actor) : null, manufacturingYear,
                 usageIntensity, serialNumber, acquiredAt, name, condition, hasDamages, damages,
                 notes, actor);

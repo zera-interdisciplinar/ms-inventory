@@ -35,7 +35,7 @@ class WarrantyExpirationReportToolTest {
     }
 
     private Item item(Model model, LocalDate acquiredAt) {
-        return new Item(UUID.randomUUID(), new Barcode("123456"), ItemStatus.OK, Fixtures.UNIT, model,
+        return new Item(UUID.randomUUID(), new Barcode("123456"), ItemStatus.IN_STOCK, Fixtures.UNIT, model,
                 null, 2024, 6, "SN-001", acquiredAt);
     }
 

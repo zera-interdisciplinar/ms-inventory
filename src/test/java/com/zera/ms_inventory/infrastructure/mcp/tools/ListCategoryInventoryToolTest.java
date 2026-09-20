@@ -42,6 +42,13 @@ class ListCategoryInventoryToolTest {
                 null, 2024, 6, "SN-001", LocalDate.now());
     }
 
+    /** Dano virou condicao do item na ZERA-243; o status so diz onde ele esta no fluxo. */
+    private static Item damaged(Item item) {
+        item.describe(item.getName(), com.zera.ms_inventory.core.domain.valueobject.ItemCondition.DAMAGED,
+                false, java.util.Set.of(), null);
+        return item;
+    }
+
     @Test
     void shouldCountOnlyTheItemsThatReachEachCategory() {
         Category electronics = Fixtures.category(UUID.randomUUID(), Fixtures.UNIT);
@@ -50,8 +57,8 @@ class ListCategoryInventoryToolTest {
 
         when(findAllCategories.execute(Fixtures.UNIT)).thenReturn(List.of(electronics, furniture));
         when(findAllItems.execute(Fixtures.UNIT)).thenReturn(List.of(
-                itemOf(laptop, ItemStatus.OK),
-                itemOf(laptop, ItemStatus.DAMAGED)));
+                itemOf(laptop, ItemStatus.IN_STOCK),
+                damaged(itemOf(laptop, ItemStatus.IN_MAINTENANCE))));
 
         List<ListCategoryInventoryTool.CategoryInventorySummary> result =
                 new ListCategoryInventoryTool(findAllCategories, findAllItems)
@@ -69,7 +76,7 @@ class ListCategoryInventoryToolTest {
     void shouldIgnoreItemsWithoutModel() {
         Category electronics = Fixtures.category(UUID.randomUUID(), Fixtures.UNIT);
         when(findAllCategories.execute(Fixtures.UNIT)).thenReturn(List.of(electronics));
-        when(findAllItems.execute(Fixtures.UNIT)).thenReturn(List.of(itemOf(null, ItemStatus.OK)));
+        when(findAllItems.execute(Fixtures.UNIT)).thenReturn(List.of(itemOf(null, ItemStatus.IN_STOCK)));
 
         List<ListCategoryInventoryTool.CategoryInventorySummary> result =
                 new ListCategoryInventoryTool(findAllCategories, findAllItems)

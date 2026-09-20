@@ -8,8 +8,10 @@ import java.util.UUID;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
+import com.zera.ms_inventory.core.domain.valueobject.EventType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException;
 
 public class Item {
     private final UUID id;
@@ -256,9 +258,28 @@ public class Item {
     }
 
 
-    public void updateStatus(ItemStatus status) {
-        this.status = status;
+    /**
+     * Unico caminho para trocar o status: valida a transicao na maquina de estados e devolve o
+     * evento a ser gravado pelo caso de uso. Quem chamar com uma transicao invalida recebe
+     * {@link InvalidItemTransitionException}, que a API traduz para 409.
+     */
+    public Event transitionTo(ItemStatus target, EventType type, String reason, Actor actor) {
+        if (!status.canTransitionTo(target)) {
+            throw new InvalidItemTransitionException(id, status, target);
+        }
+        ItemStatus previous = status;
+        this.status = target;
         touch();
+        touchLastEvent();
+        return Event.of(id, unitId, type, previous, target, reason, actor);
+    }
+
+    /**
+     * Reidrata o status vindo do banco sem passar pela maquina de estados. Uso exclusivo da camada
+     * de persistencia e da migracao de dados.
+     */
+    public void restoreStatus(ItemStatus status) {
+        this.status = status;
     }
 
     public void assignUnit(UUID unitId) {
