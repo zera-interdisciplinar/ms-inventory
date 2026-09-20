@@ -20,6 +20,8 @@ public interface ItemRepository {
     PageResult<Item> findPage(UUID unitId, ItemFilter filter, Pagination pagination);
     PageResult<Item> findPageByModel(UUID unitId, UUID modelId, Pagination pagination);
     boolean existsByModel(UUID unitId, UUID modelId);
+    /** Quantos itens usam o modelo; a reprovacao em cascata so cai num modelo sem outros itens. */
+    long countByModel(UUID unitId, UUID modelId);
     boolean existsByDisplayCode(UUID unitId, String displayCode);
     boolean existsAnyWithId(UUID id);
     Optional<Item> findByBarcode(UUID unitId, String barcode);

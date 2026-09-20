@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.zera.ms_inventory.core.domain.exception.CategoryInUseException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.ItemIdInUseException;
+import com.zera.ms_inventory.core.domain.exception.IncompleteItemException;
 import com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
@@ -67,6 +68,14 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 ex.getName() + " has invalid value: " + ex.getValue());
+    }
+
+    // rascunho enviado sem os obrigatorios: a tela do app usa missingFields para marcar os campos
+    @ExceptionHandler(IncompleteItemException.class)
+    public ProblemDetail handleIncompleteItem(IncompleteItemException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage());
+        problem.setProperty("missingFields", ex.getMissingFields());
+        return problem;
     }
 
     // transicao fora da maquina de estados do item

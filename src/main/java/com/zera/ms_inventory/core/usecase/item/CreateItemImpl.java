@@ -11,7 +11,9 @@ import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.exception.ItemIdInUseException;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.EventType;
+import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.repository.EventRepository;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 import com.zera.ms_inventory.core.repository.ModelRepository;
@@ -56,15 +58,28 @@ public class CreateItemImpl implements CreateItem {
                 : createModel.execute(command.newModel());
 
         Item item = new Item(command.id() != null ? command.id() : UUID.randomUUID(), command.barcode(),
-                command.status(), command.unitId(), model, null, command.manufacturingYear(),
+                ItemStatus.DRAFT, command.unitId(), model, null, command.manufacturingYear(),
                 command.usageIntensity(), command.serialNumber(), command.acquiredAt());
         item.describe(command.name(), command.condition(), command.hasDamages(), command.damages(), command.notes());
         item.registerBy(command.actor());
         item.assignDisplayCode(displayCodeGenerator.next(command.unitId()));
+        item.restoreStatus(initialStatus(item, command.actor()));
         Item saved = itemRepository.save(item);
         // abre o historico: o primeiro passo do item e o proprio cadastro
         eventRepository.save(Event.of(saved.getId(), saved.getUnitId(), EventType.CREATED, null, saved.getStatus(),
                 null, command.actor()));
         return new CreateItemResult(saved, true);
+    }
+
+    /**
+     * Cadastro incompleto vira rascunho. Completo, o do gestor ja entra no estoque e o do operario
+     * espera aprovacao. Como a foto sobe em outra chamada, o caminho normal do app e nascer em
+     * DRAFT e so depois passar pelo submit.
+     */
+    private static ItemStatus initialStatus(Item item, Actor actor) {
+        if (!item.isReadyToSubmit()) {
+            return ItemStatus.DRAFT;
+        }
+        return actor != null && actor.isManager() ? ItemStatus.IN_STOCK : ItemStatus.PENDING_APPROVAL;
     }
 }

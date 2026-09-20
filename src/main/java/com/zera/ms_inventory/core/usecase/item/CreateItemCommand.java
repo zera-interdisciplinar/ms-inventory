@@ -8,7 +8,6 @@ import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
-import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.usecase.model.CreateModelCommand;
 
 /**
@@ -18,7 +17,6 @@ import com.zera.ms_inventory.core.usecase.model.CreateModelCommand;
 public record CreateItemCommand(
         UUID id,
         Barcode barcode,
-        ItemStatus status,
         UUID unitId,
         UUID modelId,
         CreateModelCommand newModel,

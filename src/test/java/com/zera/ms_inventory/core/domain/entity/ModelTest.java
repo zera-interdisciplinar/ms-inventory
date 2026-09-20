@@ -158,4 +158,46 @@ class ModelTest {
         model.restoreApproval(null, null, null, null, null);
         assertEquals(ApprovalStatus.APPROVED, model.getApprovalStatus());
     }
+
+    @Test
+    void shouldApproveAPendingModelAndClearTheRejection() {
+        Model model = com.zera.ms_inventory.Fixtures.model(com.zera.ms_inventory.Fixtures.UNIT);
+        model.registerBy(com.zera.ms_inventory.Fixtures.OPERATOR);
+        model.rejectBy(com.zera.ms_inventory.Fixtures.MANAGER, "faltou o peso");
+
+        model.approveBy(com.zera.ms_inventory.Fixtures.MANAGER);
+
+        org.assertj.core.api.Assertions.assertThat(model.getApprovalStatus())
+                .isEqualTo(com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus.APPROVED);
+        org.assertj.core.api.Assertions.assertThat(model.getRejectionReason()).isNull();
+        org.assertj.core.api.Assertions.assertThat(model.getReviewedBy())
+                .isEqualTo(com.zera.ms_inventory.Fixtures.MANAGER.userId());
+    }
+
+    /** Reaprovar nao pode reescrever quem revisou primeiro. */
+    @Test
+    void shouldLeaveAnAlreadyApprovedModelUntouched() {
+        Model model = com.zera.ms_inventory.Fixtures.model(com.zera.ms_inventory.Fixtures.UNIT);
+        model.registerBy(com.zera.ms_inventory.Fixtures.MANAGER);
+        java.time.LocalDateTime reviewedAt = model.getReviewedAt();
+
+        model.approveBy(com.zera.ms_inventory.Fixtures.OPERATOR);
+
+        org.assertj.core.api.Assertions.assertThat(model.getReviewedBy())
+                .isEqualTo(com.zera.ms_inventory.Fixtures.MANAGER.userId());
+        org.assertj.core.api.Assertions.assertThat(model.getReviewedAt()).isEqualTo(reviewedAt);
+    }
+
+    @Test
+    void shouldRejectWithTheReasonTrimmed() {
+        Model model = com.zera.ms_inventory.Fixtures.model(com.zera.ms_inventory.Fixtures.UNIT);
+        model.registerBy(com.zera.ms_inventory.Fixtures.OPERATOR);
+
+        model.rejectBy(com.zera.ms_inventory.Fixtures.MANAGER, "  material errado  ");
+
+        org.assertj.core.api.Assertions.assertThat(model.getApprovalStatus())
+                .isEqualTo(com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus.REJECTED);
+        org.assertj.core.api.Assertions.assertThat(model.getRejectionReason()).isEqualTo("material errado");
+        org.assertj.core.api.Assertions.assertThat(model.isPendingApproval()).isFalse();
+    }
 }

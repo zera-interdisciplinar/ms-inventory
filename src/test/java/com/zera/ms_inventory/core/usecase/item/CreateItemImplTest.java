@@ -65,7 +65,7 @@ class CreateItemImplTest {
     }
 
     private CreateItemCommand command(UUID id, UUID modelId, CreateModelCommand newModel) {
-        return new CreateItemCommand(id, new Barcode("7891234567890"), ItemStatus.IN_STOCK, Fixtures.UNIT, modelId, newModel,
+        return new CreateItemCommand(id, new Barcode("7891234567890"), Fixtures.UNIT, modelId, newModel,
                 2024, 9, "SN-001", LocalDate.of(2026, 8, 4), "Placa de vídeo",
                 ItemCondition.SEMI_DAMAGED, true, Set.of(DamageType.OXIDATION), "Pino torto", ACTOR);
     }

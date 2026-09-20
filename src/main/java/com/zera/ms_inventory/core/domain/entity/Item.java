@@ -2,6 +2,8 @@ package com.zera.ms_inventory.core.domain.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -257,6 +259,43 @@ public class Item {
         this.notes = notes;
     }
 
+
+    /**
+     * Campos que o app exige para o item sair do rascunho (ZERA-236). Devolve os nomes como o
+     * cadastro os envia, em ordem fixa, para a tela marcar o que falta preencher.
+     */
+    public List<String> missingRequiredFields() {
+        List<String> missing = new ArrayList<>();
+        if (barcode == null || barcode.getValue() == null || barcode.getValue().isBlank()) {
+            missing.add("barcode");
+        }
+        if (name == null || name.isBlank()) {
+            missing.add("name");
+        }
+        if (model == null) {
+            missing.add("model");
+        }
+        if (condition == null) {
+            missing.add("condition");
+        }
+        if (hasDamages == null) {
+            missing.add("hasDamages");
+        } else if (hasDamages && damages.isEmpty()) {
+            // respondeu que ha danos, mas nao disse quais
+            missing.add("damages");
+        }
+        if (usageIntensity == null) {
+            missing.add("usageIntensity");
+        }
+        if (photoKey == null || photoKey.isBlank()) {
+            missing.add("photo");
+        }
+        return List.copyOf(missing);
+    }
+
+    public boolean isReadyToSubmit() {
+        return missingRequiredFields().isEmpty();
+    }
 
     /**
      * Unico caminho para trocar o status: valida a transicao na maquina de estados e devolve o

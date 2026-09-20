@@ -55,6 +55,9 @@ interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
 
     boolean existsByUnitIdAndModelId(UUID unitId, UUID modelId);
 
+    @Query("MATCH (i:Item {unitId: $unitId})-[:IS_MODEL]->(:Model {id: $modelId}) RETURN count(i)")
+    long countByUnitIdAndModelId(@Param("unitId") UUID unitId, @Param("modelId") UUID modelId);
+
     boolean existsByUnitIdAndDisplayCode(UUID unitId, String displayCode);
 
     Optional<ItemNode> findByUnitIdAndBarcode(UUID unitId, String barcode);

@@ -78,6 +78,9 @@ class ItemControllerTest {
     @MockitoBean private FindItemById findItemById;
     @MockitoBean private FindItemByBarcode findItemByBarcode;
     @MockitoBean private UpdateItem updateItem;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.SubmitItem submitItem;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.ApproveItem approveItem;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.RejectItem rejectItem;
     @MockitoBean private UploadItemPhoto uploadItemPhoto;
     @MockitoBean private UpdateItemStatus updateItemStatus;
     @MockitoBean private AssignItemUnit assignItemUnit;
@@ -96,7 +99,7 @@ class ItemControllerTest {
         Item item = sampleItem(id);
         when(createItem.execute(any(CreateItemCommand.class))).thenReturn(new CreateItemResult(item, true));
 
-        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.IN_STOCK, MODEL_ID, null,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", MODEL_ID, null,
                 2024, 6, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -115,7 +118,7 @@ class ItemControllerTest {
         when(createItem.execute(any(CreateItemCommand.class)))
                 .thenThrow(new DataIntegrityViolationException("Node already exists with label `Item`"));
 
-        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.IN_STOCK, MODEL_ID, null,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", MODEL_ID, null,
                 2024, 6, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -130,7 +133,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("POST /api/v1/items - deve retornar 400 quando a intensidade de uso sair da escala 0-10")
     void shouldReturn400WhenUsageIntensityIsOutsideTheScale() throws Exception {
-        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.IN_STOCK, MODEL_ID, null,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", MODEL_ID, null,
                 2024, 11, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -144,7 +147,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("POST /api/v1/items - deve retornar 400 quando o barcode estiver em branco")
     void shouldReturn400WhenBarcodeIsBlank() throws Exception {
-        CreateItemRequest request = new CreateItemRequest(null, "", ItemStatus.IN_STOCK, MODEL_ID, null,
+        CreateItemRequest request = new CreateItemRequest(null, "", MODEL_ID, null,
                 2024, 6, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -191,6 +194,48 @@ class ItemControllerTest {
         mockMvc.perform(get("/api/v1/items/{id}", id)
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/submit - deve enviar o rascunho para aprovacao")
+    void shouldSubmitDraft() throws Exception {
+        UUID id = UUID.randomUUID();
+        Item item = sampleItem(id);
+        when(submitItem.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.any())).thenReturn(item);
+
+        mockMvc.perform(post("/api/v1/items/{id}/submit", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/submit - deve retornar 422 com os campos que faltam")
+    void shouldReturn422WithMissingFields() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(submitItem.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new com.zera.ms_inventory.core.domain.exception.IncompleteItemException(
+                        id, List.of("condition", "photo")));
+
+        mockMvc.perform(post("/api/v1/items/{id}/submit", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.missingFields[0]").value("condition"))
+                .andExpect(jsonPath("$.missingFields[1]").value("photo"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/reject - deve exigir o motivo")
+    void shouldRequireReasonToReject() throws Exception {
+        mockMvc.perform(post("/api/v1/items/{id}/reject", UUID.randomUUID())
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_MANAGER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"  \"}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

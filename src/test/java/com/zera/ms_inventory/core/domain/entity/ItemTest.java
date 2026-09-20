@@ -140,6 +140,44 @@ class ItemTest {
     }
 
     @Test
+    void shouldListEveryMissingFieldOfAnEmptyDraft() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.DRAFT, unitId, model(unitId),
+                null, null, null, null, null, null);
+
+        org.assertj.core.api.Assertions.assertThat(item.missingRequiredFields())
+                .containsExactly("name", "condition", "hasDamages", "usageIntensity", "photo");
+        assertTrue(!item.isReadyToSubmit());
+    }
+
+    /** Respondeu que ha danos mas nao disse quais: o cadastro continua incompleto. */
+    @Test
+    void shouldRequireTheDamageListWhenTheItemHasDamages() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.DRAFT, unitId, model(unitId),
+                null, 2024, 7, null, null);
+        item.describe("Notebook", ItemCondition.DAMAGED, true, Set.of(), null);
+        item.attachPhoto("photos/x.jpg");
+
+        org.assertj.core.api.Assertions.assertThat(item.missingRequiredFields()).containsExactly("damages");
+
+        item.describe("Notebook", ItemCondition.DAMAGED, true, Set.of(DamageType.OXIDATION), null);
+        assertTrue(item.isReadyToSubmit());
+    }
+
+    @Test
+    void shouldConsiderTheDraftReadyWithEveryRequiredFieldAnswered() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.DRAFT, unitId, model(unitId),
+                null, 2024, 0, null, null);
+        item.describe("Notebook", ItemCondition.NEW, false, Set.of(), null);
+        item.attachPhoto("photos/x.jpg");
+
+        org.assertj.core.api.Assertions.assertThat(item.missingRequiredFields()).isEmpty();
+        assertTrue(item.isReadyToSubmit());
+    }
+
+    @Test
     void shouldReturnTheEventOfTheTransitionAndMoveTheStatus() {
         UUID unitId = UUID.randomUUID();
         Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.IN_STOCK, unitId, model(unitId),

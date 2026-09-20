@@ -150,6 +150,30 @@ public class Model {
         touch();
     }
 
+    /** Aprovacao do gestor. Modelo ja aprovado nao muda, para nao reescrever quem revisou. */
+    public void approveBy(Actor reviewer) {
+        if (approvalStatus == ApprovalStatus.APPROVED) {
+            return;
+        }
+        this.approvalStatus = ApprovalStatus.APPROVED;
+        this.rejectionReason = null;
+        this.reviewedBy = reviewer != null ? reviewer.userId() : null;
+        this.reviewedAt = LocalDateTime.now();
+        touch();
+    }
+
+    public void rejectBy(Actor reviewer, String reason) {
+        this.approvalStatus = ApprovalStatus.REJECTED;
+        this.rejectionReason = reason != null && !reason.isBlank() ? reason.strip() : null;
+        this.reviewedBy = reviewer != null ? reviewer.userId() : null;
+        this.reviewedAt = LocalDateTime.now();
+        touch();
+    }
+
+    public boolean isPendingApproval() {
+        return approvalStatus == ApprovalStatus.PENDING;
+    }
+
     /** Reidrata o estado de aprovacao salvo. Uso exclusivo da camada de persistencia. */
     public void restoreApproval(ApprovalStatus approvalStatus, String rejectionReason, UUID createdBy,
                                 UUID reviewedBy, LocalDateTime reviewedAt) {
