@@ -24,6 +24,8 @@ interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
               AND ($status IS NULL OR i.status = $status)
               AND ($status = 'REMOVED' OR i.status <> 'REMOVED')
               AND (NOT $eligibleForDisposal OR i.status IN $disposableStatuses)
+              AND ($createdBy IS NULL OR i.createdBy = $createdBy)
+              AND ($condition IS NULL OR i.condition = $condition)
               AND ($modelId IS NULL OR m.id = $modelId)
               AND ($categoryId IS NULL OR EXISTS { (m)-[:BELONGS_TO]->(:Category {id: $categoryId}) })
               AND ($query IS NULL
@@ -49,6 +51,7 @@ interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
                                     @Param("query") String query,
                                     @Param("eligibleForDisposal") boolean eligibleForDisposal,
                                     @Param("disposableStatuses") List<String> disposableStatuses,
+                                    @Param("createdBy") UUID createdBy, @Param("condition") String condition,
                                     @Param("skip") long skip, @Param("limit") int limit);
 
     @Query(FILTER + "RETURN count(DISTINCT i)")
@@ -56,7 +59,8 @@ interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
                        @Param("categoryId") UUID categoryId, @Param("modelId") UUID modelId,
                        @Param("query") String query,
                        @Param("eligibleForDisposal") boolean eligibleForDisposal,
-                       @Param("disposableStatuses") List<String> disposableStatuses);
+                       @Param("disposableStatuses") List<String> disposableStatuses,
+                       @Param("createdBy") UUID createdBy, @Param("condition") String condition);
 
     Page<ItemNode> findAllByUnitIdAndModelId(UUID unitId, UUID modelId, Pageable pageable);
 

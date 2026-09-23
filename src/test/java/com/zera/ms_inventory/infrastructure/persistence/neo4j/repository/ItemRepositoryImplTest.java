@@ -146,9 +146,9 @@ class ItemRepositoryImplTest {
         UUID categoryId = UUID.randomUUID();
         ItemFilter filter = new ItemFilter(ItemStatus.IN_STOCK, categoryId, null, "placa");
         when(neo4jRepository.countFiltered(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa", false,
-                DISPOSABLE)).thenReturn(11L);
+                DISPOSABLE, null, null)).thenReturn(11L);
         when(neo4jRepository.findFilteredPage(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa", false,
-                DISPOSABLE, 10L, 10))
+                DISPOSABLE, null, null, 10L, 10))
                 .thenReturn(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))));
 
         PageResult<Item> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(1, 10));
@@ -161,9 +161,9 @@ class ItemRepositoryImplTest {
     @Test
     void shouldFilterOnlyWhatCanBeDisposed() {
         ItemFilter filter = new ItemFilter(null, null, null, null, true);
-        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, true, DISPOSABLE))
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, true, DISPOSABLE, null, null))
                 .thenReturn(1L);
-        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, null, null, null, null, true, DISPOSABLE, 0L, 20))
+        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, null, null, null, null, true, DISPOSABLE, null, null, 0L, 20))
                 .thenReturn(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))));
 
         PageResult<Item> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(0, 20));
@@ -177,14 +177,14 @@ class ItemRepositoryImplTest {
 
     @Test
     void shouldSkipThePageQueryWhenNothingMatches() {
-        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, false, DISPOSABLE))
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, false, DISPOSABLE, null, null))
                 .thenReturn(0L);
 
         PageResult<Item> result = repository.findPage(Fixtures.UNIT, ItemFilter.none(), new Pagination(0, 20));
 
         assertTrue(result.content().isEmpty());
         verify(neo4jRepository, never()).findFilteredPage(any(), any(), any(), any(), any(),
-                org.mockito.ArgumentMatchers.anyBoolean(), any(),
+                org.mockito.ArgumentMatchers.anyBoolean(), any(), any(), any(),
                 org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyInt());
     }
 
