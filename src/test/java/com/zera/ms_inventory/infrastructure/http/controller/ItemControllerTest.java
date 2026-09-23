@@ -35,6 +35,7 @@ import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
 import com.zera.ms_inventory.core.usecase.item.UploadItemPhoto;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemCommand;
+import com.zera.ms_inventory.core.usecase.item.ListItemEvents;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
@@ -73,6 +74,7 @@ class ItemControllerTest {
 
     @MockitoBean private CreateItem createItem;
     @MockitoBean private ListItems listItems;
+    @MockitoBean private ListItemEvents listItemEvents;
     @MockitoBean private FindItemById findItemById;
     @MockitoBean private FindItemByBarcode findItemByBarcode;
     @MockitoBean private UpdateItem updateItem;
@@ -82,7 +84,7 @@ class ItemControllerTest {
     @MockitoBean private DeleteItem deleteItem;
 
     private Item sampleItem(UUID id) {
-        return new Item(id, new Barcode("123456"), ItemStatus.OK, UNIT,
+        return new Item(id, new Barcode("123456"), ItemStatus.IN_STOCK, UNIT,
                 com.zera.ms_inventory.Fixtures.model(MODEL_ID, UNIT), null,
                 2024, 6, "SN-001", LocalDate.now());
     }
@@ -94,7 +96,7 @@ class ItemControllerTest {
         Item item = sampleItem(id);
         when(createItem.execute(any(CreateItemCommand.class))).thenReturn(new CreateItemResult(item, true));
 
-        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.OK, MODEL_ID, null,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.IN_STOCK, MODEL_ID, null,
                 2024, 6, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -113,7 +115,7 @@ class ItemControllerTest {
         when(createItem.execute(any(CreateItemCommand.class)))
                 .thenThrow(new DataIntegrityViolationException("Node already exists with label `Item`"));
 
-        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.OK, MODEL_ID, null,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.IN_STOCK, MODEL_ID, null,
                 2024, 6, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -128,7 +130,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("POST /api/v1/items - deve retornar 400 quando a intensidade de uso sair da escala 0-10")
     void shouldReturn400WhenUsageIntensityIsOutsideTheScale() throws Exception {
-        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.OK, MODEL_ID, null,
+        CreateItemRequest request = new CreateItemRequest(null, "123456", ItemStatus.IN_STOCK, MODEL_ID, null,
                 2024, 11, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -142,7 +144,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("POST /api/v1/items - deve retornar 400 quando o barcode estiver em branco")
     void shouldReturn400WhenBarcodeIsBlank() throws Exception {
-        CreateItemRequest request = new CreateItemRequest(null, "", ItemStatus.OK, MODEL_ID, null,
+        CreateItemRequest request = new CreateItemRequest(null, "", ItemStatus.IN_STOCK, MODEL_ID, null,
                 2024, 6, "SN-001", LocalDate.now(), "Placa de vídeo", ItemCondition.USED, false, Set.of(), null);
 
         mockMvc.perform(post("/api/v1/items")
@@ -192,15 +194,69 @@ class ItemControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/v1/items/{id}/events - deve listar o historico paginado")
+    void shouldListItemHistory() throws Exception {
+        UUID id = UUID.randomUUID();
+        com.zera.ms_inventory.core.domain.entity.Event event =
+                com.zera.ms_inventory.core.domain.entity.Event.of(id, UNIT,
+                        com.zera.ms_inventory.core.domain.valueobject.EventType.APPROVED,
+                        ItemStatus.PENDING_APPROVAL, ItemStatus.IN_STOCK, "ok", com.zera.ms_inventory.Fixtures.MANAGER);
+        when(listItemEvents.execute(UNIT, id, new Pagination(0, 20)))
+                .thenReturn(new PageResult<>(List.of(event), 0, 20, 1));
+
+        mockMvc.perform(get("/api/v1/items/{id}/events", id)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].type").value("APPROVED"))
+                .andExpect(jsonPath("$.content[0].fromStatus").value("PENDING_APPROVAL"))
+                .andExpect(jsonPath("$.content[0].toStatus").value("IN_STOCK"))
+                .andExpect(jsonPath("$.content[0].actorName").value("Kevin Gestor"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/items/{id}/events - deve retornar 404 quando o item nao existir na unidade")
+    void shouldReturn404ForHistoryOfAnItemOutsideTheUnit() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(listItemEvents.execute(UNIT, id, new Pagination(0, 20))).thenThrow(new ItemNotFoundException(id));
+
+        mockMvc.perform(get("/api/v1/items/{id}/events", id)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/items/{id}/status - deve retornar 409 quando a transicao for invalida")
+    void shouldReturn409ForAnInvalidTransition() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(updateItemStatus.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.eq(ItemStatus.AWAITING_EVALUATION), org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException(
+                        id, ItemStatus.IN_STOCK, ItemStatus.AWAITING_EVALUATION));
+
+        mockMvc.perform(patch("/api/v1/items/{id}/status", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateItemStatusRequest(ItemStatus.AWAITING_EVALUATION)))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("cannot go from IN_STOCK")));
+    }
+
+    @Test
     @DisplayName("PATCH /api/v1/items/{id}/status - deve atualizar o status")
     void shouldUpdateStatus() throws Exception {
         UUID id = UUID.randomUUID();
         Item item = sampleItem(id);
-        when(updateItemStatus.execute(UNIT, id, ItemStatus.DAMAGED)).thenReturn(item);
+        when(updateItemStatus.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.eq(ItemStatus.IN_MAINTENANCE),
+                org.mockito.ArgumentMatchers.any())).thenReturn(item);
 
         mockMvc.perform(patch("/api/v1/items/{id}/status", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(ItemStatus.DAMAGED)))
+                        .content(objectMapper.writeValueAsString(new UpdateItemStatusRequest(ItemStatus.IN_MAINTENANCE)))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk());
     }
@@ -271,7 +327,7 @@ class ItemControllerTest {
                         .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"barcode":"123456","status":"OK","modelId":"%s","name":"Placa de vídeo",
+                                {"barcode":"123456","status":"IN_STOCK","modelId":"%s","name":"Placa de vídeo",
                                  "condition":"SEMI_DAMAGED","hasDamages":true,"damages":["OXIDATION"],"notes":"Pino torto"}
                                 """.formatted(MODEL_ID))
                         .header("X-Unit-Id", UNIT))
@@ -410,12 +466,12 @@ class ItemControllerTest {
     @DisplayName("GET /api/v1/items - deve repassar filtros e busca da tela Itens")
     void shouldForwardFiltersAndSearch() throws Exception {
         UUID categoryId = UUID.randomUUID();
-        ItemFilter filter = new ItemFilter(ItemStatus.OK, categoryId, MODEL_ID, "265964");
+        ItemFilter filter = new ItemFilter(ItemStatus.IN_STOCK, categoryId, MODEL_ID, "265964");
         when(listItems.execute(UNIT, filter, new Pagination(0, 20)))
                 .thenReturn(new PageResult<>(List.of(sampleItem(UUID.randomUUID())), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/items")
-                        .param("status", "OK")
+                        .param("status", "IN_STOCK")
                         .param("categoryId", categoryId.toString())
                         .param("modelId", MODEL_ID.toString())
                         .param("q", " 265964 ")

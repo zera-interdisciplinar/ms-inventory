@@ -99,7 +99,7 @@ class SecurityRbacIntegrationTest {
         mockMvc.perform(asRole(post("/api/v1/items"), "EMPLOYEE")
                         .header("X-Unit-Id", Fixtures.UNIT.toString())
                         .contentType("application/json")
-                        .content("{\"barcode\":\"7891234567890\",\"status\":\"OK\",\"modelId\":\""
+                        .content("{\"barcode\":\"7891234567890\",\"status\":\"IN_STOCK\",\"modelId\":\""
                                 + UUID.randomUUID() + "\"}"))
                 .andExpect(status().isCreated());
     }

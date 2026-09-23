@@ -6,10 +6,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.zera.ms_inventory.core.domain.entity.Event;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.exception.ItemIdInUseException;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
+import com.zera.ms_inventory.core.domain.valueobject.EventType;
+import com.zera.ms_inventory.core.repository.EventRepository;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
@@ -20,13 +23,15 @@ public class CreateItemImpl implements CreateItem {
     private final ModelRepository modelRepository;
     private final CreateModel createModel;
     private final DisplayCodeGenerator displayCodeGenerator;
+    private final EventRepository eventRepository;
 
     public CreateItemImpl(ItemRepository itemRepository, ModelRepository modelRepository, CreateModel createModel,
-                          DisplayCodeGenerator displayCodeGenerator) {
+                          DisplayCodeGenerator displayCodeGenerator, EventRepository eventRepository) {
         this.itemRepository = itemRepository;
         this.modelRepository = modelRepository;
         this.createModel = createModel;
         this.displayCodeGenerator = displayCodeGenerator;
+        this.eventRepository = eventRepository;
     }
 
     // modelo novo e item ficam na mesma transacao: se o item falhar, o modelo nao sobra
@@ -56,6 +61,10 @@ public class CreateItemImpl implements CreateItem {
         item.describe(command.name(), command.condition(), command.hasDamages(), command.damages(), command.notes());
         item.registerBy(command.actor());
         item.assignDisplayCode(displayCodeGenerator.next(command.unitId()));
-        return new CreateItemResult(itemRepository.save(item), true);
+        Item saved = itemRepository.save(item);
+        // abre o historico: o primeiro passo do item e o proprio cadastro
+        eventRepository.save(Event.of(saved.getId(), saved.getUnitId(), EventType.CREATED, null, saved.getStatus(),
+                null, command.actor()));
+        return new CreateItemResult(saved, true);
     }
 }

@@ -32,6 +32,7 @@ import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
+import com.zera.ms_inventory.core.usecase.item.ListItemEvents;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
 import com.zera.ms_inventory.core.usecase.item.UploadItemPhoto;
@@ -40,6 +41,7 @@ import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
+import com.zera.ms_inventory.infrastructure.http.response.EventResponse;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
 import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
@@ -53,6 +55,7 @@ public class ItemController {
     private final ItemResponses itemResponses;
     private final CreateItem createItem;
     private final ListItems listItems;
+    private final ListItemEvents listItemEvents;
     private final FindItemById findItemById;
     private final FindItemByBarcode findItemByBarcode;
     private final UpdateItem updateItem;
@@ -63,6 +66,7 @@ public class ItemController {
 
     public ItemController(CreateItem createItem,
                            ListItems listItems,
+                           ListItemEvents listItemEvents,
                            FindItemById findItemById,
                            FindItemByBarcode findItemByBarcode,
                            UpdateItem updateItem,
@@ -74,6 +78,7 @@ public class ItemController {
         this.itemResponses = itemResponses;
         this.createItem = createItem;
         this.listItems = listItems;
+        this.listItemEvents = listItemEvents;
         this.findItemById = findItemById;
         this.findItemByBarcode = findItemByBarcode;
         this.updateItem = updateItem;
@@ -132,9 +137,21 @@ public class ItemController {
                 uploadItemPhoto.execute(unitId, id, photo.getBytes(), photo.getContentType())));
     }
 
+    @GetMapping("/{id}/events")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PageResponse<EventResponse>> findEvents(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                                  @PathVariable UUID id,
+                                                                  @RequestParam(defaultValue = "0") int page,
+                                                                  @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(PageResponse.from(
+                listItemEvents.execute(unitId, id, new Pagination(page, size)), EventResponse::from));
+    }
+
+    // transicao fora da maquina de estados responde 409; os passos do fluxo ganham endpoint proprio nas ZERA-244 a 247
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ItemResponse> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemStatusRequest request) {
-        return ResponseEntity.ok(itemResponses.from(updateItemStatus.execute(unitId, id, request.status())));
+    public ResponseEntity<ItemResponse> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                     @RequestBody @Valid UpdateItemStatusRequest request, Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(updateItemStatus.execute(unitId, id, request.status(), actor)));
     }
 
     @PatchMapping("/{id}/unit")

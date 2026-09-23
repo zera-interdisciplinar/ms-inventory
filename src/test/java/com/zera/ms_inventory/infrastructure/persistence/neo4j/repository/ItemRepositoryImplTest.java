@@ -138,9 +138,9 @@ class ItemRepositoryImplTest {
     @Test
     void shouldPageTheFilteredItemsWithinTheUnit() {
         UUID categoryId = UUID.randomUUID();
-        ItemFilter filter = new ItemFilter(ItemStatus.OK, categoryId, null, "placa");
-        when(neo4jRepository.countFiltered(Fixtures.UNIT, "OK", categoryId, null, "placa")).thenReturn(11L);
-        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, "OK", categoryId, null, "placa", 10L, 10))
+        ItemFilter filter = new ItemFilter(ItemStatus.IN_STOCK, categoryId, null, "placa");
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa")).thenReturn(11L);
+        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa", 10L, 10))
                 .thenReturn(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))));
 
         PageResult<Item> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(1, 10));
