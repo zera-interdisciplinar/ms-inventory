@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.zera.ms_inventory.core.domain.exception.CategoryInUseException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.ItemIdInUseException;
+import com.zera.ms_inventory.core.domain.exception.DisposalNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.IncompleteItemException;
 import com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
@@ -38,6 +39,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ItemNotFoundException.class)
     public ProblemDetail handleItemNotFound(ItemNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(DisposalNotFoundException.class)
+    public ProblemDetail handleDisposalNotFound(DisposalNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 

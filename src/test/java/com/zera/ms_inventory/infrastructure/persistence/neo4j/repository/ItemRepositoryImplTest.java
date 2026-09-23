@@ -46,6 +46,12 @@ class ItemRepositoryImplTest {
     private final ModelMapper modelMapper = new ModelMapper(new CategoryMapper());
     private final ItemMapper mapper = new ItemMapper(modelMapper);
 
+    /** Mesma derivacao do repositorio: status que a maquina de estados deixa ir para DISPOSED. */
+    private static final List<String> DISPOSABLE = java.util.Arrays.stream(ItemStatus.values())
+            .filter(s -> s.canTransitionTo(ItemStatus.DISPOSED))
+            .map(ItemStatus::name)
+            .toList();
+
     private ItemRepositoryImpl repository;
 
     @BeforeEach
@@ -139,8 +145,10 @@ class ItemRepositoryImplTest {
     void shouldPageTheFilteredItemsWithinTheUnit() {
         UUID categoryId = UUID.randomUUID();
         ItemFilter filter = new ItemFilter(ItemStatus.IN_STOCK, categoryId, null, "placa");
-        when(neo4jRepository.countFiltered(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa")).thenReturn(11L);
-        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa", 10L, 10))
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa", false,
+                DISPOSABLE)).thenReturn(11L);
+        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa", false,
+                DISPOSABLE, 10L, 10))
                 .thenReturn(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))));
 
         PageResult<Item> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(1, 10));
@@ -151,13 +159,33 @@ class ItemRepositoryImplTest {
     }
 
     @Test
+    void shouldFilterOnlyWhatCanBeDisposed() {
+        ItemFilter filter = new ItemFilter(null, null, null, null, true);
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, true, DISPOSABLE))
+                .thenReturn(1L);
+        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, null, null, null, null, true, DISPOSABLE, 0L, 20))
+                .thenReturn(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))));
+
+        PageResult<Item> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(0, 20));
+
+        assertEquals(1, result.content().size());
+        // o filtro nasce da maquina de estados, entao acompanha qualquer estado novo
+        assertTrue(DISPOSABLE.contains(ItemStatus.IN_STOCK.name()));
+        assertTrue(DISPOSABLE.contains(ItemStatus.AWAITING_EVALUATION.name()));
+        assertTrue(!DISPOSABLE.contains(ItemStatus.DRAFT.name()));
+    }
+
+    @Test
     void shouldSkipThePageQueryWhenNothingMatches() {
-        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null)).thenReturn(0L);
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, false, DISPOSABLE))
+                .thenReturn(0L);
 
         PageResult<Item> result = repository.findPage(Fixtures.UNIT, ItemFilter.none(), new Pagination(0, 20));
 
         assertTrue(result.content().isEmpty());
-        verify(neo4jRepository, never()).findFilteredPage(any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyInt());
+        verify(neo4jRepository, never()).findFilteredPage(any(), any(), any(), any(), any(),
+                org.mockito.ArgumentMatchers.anyBoolean(), any(),
+                org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyInt());
     }
 
     @Test

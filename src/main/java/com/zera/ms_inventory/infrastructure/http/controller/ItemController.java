@@ -135,9 +135,10 @@ public class ItemController {
                                                             @RequestParam(required = false) UUID categoryId,
                                                             @RequestParam(required = false) UUID modelId,
                                                             @RequestParam(required = false) String q,
+                                                            @RequestParam(required = false) Boolean eligibleForDisposal,
                                                             @RequestParam(defaultValue = "0") int page,
                                                             @RequestParam(defaultValue = "20") int size) {
-        ItemFilter filter = new ItemFilter(status, categoryId, modelId, q);
+        ItemFilter filter = new ItemFilter(status, categoryId, modelId, q, eligibleForDisposal);
         return ResponseEntity.ok(PageResponse.from(listItems.execute(unitId, filter, new Pagination(page, size)),
                 itemResponses::from));
     }
