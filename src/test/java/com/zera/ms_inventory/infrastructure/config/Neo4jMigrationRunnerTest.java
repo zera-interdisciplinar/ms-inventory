@@ -59,7 +59,7 @@ class Neo4jMigrationRunnerTest {
     void shouldLoadTheBundledMigrationsInVersionOrder() {
         List<Neo4jMigration> migrations = runner(true).loadMigrations();
 
-        assertThat(migrations).extracting(Neo4jMigration::version).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        assertThat(migrations).extracting(Neo4jMigration::version).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
         assertThat(migrations.get(0).statements()).singleElement()
                 .asString().contains("REQUIRE (i.unitId, i.barcode) IS UNIQUE");
         assertThat(migrations.get(1).statements()).hasSize(2)

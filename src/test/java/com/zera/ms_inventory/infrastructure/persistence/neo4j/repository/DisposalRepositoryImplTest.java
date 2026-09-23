@@ -11,12 +11,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Values;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Disposal;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
+import com.zera.ms_inventory.core.domain.valueobject.DisposedWeight;
+import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.DisposalNode;
@@ -40,6 +44,7 @@ class DisposalRepositoryImplTest {
 
     @Mock private DisposalNeo4jRepository neo4jRepository;
     @Mock private ItemNeo4jRepository itemNeo4jRepository;
+    @Mock private org.springframework.data.neo4j.core.Neo4jClient neo4jClient;
 
     private final ItemMapper itemMapper = new ItemMapper(new ModelMapper(new CategoryMapper()));
     private final DisposalMapper mapper = new DisposalMapper();
@@ -48,7 +53,7 @@ class DisposalRepositoryImplTest {
 
     @BeforeEach
     void setUp() {
-        repository = new DisposalRepositoryImpl(neo4jRepository, itemNeo4jRepository, mapper);
+        repository = new DisposalRepositoryImpl(neo4jRepository, itemNeo4jRepository, mapper, neo4jClient);
     }
 
     private ItemNode itemNode(UUID id, String displayCode) {
@@ -142,6 +147,42 @@ class DisposalRepositoryImplTest {
 
         assertThat(repository.findById(Fixtures.UNIT, id)).isPresent()
                 .get().extracting(Disposal::getDestination).isEqualTo(DestinationType.DONATION);
+    }
+
+    /**
+     * O mapeamento das linhas dos indicadores e testado direto na funcao: o caminho fluente do
+     * Neo4jClient nao acrescenta logica, so entrega o Record.
+     */
+    @Test
+    void shouldMapADisposedWeightRow() {
+        Record linha = org.mockito.Mockito.mock(Record.class);
+        when(linha.get("destination")).thenReturn(Values.value("RECYCLING"));
+        when(linha.get("disposedAt")).thenReturn(Values.value(LocalDate.parse("2026-01-10")));
+        when(linha.get("weightKg")).thenReturn(Values.value(2.5));
+        when(linha.get("materials")).thenReturn(Values.value(List.of("METAL", "PLASTIC")));
+
+        DisposedWeight peso = DisposalRepositoryImpl.toDisposedWeight(null, linha);
+
+        assertThat(peso.destination()).isEqualTo(DestinationType.RECYCLING);
+        assertThat(peso.disposedAt()).isEqualTo(LocalDate.parse("2026-01-10"));
+        assertThat(peso.weightKg()).isEqualTo(2.5);
+        assertThat(peso.materials()).containsExactly(MaterialCode.METAL, MaterialCode.PLASTIC);
+    }
+
+    /** Modelo sem material e item sem peso nao podem quebrar a consulta dos indicadores. */
+    @Test
+    void shouldMapARowWithoutMaterialsOrWeight() {
+        Record linha = org.mockito.Mockito.mock(Record.class);
+        when(linha.get("destination")).thenReturn(Values.value("DONATION"));
+        when(linha.get("disposedAt")).thenReturn(Values.value(LocalDate.parse("2026-01-15")));
+        when(linha.get("weightKg")).thenReturn(Values.NULL);
+        when(linha.get("materials")).thenReturn(Values.value(List.of()));
+
+        DisposedWeight peso = DisposalRepositoryImpl.toDisposedWeight(null, linha);
+
+        assertThat(peso.weightKg()).isNull();
+        assertThat(peso.weightOrZero()).isZero();
+        assertThat(peso.materials()).isEmpty();
     }
 
     @Test
