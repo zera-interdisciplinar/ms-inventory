@@ -1,11 +1,12 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
-import java.util.List;
+import java.io.IOException;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,128 +17,241 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
+import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
+import com.zera.ms_inventory.core.usecase.item.ApproveItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
+import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
-import com.zera.ms_inventory.core.usecase.item.FindAllItems;
+import com.zera.ms_inventory.core.usecase.item.EvaluateItem;
+import com.zera.ms_inventory.core.usecase.item.FinishMaintenance;
+import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemAcquiredAt;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemManufacturingDate;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemNextPredictionDate;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemSerialNumber;
+import com.zera.ms_inventory.core.usecase.item.ListItemEvents;
+import com.zera.ms_inventory.core.usecase.item.ListItems;
+import com.zera.ms_inventory.core.usecase.item.RejectItem;
+import com.zera.ms_inventory.core.usecase.item.RestoreItem;
+import com.zera.ms_inventory.core.usecase.item.StartMaintenance;
+import com.zera.ms_inventory.core.usecase.item.SubmitItem;
+import com.zera.ms_inventory.core.usecase.item.UpdateItem;
+import com.zera.ms_inventory.core.usecase.item.UploadItemPhoto;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
-import com.zera.ms_inventory.core.usecase.item.UpdateItemUsageIntensity;
 import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemAcquiredAtRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemManufacturingDateRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemNextPredictionDateRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemSerialNumberRequest;
+import com.zera.ms_inventory.infrastructure.http.request.EvaluateItemRequest;
+import com.zera.ms_inventory.infrastructure.http.request.RejectItemRequest;
+import com.zera.ms_inventory.infrastructure.http.request.StartMaintenanceRequest;
+import com.zera.ms_inventory.infrastructure.http.request.UpdateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateItemUsageIntensityRequest;
+import com.zera.ms_inventory.infrastructure.http.response.EventResponse;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
+import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
 @RequestMapping("/api/v1/items")
-@PreAuthorize(Authz.MANAGER)
+@PreAuthorize(Authz.INVENTORY_OPERATOR)
 public class ItemController {
 
+    private final ItemResponses itemResponses;
     private final CreateItem createItem;
-    private final FindAllItems findAllItems;
+    private final ListItems listItems;
+    private final ListItemEvents listItemEvents;
     private final FindItemById findItemById;
+    private final FindItemByBarcode findItemByBarcode;
+    private final UpdateItem updateItem;
+    private final SubmitItem submitItem;
+    private final ApproveItem approveItem;
+    private final RejectItem rejectItem;
+    private final StartMaintenance startMaintenance;
+    private final FinishMaintenance finishMaintenance;
+    private final EvaluateItem evaluateItem;
+    private final RestoreItem restoreItem;
+    private final UploadItemPhoto uploadItemPhoto;
     private final UpdateItemStatus updateItemStatus;
     private final AssignItemUnit assignItemUnit;
-    private final UpdateItemSerialNumber updateItemSerialNumber;
-    private final UpdateItemAcquiredAt updateItemAcquiredAt;
-    private final UpdateItemNextPredictionDate updateItemNextPredictionDate;
-    private final UpdateItemManufacturingDate updateItemManufacturingDate;
-    private final UpdateItemUsageIntensity updateItemUsageIntensity;
     private final DeleteItem deleteItem;
 
     public ItemController(CreateItem createItem,
-                           FindAllItems findAllItems,
+                           ListItems listItems,
+                           ListItemEvents listItemEvents,
                            FindItemById findItemById,
+                           FindItemByBarcode findItemByBarcode,
+                           UpdateItem updateItem,
+                           SubmitItem submitItem,
+                           ApproveItem approveItem,
+                           RejectItem rejectItem,
+                           StartMaintenance startMaintenance,
+                           FinishMaintenance finishMaintenance,
+                           EvaluateItem evaluateItem,
+                           RestoreItem restoreItem,
+                           UploadItemPhoto uploadItemPhoto,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
-                           UpdateItemSerialNumber updateItemSerialNumber,
-                           UpdateItemAcquiredAt updateItemAcquiredAt,
-                           UpdateItemNextPredictionDate updateItemNextPredictionDate,
-                           UpdateItemManufacturingDate updateItemManufacturingDate,
-                           UpdateItemUsageIntensity updateItemUsageIntensity,
-                           DeleteItem deleteItem) {
+                           DeleteItem deleteItem,
+                           ItemResponses itemResponses) {
+        this.itemResponses = itemResponses;
         this.createItem = createItem;
-        this.findAllItems = findAllItems;
+        this.listItems = listItems;
+        this.listItemEvents = listItemEvents;
         this.findItemById = findItemById;
+        this.findItemByBarcode = findItemByBarcode;
+        this.updateItem = updateItem;
+        this.submitItem = submitItem;
+        this.approveItem = approveItem;
+        this.rejectItem = rejectItem;
+        this.startMaintenance = startMaintenance;
+        this.finishMaintenance = finishMaintenance;
+        this.evaluateItem = evaluateItem;
+        this.restoreItem = restoreItem;
+        this.uploadItemPhoto = uploadItemPhoto;
         this.updateItemStatus = updateItemStatus;
         this.assignItemUnit = assignItemUnit;
-        this.updateItemSerialNumber = updateItemSerialNumber;
-        this.updateItemAcquiredAt = updateItemAcquiredAt;
-        this.updateItemNextPredictionDate = updateItemNextPredictionDate;
-        this.updateItemManufacturingDate = updateItemManufacturingDate;
-        this.updateItemUsageIntensity = updateItemUsageIntensity;
         this.deleteItem = deleteItem;
     }
 
     @PostMapping
-    public ResponseEntity<Item> create(@RequestHeader("X-Unit-Id") UUID unitId,
-                                        @RequestBody @Valid CreateItemRequest request) {
-        Item created = createItem.execute(request.toCommand(unitId));
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<ItemResponse> create(@RequestHeader("X-Unit-Id") UUID unitId,
+                                        @RequestBody @Valid CreateItemRequest request, Actor actor) {
+        CreateItemResult result = createItem.execute(request.toCommand(unitId, actor));
+        // reenvio do mesmo id (app offline) devolve o item ja cadastrado
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
+                .body(itemResponses.from(result.item()));
     }
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Item>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
-        return ResponseEntity.ok(findAllItems.execute(unitId));
+    public ResponseEntity<PageResponse<ItemResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                            @RequestParam(required = false) ItemStatus status,
+                                                            @RequestParam(required = false) UUID categoryId,
+                                                            @RequestParam(required = false) UUID modelId,
+                                                            @RequestParam(required = false) String q,
+                                                            @RequestParam(required = false) Boolean eligibleForDisposal,
+                                                            @RequestParam(defaultValue = "0") int page,
+                                                            @RequestParam(defaultValue = "20") int size) {
+        ItemFilter filter = new ItemFilter(status, categoryId, modelId, q, eligibleForDisposal);
+        return ResponseEntity.ok(PageResponse.from(listItems.execute(unitId, filter, new Pagination(page, size)),
+                itemResponses::from));
+    }
+
+    @GetMapping("/by-barcode/{barcode}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ItemResponse> findByBarcode(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                      @PathVariable String barcode) {
+        return ResponseEntity.ok(itemResponses.from(findItemByBarcode.execute(unitId, barcode)));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Item> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
-        return ResponseEntity.ok(findItemById.execute(unitId, id));
+    public ResponseEntity<ItemResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        return ResponseEntity.ok(itemResponses.from(findItemById.execute(unitId, id)));
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<ItemResponse> update(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                               @RequestBody @Valid UpdateItemRequest request) {
+        return ResponseEntity.ok(itemResponses.from(updateItem.execute(request.toCommand(unitId, id))));
+    }
+
+    @PostMapping(path = "/{id}/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ItemResponse> uploadPhoto(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                    @RequestPart("photo") MultipartFile photo) throws IOException {
+        return ResponseEntity.ok(itemResponses.from(
+                uploadItemPhoto.execute(unitId, id, photo.getBytes(), photo.getContentType())));
+    }
+
+    @GetMapping("/{id}/events")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PageResponse<EventResponse>> findEvents(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                                  @PathVariable UUID id,
+                                                                  @RequestParam(defaultValue = "0") int page,
+                                                                  @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(PageResponse.from(
+                listItemEvents.execute(unitId, id, new Pagination(page, size)), EventResponse::from));
+    }
+
+    /** Envia o rascunho: 422 com missingFields quando ainda falta algo do cadastro. */
+    @PostMapping("/{id}/submit")
+    public ResponseEntity<ItemResponse> submit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                               Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(submitItem.execute(unitId, id, actor)));
+    }
+
+    @PostMapping("/{id}/approve")
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<ItemResponse> approve(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(approveItem.execute(unitId, id, actor)));
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<ItemResponse> reject(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                               @RequestBody @Valid RejectItemRequest request, Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(rejectItem.execute(unitId, id, request.reason(), actor)));
+    }
+
+    @PostMapping("/{id}/maintenance/start")
+    public ResponseEntity<ItemResponse> startMaintenance(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                         @PathVariable UUID id,
+                                                         @RequestBody @Valid StartMaintenanceRequest request,
+                                                         Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(
+                startMaintenance.execute(unitId, id, request.reason(), actor)));
+    }
+
+    @PostMapping("/{id}/maintenance/finish")
+    public ResponseEntity<ItemResponse> finishMaintenance(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                          @PathVariable UUID id, Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(finishMaintenance.execute(unitId, id, actor)));
+    }
+
+    /** Avaliacao do item que voltou da manutencao; operario e gestor podem avaliar. */
+    @PostMapping("/{id}/evaluate")
+    public ResponseEntity<ItemResponse> evaluate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                 @RequestBody @Valid EvaluateItemRequest request, Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(evaluateItem.execute(unitId, id, request.condition(),
+                request.hasDamages(), request.damages(), actor)));
+    }
+
+    /** Desfaz a remocao logica, devolvendo o item ao estado de onde ele saiu. */
+    @PostMapping("/{id}/restore")
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<ItemResponse> restore(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(restoreItem.execute(unitId, id, actor)));
+    }
+
+    // transicao fora da maquina de estados responde 409; os passos do fluxo ganham endpoint proprio nas ZERA-244 a 247
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Item> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemStatusRequest request) {
-        return ResponseEntity.ok(updateItemStatus.execute(unitId, id, request.status()));
+    public ResponseEntity<ItemResponse> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                     @RequestBody @Valid UpdateItemStatusRequest request, Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(updateItemStatus.execute(unitId, id, request.status(), actor)));
     }
 
     @PatchMapping("/{id}/unit")
-    public ResponseEntity<Item> assignUnit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
-        return ResponseEntity.ok(assignItemUnit.execute(unitId, id, request.unitId()));
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<ItemResponse> assignUnit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid AssignItemUnitRequest request) {
+        return ResponseEntity.ok(itemResponses.from(assignItemUnit.execute(unitId, id, request.unitId())));
     }
 
-    @PatchMapping("/{id}/serial-number")
-    public ResponseEntity<Item> updateSerialNumber(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemSerialNumberRequest request) {
-        return ResponseEntity.ok(updateItemSerialNumber.execute(unitId, id, request.serialNumber()));
-    }
-
-    @PatchMapping("/{id}/acquired-at")
-    public ResponseEntity<Item> updateAcquiredAt(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemAcquiredAtRequest request) {
-        return ResponseEntity.ok(updateItemAcquiredAt.execute(unitId, id, request.acquiredAt()));
-    }
-
-    @PatchMapping("/{id}/next-prediction-date")
-    public ResponseEntity<Item> updateNextPredictionDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemNextPredictionDateRequest request) {
-        return ResponseEntity.ok(updateItemNextPredictionDate.execute(unitId, id, request.nextPredictionDate()));
-    }
-
-    @PatchMapping("/{id}/manufacturing-date")
-    public ResponseEntity<Item> updateManufacturingDate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemManufacturingDateRequest request) {
-        return ResponseEntity.ok(updateItemManufacturingDate.execute(unitId, id, request.manufacturingDate()));
-    }
-
-    @PatchMapping("/{id}/usage-intensity")
-    public ResponseEntity<Item> updateUsageIntensity(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateItemUsageIntensityRequest request) {
-        return ResponseEntity.ok(updateItemUsageIntensity.execute(unitId, id, request.usageIntensity()));
-    }
-
+    /**
+     * Remocao logica: o item vai para REMOVED e sai das listagens. O operario pode remover porque o
+     * gestor consegue restaurar; item descartado nao e removivel e responde 409.
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
-        deleteItem.execute(unitId, id);
+    public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                       Actor actor) {
+        deleteItem.execute(unitId, id, actor);
         return ResponseEntity.noContent().build();
     }
 }

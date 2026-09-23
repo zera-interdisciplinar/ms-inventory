@@ -9,9 +9,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
+import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.PageResult;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ItemNode;
@@ -38,6 +45,12 @@ class ItemRepositoryImplTest {
 
     private final ModelMapper modelMapper = new ModelMapper(new CategoryMapper());
     private final ItemMapper mapper = new ItemMapper(modelMapper);
+
+    /** Mesma derivacao do repositorio: status que a maquina de estados deixa ir para DISPOSED. */
+    private static final List<String> DISPOSABLE = java.util.Arrays.stream(ItemStatus.values())
+            .filter(s -> s.canTransitionTo(ItemStatus.DISPOSED))
+            .map(ItemStatus::name)
+            .toList();
 
     private ItemRepositoryImpl repository;
 
@@ -126,5 +139,93 @@ class ItemRepositoryImplTest {
         repository.deleteById(Fixtures.UNIT, id);
 
         verify(neo4jRepository).deleteByIdAndUnitId(id, Fixtures.UNIT);
+    }
+
+    @Test
+    void shouldPageTheFilteredItemsWithinTheUnit() {
+        UUID categoryId = UUID.randomUUID();
+        ItemFilter filter = new ItemFilter(ItemStatus.IN_STOCK, categoryId, null, "placa");
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa", false,
+                DISPOSABLE)).thenReturn(11L);
+        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, "IN_STOCK", categoryId, null, "placa", false,
+                DISPOSABLE, 10L, 10))
+                .thenReturn(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))));
+
+        PageResult<Item> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(1, 10));
+
+        assertEquals(1, result.content().size());
+        assertEquals(11, result.totalElements());
+        assertEquals(2, result.totalPages());
+    }
+
+    @Test
+    void shouldFilterOnlyWhatCanBeDisposed() {
+        ItemFilter filter = new ItemFilter(null, null, null, null, true);
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, true, DISPOSABLE))
+                .thenReturn(1L);
+        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, null, null, null, null, true, DISPOSABLE, 0L, 20))
+                .thenReturn(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))));
+
+        PageResult<Item> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(0, 20));
+
+        assertEquals(1, result.content().size());
+        // o filtro nasce da maquina de estados, entao acompanha qualquer estado novo
+        assertTrue(DISPOSABLE.contains(ItemStatus.IN_STOCK.name()));
+        assertTrue(DISPOSABLE.contains(ItemStatus.AWAITING_EVALUATION.name()));
+        assertTrue(!DISPOSABLE.contains(ItemStatus.DRAFT.name()));
+    }
+
+    @Test
+    void shouldSkipThePageQueryWhenNothingMatches() {
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, false, DISPOSABLE))
+                .thenReturn(0L);
+
+        PageResult<Item> result = repository.findPage(Fixtures.UNIT, ItemFilter.none(), new Pagination(0, 20));
+
+        assertTrue(result.content().isEmpty());
+        verify(neo4jRepository, never()).findFilteredPage(any(), any(), any(), any(), any(),
+                org.mockito.ArgumentMatchers.anyBoolean(), any(),
+                org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void shouldPageTheItemsOfAModelWithinTheUnit() {
+        UUID modelId = UUID.randomUUID();
+        PageRequest request = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+        when(neo4jRepository.findAllByUnitIdAndModelId(Fixtures.UNIT, modelId, request))
+                .thenReturn(new PageImpl<>(List.of(mapper.toNode(Fixtures.item(Fixtures.UNIT))), request, 6));
+
+        PageResult<Item> result = repository.findPageByModel(Fixtures.UNIT, modelId, new Pagination(0, 5));
+
+        assertEquals(1, result.content().size());
+        assertEquals(2, result.totalPages());
+    }
+
+    @Test
+    void shouldCheckWhetherTheModelHasItemsInTheUnit() {
+        UUID modelId = UUID.randomUUID();
+        when(neo4jRepository.existsByUnitIdAndModelId(Fixtures.UNIT, modelId)).thenReturn(true);
+
+        assertTrue(repository.existsByModel(Fixtures.UNIT, modelId));
+    }
+
+    @Test
+    void shouldFindByBarcodeAndCheckDisplayCodesWithinTheUnit() {
+        Item item = Fixtures.item(Fixtures.UNIT);
+        item.assignDisplayCode("265964");
+        when(neo4jRepository.findByUnitIdAndBarcode(Fixtures.UNIT, "7891234567890"))
+                .thenReturn(Optional.of(mapper.toNode(item)));
+        when(neo4jRepository.existsByUnitIdAndDisplayCode(Fixtures.UNIT, "265964")).thenReturn(true);
+
+        assertEquals("265964", repository.findByBarcode(Fixtures.UNIT, "7891234567890").orElseThrow().getDisplayCode());
+        assertTrue(repository.existsByDisplayCode(Fixtures.UNIT, "265964"));
+    }
+
+    @Test
+    void shouldTellWhetherAnIdIsAlreadyTakenInAnyUnit() {
+        UUID id = UUID.randomUUID();
+        when(neo4jRepository.existsById(id)).thenReturn(true);
+
+        assertTrue(repository.existsAnyWithId(id));
     }
 }

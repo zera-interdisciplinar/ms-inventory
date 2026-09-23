@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,13 +29,13 @@ class SearchInventoryToolTest {
 
     private Item item(ItemStatus status, String serialNumber) {
         return new Item(UUID.randomUUID(), new Barcode("123456"), status, Fixtures.UNIT,
-                Fixtures.model(Fixtures.UNIT), LocalDateTime.now(), 2024, 7, serialNumber, LocalDate.now());
+                Fixtures.model(Fixtures.UNIT), null, 2024, 6, serialNumber, LocalDate.now());
     }
 
     @Test
     void shouldReturnEverythingInTheUnitWhenNoFilterIsGiven() {
         when(findAllItems.execute(Fixtures.UNIT))
-                .thenReturn(List.of(item(ItemStatus.OK, "SN-001"), item(ItemStatus.DAMAGED, "SN-002")));
+                .thenReturn(List.of(item(ItemStatus.IN_STOCK, "SN-001"), item(ItemStatus.IN_MAINTENANCE, "SN-002")));
 
         List<Item> result = new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, null, null);
 
@@ -46,17 +45,17 @@ class SearchInventoryToolTest {
     @Test
     void shouldFilterByStatus() {
         when(findAllItems.execute(Fixtures.UNIT))
-                .thenReturn(List.of(item(ItemStatus.OK, "SN-001"), item(ItemStatus.DAMAGED, "SN-002")));
+                .thenReturn(List.of(item(ItemStatus.IN_STOCK, "SN-001"), item(ItemStatus.IN_MAINTENANCE, "SN-002")));
 
-        List<Item> result = new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, "damaged", null);
+        List<Item> result = new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, "in_maintenance", null);
 
         assertEquals(1, result.size());
-        assertEquals(ItemStatus.DAMAGED, result.get(0).getStatus());
+        assertEquals(ItemStatus.IN_MAINTENANCE, result.get(0).getStatus());
     }
 
     @Test
     void shouldReturnNothingForAnUnknownStatus() {
-        when(findAllItems.execute(Fixtures.UNIT)).thenReturn(List.of(item(ItemStatus.OK, "SN-001")));
+        when(findAllItems.execute(Fixtures.UNIT)).thenReturn(List.of(item(ItemStatus.IN_STOCK, "SN-001")));
 
         assertTrue(new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, "NOPE", null).isEmpty());
     }
@@ -64,7 +63,7 @@ class SearchInventoryToolTest {
     @Test
     void shouldFilterBySerialNumberSubstringIgnoringCaseAndNulls() {
         when(findAllItems.execute(Fixtures.UNIT))
-                .thenReturn(List.of(item(ItemStatus.OK, "SN-ABC"), item(ItemStatus.OK, null)));
+                .thenReturn(List.of(item(ItemStatus.IN_STOCK, "SN-ABC"), item(ItemStatus.IN_STOCK, null)));
 
         List<Item> result = new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, null, "abc");
 

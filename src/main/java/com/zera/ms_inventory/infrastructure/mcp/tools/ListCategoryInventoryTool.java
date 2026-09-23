@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.zera.ms_inventory.core.domain.entity.Category;
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.usecase.category.FindAllCategories;
 import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 
@@ -59,7 +60,7 @@ public class ListCategoryInventoryTool {
 
         long totalItems = categoryItems.size();
         long damagedItems = categoryItems.stream()
-            .filter(item -> item.getStatus().name().equals("DAMAGED"))
+            .filter(item -> item.getCondition() == ItemCondition.DAMAGED)
             .count();
 
         return new CategoryInventorySummary(

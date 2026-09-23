@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import com.zera.ms_inventory.core.domain.entity.Category;
+import com.zera.ms_inventory.core.domain.exception.CategoryInUseException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.usecase.category.CreateCategory;
 import com.zera.ms_inventory.core.usecase.category.DeleteCategory;
@@ -28,6 +29,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateCategoryNameReque
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -160,5 +162,16 @@ class CategoryControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(deleteCategory).execute(UNIT, id);
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/categories/{id} - deve retornar 409 quando a categoria ainda tiver modelos")
+    void shouldReturn409WhenDeletingACategoryWithModels() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new CategoryInUseException(id)).when(deleteCategory).execute(UNIT, id);
+
+        mockMvc.perform(delete("/api/v1/categories/{id}", id)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isConflict());
     }
 }

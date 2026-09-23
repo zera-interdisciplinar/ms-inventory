@@ -1,6 +1,5 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
-import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -16,107 +15,136 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
-import com.zera.ms_inventory.core.usecase.model.FindAllModels;
 import com.zera.ms_inventory.core.usecase.model.FindModelById;
+import com.zera.ms_inventory.core.usecase.model.ListModelItems;
+import com.zera.ms_inventory.core.usecase.model.ListModels;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelExpectedLifespanMonths;
-import com.zera.ms_inventory.core.usecase.model.UpdateModelHazardousMaterials;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelManufacturer;
+import com.zera.ms_inventory.core.usecase.model.UpdateModelMaterials;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelName;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelWarrantyMonths;
 import com.zera.ms_inventory.infrastructure.http.request.CreateModelRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelExpectedLifespanMonthsRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateModelHazardousMaterialsRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturerRequest;
+import com.zera.ms_inventory.infrastructure.http.request.UpdateModelMaterialsRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
+import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
+import com.zera.ms_inventory.infrastructure.http.response.ModelResponse;
+import com.zera.ms_inventory.infrastructure.http.response.PageResponse;
 import com.zera.ms_inventory.infrastructure.security.Authz;
 
 @RestController
 @RequestMapping("/api/v1/models")
-@PreAuthorize(Authz.MANAGER)
+@PreAuthorize(Authz.INVENTORY_OPERATOR)
 public class ModelController {
 
+    private final ItemResponses itemResponses;
     private final CreateModel createModel;
-    private final FindAllModels findAllModels;
+    private final ListModels listModels;
     private final FindModelById findModelById;
+    private final ListModelItems listModelItems;
     private final UpdateModelName updateModelName;
     private final UpdateModelManufacturer updateModelManufacturer;
     private final UpdateModelWarrantyMonths updateModelWarrantyMonths;
     private final UpdateModelExpectedLifespanMonths updateModelExpectedLifespanMonths;
-    private final UpdateModelHazardousMaterials updateModelHazardousMaterials;
+    private final UpdateModelMaterials updateModelMaterials;
     private final DeleteModel deleteModel;
 
     public ModelController(CreateModel createModel,
-                            FindAllModels findAllModels,
+                            ListModels listModels,
                             FindModelById findModelById,
+                            ListModelItems listModelItems,
                             UpdateModelName updateModelName,
                             UpdateModelManufacturer updateModelManufacturer,
                             UpdateModelWarrantyMonths updateModelWarrantyMonths,
                             UpdateModelExpectedLifespanMonths updateModelExpectedLifespanMonths,
-                            UpdateModelHazardousMaterials updateModelHazardousMaterials,
-                            DeleteModel deleteModel) {
+                            UpdateModelMaterials updateModelMaterials,
+                            DeleteModel deleteModel,
+                            ItemResponses itemResponses) {
+        this.itemResponses = itemResponses;
         this.createModel = createModel;
-        this.findAllModels = findAllModels;
+        this.listModels = listModels;
         this.findModelById = findModelById;
+        this.listModelItems = listModelItems;
         this.updateModelName = updateModelName;
         this.updateModelManufacturer = updateModelManufacturer;
         this.updateModelWarrantyMonths = updateModelWarrantyMonths;
         this.updateModelExpectedLifespanMonths = updateModelExpectedLifespanMonths;
-        this.updateModelHazardousMaterials = updateModelHazardousMaterials;
+        this.updateModelMaterials = updateModelMaterials;
         this.deleteModel = deleteModel;
     }
 
     @PostMapping
-    public ResponseEntity<Model> create(@RequestHeader("X-Unit-Id") UUID unitId,
-                                         @RequestBody @Valid CreateModelRequest request) {
-        Model created = createModel.execute(unitId, request.name(), request.manufacturer(), request.warrantyMonths(),
-                request.expectedLifespanMonths(), request.hazardousMaterials(), request.categoryId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<ModelResponse> create(@RequestHeader("X-Unit-Id") UUID unitId,
+                                         @RequestBody @Valid CreateModelRequest request, Actor actor) {
+        Model created = createModel.execute(request.toCommand(unitId, actor));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ModelResponse.from(created));
     }
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Model>> findAll(@RequestHeader("X-Unit-Id") UUID unitId) {
-        return ResponseEntity.ok(findAllModels.execute(unitId));
+    public ResponseEntity<PageResponse<ModelResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                            @RequestParam(required = false) ApprovalStatus approvalStatus,
+                                                            @RequestParam(defaultValue = "0") int page,
+                                                            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(PageResponse.from(
+                listModels.execute(unitId, approvalStatus, new Pagination(page, size)), ModelResponse::from));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Model> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
-        return ResponseEntity.ok(findModelById.execute(unitId, id));
+    public ResponseEntity<ModelResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
+        return ResponseEntity.ok(ModelResponse.from(findModelById.execute(unitId, id)));
+    }
+
+    @GetMapping("/{id}/items")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PageResponse<ItemResponse>> findItems(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                              @PathVariable UUID id,
+                                                              @RequestParam(defaultValue = "0") int page,
+                                                              @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(PageResponse.from(
+                listModelItems.execute(unitId, id, new Pagination(page, size)), itemResponses::from));
     }
 
     @PatchMapping("/{id}/name")
-    public ResponseEntity<Model> rename(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelNameRequest request) {
-        return ResponseEntity.ok(updateModelName.execute(unitId, id, request.name()));
+    public ResponseEntity<ModelResponse> rename(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelNameRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelName.execute(unitId, id, request.name())));
     }
 
     @PatchMapping("/{id}/manufacturer")
-    public ResponseEntity<Model> updateManufacturer(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelManufacturerRequest request) {
-        return ResponseEntity.ok(updateModelManufacturer.execute(unitId, id, request.manufacturer()));
+    public ResponseEntity<ModelResponse> updateManufacturer(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelManufacturerRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelManufacturer.execute(unitId, id, request.manufacturer())));
     }
 
     @PatchMapping("/{id}/warranty-months")
-    public ResponseEntity<Model> updateWarrantyMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelWarrantyMonthsRequest request) {
-        return ResponseEntity.ok(updateModelWarrantyMonths.execute(unitId, id, request.warrantyMonths()));
+    public ResponseEntity<ModelResponse> updateWarrantyMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelWarrantyMonthsRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelWarrantyMonths.execute(unitId, id, request.warrantyMonths())));
     }
 
     @PatchMapping("/{id}/expected-lifespan-months")
-    public ResponseEntity<Model> updateExpectedLifespanMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelExpectedLifespanMonthsRequest request) {
-        return ResponseEntity.ok(updateModelExpectedLifespanMonths.execute(unitId, id, request.expectedLifespanMonths()));
+    public ResponseEntity<ModelResponse> updateExpectedLifespanMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelExpectedLifespanMonthsRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelExpectedLifespanMonths.execute(unitId, id, request.expectedLifespanMonths())));
     }
 
-    @PatchMapping("/{id}/hazardous-materials")
-    public ResponseEntity<Model> updateHazardousMaterials(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelHazardousMaterialsRequest request) {
-        return ResponseEntity.ok(updateModelHazardousMaterials.execute(unitId, id, request.hazardousMaterials()));
+    @PatchMapping("/{id}/materials")
+    public ResponseEntity<ModelResponse> updateMaterials(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelMaterialsRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelMaterials.execute(unitId, id, request.materials())));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize(Authz.MANAGER)
     public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
         deleteModel.execute(unitId, id);
         return ResponseEntity.noContent().build();

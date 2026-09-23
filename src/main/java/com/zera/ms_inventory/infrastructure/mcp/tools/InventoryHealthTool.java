@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -41,7 +42,7 @@ public class InventoryHealthTool {
 
         long totalItems = items.size();
         long damagedItems = items.stream()
-            .filter(item -> item.getStatus().name().equals("DAMAGED"))
+            .filter(item -> item.getCondition() == ItemCondition.DAMAGED)
             .count();
         long okItems = totalItems - damagedItems;
 

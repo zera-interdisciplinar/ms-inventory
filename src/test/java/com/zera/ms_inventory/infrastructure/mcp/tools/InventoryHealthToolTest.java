@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,7 +28,7 @@ class InventoryHealthToolTest {
 
     private Item item(ItemStatus status, String serialNumber) {
         return new Item(UUID.randomUUID(), new Barcode("123456"), status, Fixtures.UNIT,
-                Fixtures.model(Fixtures.UNIT), LocalDateTime.now(), 2024, 7, serialNumber, LocalDate.now());
+                Fixtures.model(Fixtures.UNIT), null, 2024, 6, serialNumber, LocalDate.now());
     }
 
     @Test
@@ -42,12 +41,19 @@ class InventoryHealthToolTest {
         assertEquals(0.0, report.healthScore);
     }
 
+    /** Dano virou condicao do item na ZERA-243; o status so diz onde ele esta no fluxo. */
+    private static Item damaged(Item item) {
+        item.describe(item.getName(), com.zera.ms_inventory.core.domain.valueobject.ItemCondition.DAMAGED,
+                false, java.util.Set.of(), null);
+        return item;
+    }
+
     @Test
     void shouldScoreTheUnitInventory() {
         when(findAllItems.execute(Fixtures.UNIT)).thenReturn(List.of(
-                item(ItemStatus.OK, "SN-001"),
-                item(ItemStatus.DAMAGED, "SN-002"),
-                item(ItemStatus.OK, null)));
+                item(ItemStatus.IN_STOCK, "SN-001"),
+                damaged(item(ItemStatus.IN_MAINTENANCE, "SN-002")),
+                item(ItemStatus.IN_STOCK, null)));
 
         var report = new InventoryHealthTool(findAllItems).getInventoryHealth(Fixtures.UNIT);
 

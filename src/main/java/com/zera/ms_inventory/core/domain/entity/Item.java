@@ -2,27 +2,45 @@ package com.zera.ms_inventory.core.domain.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
+import com.zera.ms_inventory.core.domain.valueobject.DamageType;
+import com.zera.ms_inventory.core.domain.valueobject.EventType;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException;
 
 public class Item {
     private final UUID id;
     private final Barcode barcode;
+    private String displayCode;
     private ItemStatus status;
     private UUID unitId;
     private final Model model;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastEventAt;
-    private LocalDateTime nextPredictionDate;
-    private Integer manufacturingDate;
+    private LocalDate predictedFailureDate;
+    private LocalDateTime predictionUpdatedAt;
+    private Integer manufacturingYear;
     private Integer usageIntensity;
     private String serialNumber;
     private LocalDate acquiredAt;
+    private String name;
+    private ItemCondition condition;
+    private Boolean hasDamages;
+    private Set<DamageType> damages = Set.of();
+    private String notes;
+    private String photoKey;
+    private UUID createdBy;
+    private String createdByName;
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastEventAt, LocalDate predictedFailureDate, Integer manufacturingYear, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -31,14 +49,16 @@ public class Item {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.lastEventAt = lastEventAt;
-        this.nextPredictionDate = nextPredictionDate;
-        this.manufacturingDate = manufacturingDate;
+        validateManufacturingYear(manufacturingYear);
+        validateUsageIntensity(usageIntensity);
+        this.predictedFailureDate = predictedFailureDate;
+        this.manufacturingYear = manufacturingYear;
         this.usageIntensity = usageIntensity;
         this.serialNumber = serialNumber;
         this.acquiredAt = acquiredAt;
     }
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime lastEventAt, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime lastEventAt, LocalDate predictedFailureDate, Integer manufacturingYear, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -47,14 +67,16 @@ public class Item {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.lastEventAt = lastEventAt;
-        this.nextPredictionDate = nextPredictionDate;
-        this.manufacturingDate = manufacturingDate;
+        validateManufacturingYear(manufacturingYear);
+        validateUsageIntensity(usageIntensity);
+        this.predictedFailureDate = predictedFailureDate;
+        this.manufacturingYear = manufacturingYear;
         this.usageIntensity = usageIntensity;
         this.serialNumber = serialNumber;
         this.acquiredAt = acquiredAt;
     }
 
-    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDateTime nextPredictionDate, Integer manufacturingDate, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
+    public Item(UUID id, Barcode barcode, ItemStatus status, UUID unitId, Model model, LocalDate predictedFailureDate, Integer manufacturingYear, Integer usageIntensity, String serialNumber, LocalDate acquiredAt) {
         this.id = id;
         this.barcode = barcode;
         this.status = status;
@@ -63,8 +85,10 @@ public class Item {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.lastEventAt = LocalDateTime.now();
-        this.nextPredictionDate = nextPredictionDate;
-        this.manufacturingDate = manufacturingDate;
+        validateManufacturingYear(manufacturingYear);
+        validateUsageIntensity(usageIntensity);
+        this.predictedFailureDate = predictedFailureDate;
+        this.manufacturingYear = manufacturingYear;
         this.usageIntensity = usageIntensity;
         this.serialNumber = serialNumber;
         this.acquiredAt = acquiredAt;
@@ -78,6 +102,11 @@ public class Item {
 
     public Barcode getBarcode() {
         return barcode;
+    }
+
+    /** Codigo curto de 6 digitos exibido no app ("ID 265964"), unico dentro da unidade. */
+    public String getDisplayCode() {
+        return displayCode;
     }
 
     public ItemStatus getStatus() {
@@ -104,14 +133,20 @@ public class Item {
         return lastEventAt;
     }
 
-    public LocalDateTime getNextPredictionDate() {
-        return nextPredictionDate;
+    /** Data prevista de quebra calculada pelo sistema preditivo. */
+    public LocalDate getPredictedFailureDate() {
+        return predictedFailureDate;
     }
 
-    public Integer getManufacturingDate() {
-        return manufacturingDate;
+    public LocalDateTime getPredictionUpdatedAt() {
+        return predictionUpdatedAt;
     }
 
+    public Integer getManufacturingYear() {
+        return manufacturingYear;
+    }
+
+    /** Intensidade de uso na escala de 0 a 10. */
     public Integer getUsageIntensity() {
         return usageIntensity;
     }
@@ -124,11 +159,182 @@ public class Item {
         return acquiredAt;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public ItemCondition getCondition() {
+        return condition;
+    }
+
+    /** Resposta do "Possui danos?"; nulo enquanto o cadastro nao respondeu. */
+    public Boolean getHasDamages() {
+        return hasDamages;
+    }
+
+    public Set<DamageType> getDamages() {
+        return damages;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    /** Chave da foto no armazenamento; a URL para exibir e gerada na resposta. */
+    public String getPhotoKey() {
+        return photoKey;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public String getCreatedByName() {
+        return createdByName;
+    }
+
     // -----------------------------
 
-    public void updateStatus(ItemStatus status) {
-        this.status = status;
+    /** Dados do formulario de cadastro/edicao do item. */
+    public void describe(String name, ItemCondition condition, Boolean hasDamages, Set<DamageType> damages,
+                         String notes) {
+        applyDescription(name, condition, hasDamages, damages, notes);
         touch();
+    }
+
+    public void attachPhoto(String photoKey) {
+        if (photoKey == null || photoKey.isBlank()) {
+            throw new IllegalArgumentException("photoKey is required");
+        }
+        this.photoKey = photoKey;
+        touch();
+    }
+
+    /** Reidrata a chave da foto salva. Uso exclusivo da camada de persistencia. */
+    public void restorePhotoKey(String photoKey) {
+        this.photoKey = photoKey;
+    }
+
+    /** O codigo e atribuido uma unica vez, no cadastro, e nao muda depois. */
+    public void assignDisplayCode(String displayCode) {
+        if (this.displayCode != null) {
+            throw new IllegalStateException("Item " + id + " already has a display code");
+        }
+        if (displayCode == null || !displayCode.matches("\\d{6}")) {
+            throw new IllegalArgumentException("displayCode must have exactly 6 digits");
+        }
+        this.displayCode = displayCode;
+    }
+
+    /** Reidrata o codigo salvo. Uso exclusivo da camada de persistencia. */
+    public void restoreDisplayCode(String displayCode) {
+        this.displayCode = displayCode;
+    }
+
+    /** Guarda quem cadastrou; o nome fica gravado para o "Cadastrado por" de qualquer papel. */
+    public void registerBy(Actor actor) {
+        this.createdBy = actor.userId();
+        this.createdByName = actor.name();
+        touch();
+    }
+
+    /** Reidrata os dados de cadastro salvos. Uso exclusivo da camada de persistencia. */
+    public void restoreRegistration(String name, ItemCondition condition, Boolean hasDamages,
+                                    Set<DamageType> damages, String notes, UUID createdBy, String createdByName) {
+        applyDescription(name, condition, hasDamages, damages, notes);
+        this.createdBy = createdBy;
+        this.createdByName = createdByName;
+    }
+
+    private void applyDescription(String name, ItemCondition condition, Boolean hasDamages,
+                                  Set<DamageType> damages, String notes) {
+        Set<DamageType> safeDamages = damages == null ? Set.of() : Set.copyOf(damages);
+        if (Boolean.FALSE.equals(hasDamages) && !safeDamages.isEmpty()) {
+            throw new IllegalArgumentException("damages must be empty when hasDamages is false");
+        }
+        this.name = name;
+        this.condition = condition;
+        this.hasDamages = hasDamages;
+        this.damages = safeDamages;
+        this.notes = notes;
+    }
+
+
+    /**
+     * Campos que o app exige para o item sair do rascunho (ZERA-236). Devolve os nomes como o
+     * cadastro os envia, em ordem fixa, para a tela marcar o que falta preencher.
+     */
+    public List<String> missingRequiredFields() {
+        List<String> missing = new ArrayList<>();
+        if (barcode == null || barcode.getValue() == null || barcode.getValue().isBlank()) {
+            missing.add("barcode");
+        }
+        if (name == null || name.isBlank()) {
+            missing.add("name");
+        }
+        if (model == null) {
+            missing.add("model");
+        }
+        if (condition == null) {
+            missing.add("condition");
+        }
+        if (hasDamages == null) {
+            missing.add("hasDamages");
+        } else if (hasDamages && damages.isEmpty()) {
+            // respondeu que ha danos, mas nao disse quais
+            missing.add("damages");
+        }
+        if (usageIntensity == null) {
+            missing.add("usageIntensity");
+        }
+        if (photoKey == null || photoKey.isBlank()) {
+            missing.add("photo");
+        }
+        return List.copyOf(missing);
+    }
+
+    public boolean isReadyToSubmit() {
+        return missingRequiredFields().isEmpty();
+    }
+
+    /**
+     * Condicao registrada na avaliacao pos-manutencao. Os danos so mudam quando a avaliacao os
+     * informa; ficar em silencio mantem o que ja estava registrado.
+     */
+    public void evaluateCondition(ItemCondition condition, Boolean hasDamages, Set<DamageType> damages) {
+        if (condition == null) {
+            throw new IllegalArgumentException("condition is required to evaluate an item");
+        }
+        if (hasDamages == null) {
+            this.condition = condition;
+            touch();
+            return;
+        }
+        describe(name, condition, hasDamages, damages, notes);
+    }
+
+    /**
+     * Unico caminho para trocar o status: valida a transicao na maquina de estados e devolve o
+     * evento a ser gravado pelo caso de uso. Quem chamar com uma transicao invalida recebe
+     * {@link InvalidItemTransitionException}, que a API traduz para 409.
+     */
+    public Event transitionTo(ItemStatus target, EventType type, String reason, Actor actor) {
+        if (!status.canTransitionTo(target)) {
+            throw new InvalidItemTransitionException(id, status, target);
+        }
+        ItemStatus previous = status;
+        this.status = target;
+        touch();
+        touchLastEvent();
+        return Event.of(id, unitId, type, previous, target, reason, actor);
+    }
+
+    /**
+     * Reidrata o status vindo do banco sem passar pela maquina de estados. Uso exclusivo da camada
+     * de persistencia e da migracao de dados.
+     */
+    public void restoreStatus(ItemStatus status) {
+        this.status = status;
     }
 
     public void assignUnit(UUID unitId) {
@@ -146,19 +352,41 @@ public class Item {
         touch();
     }
 
-    public void updateNextPredictionDate(LocalDateTime nextPredictionDate) {
-        this.nextPredictionDate = nextPredictionDate;
+    /** Grava o resultado do sistema preditivo e quando ele foi calculado. */
+    public void recordPrediction(LocalDate predictedFailureDate) {
+        this.predictedFailureDate = predictedFailureDate;
+        this.predictionUpdatedAt = LocalDateTime.now();
         touch();
     }
 
-    public void updateManufacturingDate(Integer manufacturingDate) {
-        this.manufacturingDate = manufacturingDate;
+    /** Reidrata o momento da ultima previsao. Uso exclusivo da camada de persistencia. */
+    public void restorePredictionUpdatedAt(LocalDateTime predictionUpdatedAt) {
+        this.predictionUpdatedAt = predictionUpdatedAt;
+    }
+
+    public void updateManufacturingYear(Integer manufacturingYear) {
+        validateManufacturingYear(manufacturingYear);
+        this.manufacturingYear = manufacturingYear;
         touch();
     }
 
     public void updateUsageIntensity(Integer usageIntensity) {
+        validateUsageIntensity(usageIntensity);
         this.usageIntensity = usageIntensity;
         touch();
+    }
+
+    /** Escala de 0 a 10 informada no cadastro; e o formato que o sistema preditivo consome. */
+    private static void validateUsageIntensity(Integer usageIntensity) {
+        if (usageIntensity != null && (usageIntensity < 0 || usageIntensity > 10)) {
+            throw new IllegalArgumentException("usageIntensity must be between 0 and 10");
+        }
+    }
+
+    private static void validateManufacturingYear(Integer year) {
+        if (year != null && (year < 1950 || year > LocalDate.now().getYear())) {
+            throw new IllegalArgumentException("manufacturingYear must be between 1950 and the current year");
+        }
     }
 
     private void touch() {

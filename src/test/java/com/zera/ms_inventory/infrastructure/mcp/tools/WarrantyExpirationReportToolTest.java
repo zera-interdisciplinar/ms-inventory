@@ -1,7 +1,6 @@
 package com.zera.ms_inventory.infrastructure.mcp.tools;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -31,13 +30,13 @@ class WarrantyExpirationReportToolTest {
     private FindAllItems findAllItems;
 
     private Model modelWithWarranty(Integer months) {
-        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", months, 60, Set.of(),
+        return new Model(UUID.randomUUID(), Fixtures.UNIT, "Laptop", "Acme", months, 60, Set.of(), null, null,
                 Fixtures.category(Fixtures.UNIT));
     }
 
     private Item item(Model model, LocalDate acquiredAt) {
-        return new Item(UUID.randomUUID(), new Barcode("123456"), ItemStatus.OK, Fixtures.UNIT, model,
-                LocalDateTime.now(), 2024, 7, "SN-001", acquiredAt);
+        return new Item(UUID.randomUUID(), new Barcode("123456"), ItemStatus.IN_STOCK, Fixtures.UNIT, model,
+                null, 2024, 6, "SN-001", acquiredAt);
     }
 
     @Test
