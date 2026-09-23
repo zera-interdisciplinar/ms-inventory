@@ -5,53 +5,106 @@ import java.util.UUID;
 
 import com.zera.ms_inventory.core.domain.valueobject.RuleKind;
 import com.zera.ms_inventory.core.domain.valueobject.RuleLimitUnit;
-import com.zera.ms_inventory.core.domain.valueobject.RuleTargetType;
+import com.zera.ms_inventory.core.domain.valueobject.RuleTarget;
 
+/**
+ * Regra de alerta configurada pela unidade. Sem alvo, vale para a unidade inteira; com alvo, so
+ * para os itens daquele modelo ou categoria.
+ */
 public class Rule {
+
     private final UUID id;
+    private final UUID unitId;
     private String name;
     private RuleKind kind;
     private Integer limitValue;
     private RuleLimitUnit limitUnit;
-    private RuleTargetType targetType;
-    private UUID targetId;
+    private RuleTarget target;
     private boolean active;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public Rule(UUID id, String name, RuleKind kind, Integer limitValue, RuleLimitUnit limitUnit,
-                RuleTargetType targetType, UUID targetId, boolean active, LocalDateTime createdAt,
-                LocalDateTime updatedAt) {
-        this.id = id;
+    public Rule(UUID id, UUID unitId, String name, RuleKind kind, Integer limitValue, RuleLimitUnit limitUnit,
+                RuleTarget target, boolean active, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        if (unitId == null) {
+            throw new IllegalArgumentException("unitId is required");
+        }
+        if (kind == null) {
+            throw new IllegalArgumentException("kind is required");
+        }
+        validateLimit(kind, limitValue, limitUnit);
+        this.id = id != null ? id : UUID.randomUUID();
+        this.unitId = unitId;
         this.name = name;
         this.kind = kind;
         this.limitValue = limitValue;
         this.limitUnit = limitUnit;
-        this.targetType = targetType;
-        this.targetId = targetId;
+        this.target = target;
         this.active = active;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
+        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        this.updatedAt = updatedAt != null ? updatedAt : this.createdAt;
     }
 
-    public Rule(UUID id, String name, RuleKind kind, Integer limitValue, RuleLimitUnit limitUnit,
-                RuleTargetType targetType, UUID targetId, boolean active) {
-        this.id = id;
+    public Rule(UUID id, UUID unitId, String name, RuleKind kind, Integer limitValue, RuleLimitUnit limitUnit,
+                RuleTarget target, boolean active) {
+        this(id, unitId, name, kind, limitValue, limitUnit, target, active, null, null);
+    }
+
+    /**
+     * PERCENT so vale para limite relativo: garantia em 20% nao quer dizer nada, e deixar passar
+     * geraria alerta com numero sem sentido.
+     */
+    private static void validateLimit(RuleKind kind, Integer limitValue, RuleLimitUnit limitUnit) {
+        if (limitValue != null && limitValue < 0) {
+            throw new IllegalArgumentException("limitValue cannot be negative");
+        }
+        if (limitUnit == RuleLimitUnit.PERCENT && !kind.acceptsPercent()) {
+            throw new IllegalArgumentException("PERCENT limit is not valid for " + kind);
+        }
+    }
+
+    public void rename(String name) {
         this.name = name;
-        this.kind = kind;
+        touch();
+    }
+
+    public void changeLimit(Integer limitValue, RuleLimitUnit limitUnit) {
+        validateLimit(kind, limitValue, limitUnit);
         this.limitValue = limitValue;
         this.limitUnit = limitUnit;
-        this.targetType = targetType;
-        this.targetId = targetId;
-        this.active = active;
-        this.createdAt = LocalDateTime.now();
+        touch();
+    }
+
+    /** Alvo nulo devolve a regra para a unidade inteira. */
+    public void changeTarget(RuleTarget target) {
+        this.target = target;
+        touch();
+    }
+
+    public void activate() {
+        this.active = true;
+        touch();
+    }
+
+    public void deactivate() {
+        this.active = false;
+        touch();
+    }
+
+    public boolean appliesToWholeUnit() {
+        return target == null;
+    }
+
+    private void touch() {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // -------------------------------------------------
-
     public UUID getId() {
         return id;
+    }
+
+    public UUID getUnitId() {
+        return unitId;
     }
 
     public String getName() {
@@ -70,12 +123,8 @@ public class Rule {
         return limitUnit;
     }
 
-    public RuleTargetType getTargetType() {
-        return targetType;
-    }
-
-    public UUID getTargetId() {
-        return targetId;
+    public RuleTarget getTarget() {
+        return target;
     }
 
     public boolean isActive() {
@@ -88,38 +137,5 @@ public class Rule {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
-    }
-
-    // -------------------------------------
-
-    public void touch() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public void rename(String newName) {
-        this.name = newName;
-        touch();
-    }
-
-    public void changeLimit(Integer newLimitValue, RuleLimitUnit newLimitUnit) {
-        this.limitValue = newLimitValue;
-        this.limitUnit = newLimitUnit;
-        touch();
-    }
-
-    public void changeTarget(RuleTargetType newTargetType, UUID newTargetId) {
-        this.targetType = newTargetType;
-        this.targetId = newTargetId;
-        touch();
-    }
-
-    public void activate() {
-        this.active = true;
-        touch();
-    }
-
-    public void deactivate() {
-        this.active = false;
-        touch();
     }
 }

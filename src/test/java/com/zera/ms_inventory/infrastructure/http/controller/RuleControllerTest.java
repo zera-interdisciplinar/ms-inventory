@@ -1,6 +1,5 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,27 +10,24 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
 
+import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Rule;
 import com.zera.ms_inventory.core.domain.exception.RuleNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.RuleKind;
 import com.zera.ms_inventory.core.domain.valueobject.RuleLimitUnit;
+import com.zera.ms_inventory.core.domain.valueobject.RuleTarget;
 import com.zera.ms_inventory.core.domain.valueobject.RuleTargetType;
-import com.zera.ms_inventory.core.usecase.rule.ActivateRule;
 import com.zera.ms_inventory.core.usecase.rule.CreateRule;
-import com.zera.ms_inventory.core.usecase.rule.DeactivateRule;
+import com.zera.ms_inventory.core.usecase.rule.CreateRuleCommand;
 import com.zera.ms_inventory.core.usecase.rule.DeleteRule;
 import com.zera.ms_inventory.core.usecase.rule.FindAllRules;
 import com.zera.ms_inventory.core.usecase.rule.FindRuleById;
+import com.zera.ms_inventory.core.usecase.rule.SetRuleActive;
 import com.zera.ms_inventory.core.usecase.rule.UpdateRuleLimit;
 import com.zera.ms_inventory.core.usecase.rule.UpdateRuleName;
 import com.zera.ms_inventory.core.usecase.rule.UpdateRuleTarget;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
-import com.zera.ms_inventory.infrastructure.http.request.CreateRuleRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateRuleLimitRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateRuleNameRequest;
-import com.zera.ms_inventory.infrastructure.http.request.UpdateRuleTargetRequest;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -48,11 +44,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @org.springframework.context.annotation.Import(GlobalExceptionHandler.class)
 class RuleControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private static final UUID UNIT = Fixtures.UNIT;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Autowired private MockMvc mockMvc;
 
     @MockitoBean private CreateRule createRule;
     @MockitoBean private FindAllRules findAllRules;
@@ -60,160 +54,165 @@ class RuleControllerTest {
     @MockitoBean private UpdateRuleName updateRuleName;
     @MockitoBean private UpdateRuleLimit updateRuleLimit;
     @MockitoBean private UpdateRuleTarget updateRuleTarget;
-    @MockitoBean private ActivateRule activateRule;
-    @MockitoBean private DeactivateRule deactivateRule;
+    @MockitoBean private SetRuleActive setRuleActive;
     @MockitoBean private DeleteRule deleteRule;
 
-    @Test
-    @DisplayName("POST /api/v1/rules - deve criar a regra e retornar 201")
-    void shouldCreateRule() throws Exception {
-        UUID id = UUID.randomUUID();
-        UUID targetId = UUID.randomUUID();
-        Rule rule = new Rule(id, "Warranty check", RuleKind.WARRANTY_EXPIRATION, 12, RuleLimitUnit.MONTHS,
-                RuleTargetType.MODEL, targetId, true);
-        when(createRule.execute(eq("Warranty check"), eq(RuleKind.WARRANTY_EXPIRATION), eq(12),
-                eq(RuleLimitUnit.MONTHS), eq(RuleTargetType.MODEL), eq(targetId), eq(true),
-                any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(rule);
-
-        CreateRuleRequest request = new CreateRuleRequest("Warranty check", RuleKind.WARRANTY_EXPIRATION, 12,
-                RuleLimitUnit.MONTHS, RuleTargetType.MODEL, targetId, true);
-
-        mockMvc.perform(post("/api/v1/rules")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.name").value("Warranty check"));
+    private Rule rule(RuleTarget target) {
+        return new Rule(UUID.randomUUID(), UNIT, "Garantia vencendo", RuleKind.WARRANTY_EXPIRATION, 30,
+                RuleLimitUnit.DAYS, target, true);
     }
 
     @Test
-    @DisplayName("POST /api/v1/rules - deve retornar 400 quando o nome estiver em branco")
-    void shouldReturn400WhenNameIsBlank() throws Exception {
-        CreateRuleRequest request = new CreateRuleRequest("", RuleKind.WARRANTY_EXPIRATION, 12,
-                RuleLimitUnit.MONTHS, RuleTargetType.MODEL, UUID.randomUUID(), true);
+    @DisplayName("POST /api/v1/rules - deve criar a regra da unidade")
+    void shouldCreateRule() throws Exception {
+        UUID targetId = UUID.randomUUID();
+        when(createRule.execute(any(CreateRuleCommand.class))).thenReturn(rule(RuleTarget.model(targetId)));
 
         mockMvc.perform(post("/api/v1/rules")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content("{\"name\":\"Garantia vencendo\",\"kind\":\"WARRANTY_EXPIRATION\","
+                                + "\"limitValue\":30,\"limitUnit\":\"DAYS\",\"targetType\":\"MODEL\","
+                                + "\"targetId\":\"" + targetId + "\",\"active\":true}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.unitId").value(UNIT.toString()))
+                .andExpect(jsonPath("$.targetType").value("MODEL"))
+                .andExpect(jsonPath("$.appliesToWholeUnit").value(false));
+    }
+
+    /** Sem alvo no corpo, a regra nasce valendo para a unidade inteira. */
+    @Test
+    @DisplayName("POST /api/v1/rules - deve aceitar regra sem alvo")
+    void shouldCreateAWholeUnitRule() throws Exception {
+        when(createRule.execute(any(CreateRuleCommand.class))).thenReturn(rule(null));
+
+        mockMvc.perform(post("/api/v1/rules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Estoque cheio\",\"kind\":\"STOCK_QUANTITY_LIMIT\","
+                                + "\"limitValue\":90,\"limitUnit\":\"PERCENT\",\"active\":true}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.appliesToWholeUnit").value(true))
+                .andExpect(jsonPath("$.targetId").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/rules - deve recusar alvo pela metade")
+    void shouldRejectHalfATarget() throws Exception {
+        mockMvc.perform(post("/api/v1/rules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"x\",\"kind\":\"STALE_ITEM\",\"limitValue\":1,"
+                                + "\"limitUnit\":\"DAYS\",\"targetType\":\"MODEL\",\"active\":true}")
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("GET /api/v1/rules - deve listar todas as regras")
-    void shouldFindAllRules() throws Exception {
-        Rule rule = new Rule(UUID.randomUUID(), "Warranty check", RuleKind.WARRANTY_EXPIRATION, 12,
-                RuleLimitUnit.MONTHS, RuleTargetType.MODEL, UUID.randomUUID(), true);
-        when(findAllRules.execute()).thenReturn(List.of(rule));
+    @DisplayName("GET /api/v1/rules - deve listar as regras da unidade")
+    void shouldListRules() throws Exception {
+        when(findAllRules.execute(UNIT)).thenReturn(List.of(rule(null), rule(null)));
 
-        mockMvc.perform(get("/api/v1/rules"))
+        mockMvc.perform(get("/api/v1/rules").header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Warranty check"));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].unitId").value(UNIT.toString()));
     }
 
     @Test
-    @DisplayName("GET /api/v1/rules/{id} - deve retornar a regra")
-    void shouldFindRuleById() throws Exception {
+    @DisplayName("GET /api/v1/rules/{id} - deve retornar 404 fora da unidade")
+    void shouldReturn404ForAnotherUnit() throws Exception {
         UUID id = UUID.randomUUID();
-        Rule rule = new Rule(id, "Warranty check", RuleKind.WARRANTY_EXPIRATION, 12, RuleLimitUnit.MONTHS,
-                RuleTargetType.MODEL, UUID.randomUUID(), true);
-        when(findRuleById.execute(id)).thenReturn(rule);
+        when(findRuleById.execute(UNIT, id)).thenThrow(new RuleNotFoundException(id));
 
-        mockMvc.perform(get("/api/v1/rules/{id}", id))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id.toString()));
-    }
-
-    @Test
-    @DisplayName("GET /api/v1/rules/{id} - deve retornar 404 quando a regra não existir")
-    void shouldReturn404WhenRuleDoesNotExist() throws Exception {
-        UUID id = UUID.randomUUID();
-        when(findRuleById.execute(id)).thenThrow(new RuleNotFoundException(id));
-
-        mockMvc.perform(get("/api/v1/rules/{id}", id))
+        mockMvc.perform(get("/api/v1/rules/{id}", id).header("X-Unit-Id", UNIT))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/rules/{id}/name - deve renomear a regra")
-    void shouldRenameRule() throws Exception {
+    @DisplayName("PATCH /api/v1/rules/{id}/target - corpo vazio devolve a regra para a unidade")
+    void shouldClearTheTarget() throws Exception {
         UUID id = UUID.randomUUID();
-        Rule rule = new Rule(id, "Lifespan check", RuleKind.WARRANTY_EXPIRATION, 12, RuleLimitUnit.MONTHS,
-                RuleTargetType.MODEL, UUID.randomUUID(), true);
-        when(updateRuleName.execute(id, "Lifespan check")).thenReturn(rule);
-
-        mockMvc.perform(patch("/api/v1/rules/{id}/name", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRuleNameRequest("Lifespan check"))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Lifespan check"));
-    }
-
-    @Test
-    @DisplayName("PATCH /api/v1/rules/{id}/limit - deve atualizar o limite")
-    void shouldUpdateRuleLimit() throws Exception {
-        UUID id = UUID.randomUUID();
-        Rule rule = new Rule(id, "Warranty check", RuleKind.WARRANTY_EXPIRATION, 24, RuleLimitUnit.MONTHS,
-                RuleTargetType.MODEL, UUID.randomUUID(), true);
-        when(updateRuleLimit.execute(id, 24, RuleLimitUnit.MONTHS)).thenReturn(rule);
-
-        mockMvc.perform(patch("/api/v1/rules/{id}/limit", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRuleLimitRequest(24, RuleLimitUnit.MONTHS))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.limitValue").value(24));
-    }
-
-    @Test
-    @DisplayName("PATCH /api/v1/rules/{id}/target - deve atualizar o alvo")
-    void shouldUpdateRuleTarget() throws Exception {
-        UUID id = UUID.randomUUID();
-        UUID newTargetId = UUID.randomUUID();
-        Rule rule = new Rule(id, "Warranty check", RuleKind.WARRANTY_EXPIRATION, 12, RuleLimitUnit.MONTHS,
-                RuleTargetType.CATEGORY, newTargetId, true);
-        when(updateRuleTarget.execute(id, RuleTargetType.CATEGORY, newTargetId)).thenReturn(rule);
+        when(updateRuleTarget.execute(eq(UNIT), eq(id), eq(null))).thenReturn(rule(null));
 
         mockMvc.perform(patch("/api/v1/rules/{id}/target", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateRuleTargetRequest(RuleTargetType.CATEGORY, newTargetId))))
+                        .content("{}")
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.targetType").value("CATEGORY"));
+                .andExpect(jsonPath("$.appliesToWholeUnit").value(true));
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/rules/{id}/activate - deve ativar a regra")
-    void shouldActivateRule() throws Exception {
+    @DisplayName("PATCH /api/v1/rules/{id}/target - deve apontar para uma categoria")
+    void shouldTargetACategory() throws Exception {
         UUID id = UUID.randomUUID();
-        Rule rule = new Rule(id, "Warranty check", RuleKind.WARRANTY_EXPIRATION, 12, RuleLimitUnit.MONTHS,
-                RuleTargetType.MODEL, UUID.randomUUID(), true);
-        when(activateRule.execute(id)).thenReturn(rule);
+        UUID categoryId = UUID.randomUUID();
+        when(updateRuleTarget.execute(UNIT, id, RuleTarget.category(categoryId)))
+                .thenReturn(rule(RuleTarget.category(categoryId)));
 
-        mockMvc.perform(patch("/api/v1/rules/{id}/activate", id))
+        mockMvc.perform(patch("/api/v1/rules/{id}/target", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetType\":\"CATEGORY\",\"targetId\":\"" + categoryId + "\"}")
+                        .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.active").value(true));
+                .andExpect(jsonPath("$.targetType").value(RuleTargetType.CATEGORY.name()));
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/rules/{id}/deactivate - deve desativar a regra")
-    void shouldDeactivateRule() throws Exception {
+    @DisplayName("PATCH /api/v1/rules/{id}/activate e /deactivate")
+    void shouldActivateAndDeactivate() throws Exception {
         UUID id = UUID.randomUUID();
-        Rule rule = new Rule(id, "Warranty check", RuleKind.WARRANTY_EXPIRATION, 12, RuleLimitUnit.MONTHS,
-                RuleTargetType.MODEL, UUID.randomUUID(), false);
-        when(deactivateRule.execute(id)).thenReturn(rule);
+        when(setRuleActive.execute(eq(UNIT), eq(id), any(Boolean.class))).thenReturn(rule(null));
 
-        mockMvc.perform(patch("/api/v1/rules/{id}/deactivate", id))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.active").value(false));
+        mockMvc.perform(patch("/api/v1/rules/{id}/activate", id).header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/rules/{id}/deactivate", id).header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk());
+
+        verify(setRuleActive).execute(UNIT, id, true);
+        verify(setRuleActive).execute(UNIT, id, false);
     }
 
     @Test
-    @DisplayName("DELETE /api/v1/rules/{id} - deve remover a regra e retornar 204")
-    void shouldDeleteRule() throws Exception {
+    @DisplayName("PATCH /api/v1/rules/{id}/limit - deve alterar o limite")
+    void shouldUpdateLimit() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(updateRuleLimit.execute(UNIT, id, 60, RuleLimitUnit.DAYS)).thenReturn(rule(null));
+
+        mockMvc.perform(patch("/api/v1/rules/{id}/limit", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"limitValue\":60,\"limitUnit\":\"DAYS\"}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/rules/{id}/name - deve renomear")
+    void shouldRename() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(updateRuleName.execute(UNIT, id, "Novo nome")).thenReturn(rule(null));
+
+        mockMvc.perform(patch("/api/v1/rules/{id}/name", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Novo nome\"}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/rules/{id} - deve apagar e retornar 204")
+    void shouldDelete() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/v1/rules/{id}", id))
+        mockMvc.perform(delete("/api/v1/rules/{id}", id).header("X-Unit-Id", UNIT))
                 .andExpect(status().isNoContent());
 
-        verify(deleteRule).execute(id);
+        verify(deleteRule).execute(UNIT, id);
+    }
+
+    @Test
+    @DisplayName("Sem X-Unit-Id a chamada e 400")
+    void shouldRequireTheUnitHeader() throws Exception {
+        mockMvc.perform(get("/api/v1/rules")).andExpect(status().isBadRequest());
     }
 }
