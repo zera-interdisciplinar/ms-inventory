@@ -31,18 +31,24 @@ import com.zera.ms_inventory.core.usecase.item.ApproveItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
+import com.zera.ms_inventory.core.usecase.item.EvaluateItem;
+import com.zera.ms_inventory.core.usecase.item.FinishMaintenance;
 import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.ListItemEvents;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.RejectItem;
+import com.zera.ms_inventory.core.usecase.item.RestoreItem;
+import com.zera.ms_inventory.core.usecase.item.StartMaintenance;
 import com.zera.ms_inventory.core.usecase.item.SubmitItem;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
 import com.zera.ms_inventory.core.usecase.item.UploadItemPhoto;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
 import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
+import com.zera.ms_inventory.infrastructure.http.request.EvaluateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.RejectItemRequest;
+import com.zera.ms_inventory.infrastructure.http.request.StartMaintenanceRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
 import com.zera.ms_inventory.infrastructure.http.response.EventResponse;
@@ -66,6 +72,10 @@ public class ItemController {
     private final SubmitItem submitItem;
     private final ApproveItem approveItem;
     private final RejectItem rejectItem;
+    private final StartMaintenance startMaintenance;
+    private final FinishMaintenance finishMaintenance;
+    private final EvaluateItem evaluateItem;
+    private final RestoreItem restoreItem;
     private final UploadItemPhoto uploadItemPhoto;
     private final UpdateItemStatus updateItemStatus;
     private final AssignItemUnit assignItemUnit;
@@ -80,6 +90,10 @@ public class ItemController {
                            SubmitItem submitItem,
                            ApproveItem approveItem,
                            RejectItem rejectItem,
+                           StartMaintenance startMaintenance,
+                           FinishMaintenance finishMaintenance,
+                           EvaluateItem evaluateItem,
+                           RestoreItem restoreItem,
                            UploadItemPhoto uploadItemPhoto,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
@@ -95,6 +109,10 @@ public class ItemController {
         this.submitItem = submitItem;
         this.approveItem = approveItem;
         this.rejectItem = rejectItem;
+        this.startMaintenance = startMaintenance;
+        this.finishMaintenance = finishMaintenance;
+        this.evaluateItem = evaluateItem;
+        this.restoreItem = restoreItem;
         this.uploadItemPhoto = uploadItemPhoto;
         this.updateItemStatus = updateItemStatus;
         this.assignItemUnit = assignItemUnit;
@@ -181,6 +199,37 @@ public class ItemController {
         return ResponseEntity.ok(itemResponses.from(rejectItem.execute(unitId, id, request.reason(), actor)));
     }
 
+    @PostMapping("/{id}/maintenance/start")
+    public ResponseEntity<ItemResponse> startMaintenance(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                         @PathVariable UUID id,
+                                                         @RequestBody @Valid StartMaintenanceRequest request,
+                                                         Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(
+                startMaintenance.execute(unitId, id, request.reason(), actor)));
+    }
+
+    @PostMapping("/{id}/maintenance/finish")
+    public ResponseEntity<ItemResponse> finishMaintenance(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                          @PathVariable UUID id, Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(finishMaintenance.execute(unitId, id, actor)));
+    }
+
+    /** Avaliacao do item que voltou da manutencao; operario e gestor podem avaliar. */
+    @PostMapping("/{id}/evaluate")
+    public ResponseEntity<ItemResponse> evaluate(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                 @RequestBody @Valid EvaluateItemRequest request, Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(evaluateItem.execute(unitId, id, request.condition(),
+                request.hasDamages(), request.damages(), actor)));
+    }
+
+    /** Desfaz a remocao logica, devolvendo o item ao estado de onde ele saiu. */
+    @PostMapping("/{id}/restore")
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<ItemResponse> restore(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(restoreItem.execute(unitId, id, actor)));
+    }
+
     // transicao fora da maquina de estados responde 409; os passos do fluxo ganham endpoint proprio nas ZERA-244 a 247
     @PatchMapping("/{id}/status")
     public ResponseEntity<ItemResponse> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
@@ -194,11 +243,14 @@ public class ItemController {
         return ResponseEntity.ok(itemResponses.from(assignItemUnit.execute(unitId, id, request.unitId())));
     }
 
-    // exclusao ainda e fisica: so o gestor ate a remocao logica revisavel (ZERA-247)
+    /**
+     * Remocao logica: o item vai para REMOVED e sai das listagens. O operario pode remover porque o
+     * gestor consegue restaurar; item descartado nao e removivel e responde 409.
+     */
     @DeleteMapping("/{id}")
-    @PreAuthorize(Authz.MANAGER)
-    public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id) {
-        deleteItem.execute(unitId, id);
+    public ResponseEntity<Void> delete(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                       Actor actor) {
+        deleteItem.execute(unitId, id, actor);
         return ResponseEntity.noContent().build();
     }
 }

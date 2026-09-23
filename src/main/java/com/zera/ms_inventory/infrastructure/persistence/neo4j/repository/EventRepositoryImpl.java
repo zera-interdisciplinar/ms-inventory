@@ -1,12 +1,14 @@
 package com.zera.ms_inventory.infrastructure.persistence.neo4j.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.zera.ms_inventory.core.domain.entity.Event;
+import com.zera.ms_inventory.core.domain.valueobject.EventType;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.repository.EventRepository;
@@ -43,6 +45,11 @@ public class EventRepositoryImpl implements EventRepository {
                 (long) pagination.page() * pagination.size(), pagination.size());
         return new PageResult<>(nodes.stream().map(mapper::toDomain).toList(), pagination.page(),
                 pagination.size(), total);
+    }
+
+    @Override
+    public Optional<Event> findLastByItemAndType(UUID unitId, UUID itemId, EventType type) {
+        return neo4jRepository.findLastByItemAndType(unitId, itemId, type.name()).map(mapper::toDomain);
     }
 
     @Override

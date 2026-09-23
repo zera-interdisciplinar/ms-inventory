@@ -298,6 +298,22 @@ public class Item {
     }
 
     /**
+     * Condicao registrada na avaliacao pos-manutencao. Os danos so mudam quando a avaliacao os
+     * informa; ficar em silencio mantem o que ja estava registrado.
+     */
+    public void evaluateCondition(ItemCondition condition, Boolean hasDamages, Set<DamageType> damages) {
+        if (condition == null) {
+            throw new IllegalArgumentException("condition is required to evaluate an item");
+        }
+        if (hasDamages == null) {
+            this.condition = condition;
+            touch();
+            return;
+        }
+        describe(name, condition, hasDamages, damages, notes);
+    }
+
+    /**
      * Unico caminho para trocar o status: valida a transicao na maquina de estados e devolve o
      * evento a ser gravado pelo caso de uso. Quem chamar com uma transicao invalida recebe
      * {@link InvalidItemTransitionException}, que a API traduz para 409.

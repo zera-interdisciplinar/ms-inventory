@@ -27,38 +27,74 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class DeleteItemImplTest {
+class RestoreItemImplTest {
 
     @Mock private ItemRepository itemRepository;
     @Mock private EventRepository eventRepository;
 
-    /** A exclusao virou logica na ZERA-247: o no continua no grafo, o status vira REMOVED. */
-    @Test
-    void shouldRemoveLogicallyAndKeepWhereTheItemCameFrom() {
-        UUID id = UUID.randomUUID();
-        Item item = Fixtures.item(id, Fixtures.UNIT);
-        when(itemRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(item));
-
-        new DeleteItemImpl(itemRepository, eventRepository).execute(Fixtures.UNIT, id, Fixtures.OPERATOR);
-
-        assertThat(item.getStatus()).isEqualTo(ItemStatus.REMOVED);
-        verify(itemRepository).save(item);
-        verify(itemRepository, never()).deleteById(any(), any());
-        ArgumentCaptor<Event> event = ArgumentCaptor.forClass(Event.class);
-        verify(eventRepository).save(event.capture());
-        assertThat(event.getValue().getType()).isEqualTo(EventType.REMOVED);
-        assertThat(event.getValue().getFromStatus()).isEqualTo(ItemStatus.IN_STOCK);
+    private RestoreItemImpl useCase() {
+        return new RestoreItemImpl(itemRepository, eventRepository);
     }
 
-    /** O descarte encerra a vida do item: nao da para remover depois dele. */
+    private Item removedItem(UUID id) {
+        Item item = Fixtures.item(id, Fixtures.UNIT);
+        item.restoreStatus(ItemStatus.REMOVED);
+        when(itemRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(item));
+        when(itemRepository.save(item)).thenReturn(item);
+        return item;
+    }
+
+    private void removedFrom(UUID id, ItemStatus origin) {
+        when(eventRepository.findLastByItemAndType(Fixtures.UNIT, id, EventType.REMOVED))
+                .thenReturn(Optional.of(Event.of(id, Fixtures.UNIT, EventType.REMOVED, origin,
+                        ItemStatus.REMOVED, null, Fixtures.OPERATOR)));
+    }
+
+    /** O historico diz de onde o item saiu, entao a restauracao devolve exatamente para la. */
     @Test
-    void shouldRefuseToRemoveADisposedItem() {
+    void shouldRestoreToTheStatusTheItemWasRemovedFrom() {
+        UUID id = UUID.randomUUID();
+        removedItem(id);
+        removedFrom(id, ItemStatus.AWAITING_EVALUATION);
+
+        Item result = useCase().execute(Fixtures.UNIT, id, Fixtures.MANAGER);
+
+        assertThat(result.getStatus()).isEqualTo(ItemStatus.AWAITING_EVALUATION);
+        ArgumentCaptor<Event> event = ArgumentCaptor.forClass(Event.class);
+        verify(eventRepository).save(event.capture());
+        assertThat(event.getValue().getType()).isEqualTo(EventType.RESTORED);
+        assertThat(event.getValue().getFromStatus()).isEqualTo(ItemStatus.REMOVED);
+    }
+
+    @Test
+    void shouldRestoreADraftBackToDraft() {
+        UUID id = UUID.randomUUID();
+        removedItem(id);
+        removedFrom(id, ItemStatus.DRAFT);
+
+        assertThat(useCase().execute(Fixtures.UNIT, id, Fixtures.MANAGER).getStatus())
+                .isEqualTo(ItemStatus.DRAFT);
+    }
+
+    /** Item migrado de antes do historico nao tem evento de remocao; o destino seguro e o estoque. */
+    @Test
+    void shouldFallBackToStockWithoutARemovalEvent() {
+        UUID id = UUID.randomUUID();
+        removedItem(id);
+        when(eventRepository.findLastByItemAndType(Fixtures.UNIT, id, EventType.REMOVED))
+                .thenReturn(Optional.empty());
+
+        assertThat(useCase().execute(Fixtures.UNIT, id, Fixtures.MANAGER).getStatus())
+                .isEqualTo(ItemStatus.IN_STOCK);
+    }
+
+    @Test
+    void shouldRefuseToRestoreAnItemThatWasNotRemoved() {
         UUID id = UUID.randomUUID();
         Item item = Fixtures.item(id, Fixtures.UNIT);
-        item.restoreStatus(ItemStatus.DISPOSED);
         when(itemRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(item));
 
-        DeleteItemImpl useCase = new DeleteItemImpl(itemRepository, eventRepository);
+        RestoreItemImpl useCase = useCase();
 
         assertThatThrownBy(() -> useCase.execute(Fixtures.UNIT, id, Fixtures.MANAGER))
                 .isInstanceOf(InvalidItemTransitionException.class);
@@ -66,14 +102,13 @@ class DeleteItemImplTest {
     }
 
     @Test
-    void shouldNotRemoveFromAnotherUnit() {
+    void shouldThrowWhenTheItemIsNotInTheUnit() {
         UUID id = UUID.randomUUID();
         when(itemRepository.findById(Fixtures.OTHER_UNIT, id)).thenReturn(Optional.empty());
 
-        DeleteItemImpl useCase = new DeleteItemImpl(itemRepository, eventRepository);
+        RestoreItemImpl useCase = useCase();
 
         assertThatThrownBy(() -> useCase.execute(Fixtures.OTHER_UNIT, id, Fixtures.MANAGER))
                 .isInstanceOf(ItemNotFoundException.class);
-        verify(itemRepository, never()).save(any());
     }
 }

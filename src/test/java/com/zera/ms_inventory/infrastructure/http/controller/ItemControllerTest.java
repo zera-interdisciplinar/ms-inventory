@@ -85,6 +85,10 @@ class ItemControllerTest {
     @MockitoBean private UpdateItemStatus updateItemStatus;
     @MockitoBean private AssignItemUnit assignItemUnit;
     @MockitoBean private DeleteItem deleteItem;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.StartMaintenance startMaintenance;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.FinishMaintenance finishMaintenance;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.EvaluateItem evaluateItem;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.RestoreItem restoreItem;
 
     private Item sampleItem(UUID id) {
         return new Item(id, new Barcode("123456"), ItemStatus.IN_STOCK, UNIT,
@@ -327,10 +331,12 @@ class ItemControllerTest {
         UUID id = UUID.randomUUID();
 
         mockMvc.perform(delete("/api/v1/items/{id}", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNoContent());
 
-        verify(deleteItem).execute(UNIT, id);
+        verify(deleteItem).execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.any());
     }
 
     @Test

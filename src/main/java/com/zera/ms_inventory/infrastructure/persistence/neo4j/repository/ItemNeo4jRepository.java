@@ -15,12 +15,14 @@ import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ItemNode;
 
 interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
 
-    List<ItemNode> findAllByUnitId(UUID unitId);
+    @Query("MATCH (i:Item {unitId: $unitId}) WHERE i.status <> 'REMOVED' RETURN i")
+    List<ItemNode> findAllByUnitId(@Param("unitId") UUID unitId);
 
     String FILTER = """
             MATCH (i:Item)-[r:IS_MODEL]->(m:Model)
             WHERE i.unitId = $unitId
               AND ($status IS NULL OR i.status = $status)
+              AND ($status = 'REMOVED' OR i.status <> 'REMOVED')
               AND ($modelId IS NULL OR m.id = $modelId)
               AND ($categoryId IS NULL OR EXISTS { (m)-[:BELONGS_TO]->(:Category {id: $categoryId}) })
               AND ($query IS NULL
