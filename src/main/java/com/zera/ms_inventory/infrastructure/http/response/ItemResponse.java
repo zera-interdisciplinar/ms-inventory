@@ -2,6 +2,7 @@ package com.zera.ms_inventory.infrastructure.http.response;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -29,6 +30,7 @@ public record ItemResponse(
         Integer usageIntensity,
         LocalDate predictedFailureDate,
         LocalDateTime predictionUpdatedAt,
+        List<String> missingFields,
         LocalDateTime lastEventAt,
         UUID createdBy,
         String createdByName,
@@ -44,7 +46,7 @@ public record ItemResponse(
                 item.getCondition(), item.getHasDamages(), item.getDamages(), item.getNotes(), photoUrl, item.getUnitId(),
                 ModelResponse.from(item.getModel()), item.getSerialNumber(), item.getAcquiredAt(),
                 item.getManufacturingYear(), item.getUsageIntensity(), item.getPredictedFailureDate(),
-                item.getPredictionUpdatedAt(),
+                item.getPredictionUpdatedAt(), item.missingRequiredFields(),
                 item.getLastEventAt(), item.getCreatedBy(), item.getCreatedByName(), item.getCreatedAt(),
                 item.getUpdatedAt());
     }

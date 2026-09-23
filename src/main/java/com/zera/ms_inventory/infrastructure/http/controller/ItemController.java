@@ -27,6 +27,7 @@ import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.item.AssignItemUnit;
+import com.zera.ms_inventory.core.usecase.item.ApproveItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItem;
 import com.zera.ms_inventory.core.usecase.item.CreateItemResult;
 import com.zera.ms_inventory.core.usecase.item.DeleteItem;
@@ -34,11 +35,14 @@ import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 import com.zera.ms_inventory.core.usecase.item.ListItemEvents;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
+import com.zera.ms_inventory.core.usecase.item.RejectItem;
+import com.zera.ms_inventory.core.usecase.item.SubmitItem;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
 import com.zera.ms_inventory.core.usecase.item.UploadItemPhoto;
 import com.zera.ms_inventory.core.usecase.item.UpdateItemStatus;
 import com.zera.ms_inventory.infrastructure.http.request.AssignItemUnitRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateItemRequest;
+import com.zera.ms_inventory.infrastructure.http.request.RejectItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateItemStatusRequest;
 import com.zera.ms_inventory.infrastructure.http.response.EventResponse;
@@ -59,6 +63,9 @@ public class ItemController {
     private final FindItemById findItemById;
     private final FindItemByBarcode findItemByBarcode;
     private final UpdateItem updateItem;
+    private final SubmitItem submitItem;
+    private final ApproveItem approveItem;
+    private final RejectItem rejectItem;
     private final UploadItemPhoto uploadItemPhoto;
     private final UpdateItemStatus updateItemStatus;
     private final AssignItemUnit assignItemUnit;
@@ -70,6 +77,9 @@ public class ItemController {
                            FindItemById findItemById,
                            FindItemByBarcode findItemByBarcode,
                            UpdateItem updateItem,
+                           SubmitItem submitItem,
+                           ApproveItem approveItem,
+                           RejectItem rejectItem,
                            UploadItemPhoto uploadItemPhoto,
                            UpdateItemStatus updateItemStatus,
                            AssignItemUnit assignItemUnit,
@@ -82,6 +92,9 @@ public class ItemController {
         this.findItemById = findItemById;
         this.findItemByBarcode = findItemByBarcode;
         this.updateItem = updateItem;
+        this.submitItem = submitItem;
+        this.approveItem = approveItem;
+        this.rejectItem = rejectItem;
         this.uploadItemPhoto = uploadItemPhoto;
         this.updateItemStatus = updateItemStatus;
         this.assignItemUnit = assignItemUnit;
@@ -145,6 +158,27 @@ public class ItemController {
                                                                   @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(PageResponse.from(
                 listItemEvents.execute(unitId, id, new Pagination(page, size)), EventResponse::from));
+    }
+
+    /** Envia o rascunho: 422 com missingFields quando ainda falta algo do cadastro. */
+    @PostMapping("/{id}/submit")
+    public ResponseEntity<ItemResponse> submit(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                               Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(submitItem.execute(unitId, id, actor)));
+    }
+
+    @PostMapping("/{id}/approve")
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<ItemResponse> approve(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(approveItem.execute(unitId, id, actor)));
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<ItemResponse> reject(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                               @RequestBody @Valid RejectItemRequest request, Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(rejectItem.execute(unitId, id, request.reason(), actor)));
     }
 
     // transicao fora da maquina de estados responde 409; os passos do fluxo ganham endpoint proprio nas ZERA-244 a 247

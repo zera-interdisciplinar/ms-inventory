@@ -82,6 +82,11 @@ public class ItemRepositoryImpl implements ItemRepository {
     }
 
     @Override
+    public long countByModel(UUID unitId, UUID modelId) {
+        return neo4jRepository.countByUnitIdAndModelId(unitId, modelId);
+    }
+
+    @Override
     public boolean existsAnyWithId(UUID id) {
         return neo4jRepository.existsById(id);
     }

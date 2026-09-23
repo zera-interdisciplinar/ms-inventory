@@ -15,14 +15,12 @@ import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
 import com.zera.ms_inventory.core.domain.valueobject.DamageType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
-import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.usecase.item.CreateItemCommand;
 
 /** Informe modelId de um modelo existente ou model para criar o modelo junto (exatamente um). */
 public record CreateItemRequest(
         UUID id,
         @NotBlank String barcode,
-        ItemStatus status,
         UUID modelId,
         @Valid NewItemModelRequest model,
         Integer manufacturingYear,
@@ -42,8 +40,8 @@ public record CreateItemRequest(
     }
 
     public CreateItemCommand toCommand(UUID unitId, Actor actor) {
-        // o rascunho e a aprovacao entram na ZERA-244; ate la o cadastro ja nasce no estoque
-        return new CreateItemCommand(id, new Barcode(barcode), status != null ? status : ItemStatus.IN_STOCK, unitId,
+        // o status nao vem do cliente: quem decide e a regra de rascunho/aprovacao (ZERA-244)
+        return new CreateItemCommand(id, new Barcode(barcode), unitId,
                 modelId, model != null ? model.toCommand(unitId, actor) : null, manufacturingYear,
                 usageIntensity, serialNumber, acquiredAt, name, condition, hasDamages, damages,
                 notes, actor);
