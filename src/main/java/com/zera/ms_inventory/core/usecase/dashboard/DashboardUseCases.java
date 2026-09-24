@@ -14,6 +14,7 @@ import com.zera.ms_inventory.core.domain.valueobject.HomeSummary;
 import com.zera.ms_inventory.core.domain.valueobject.InventoryCounts;
 import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
+import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.domain.valueobject.WorkCenterSummary;
 import com.zera.ms_inventory.core.repository.DashboardRepository;
@@ -25,7 +26,6 @@ public class DashboardUseCases implements GetHomeSummary, GetWorkCenter {
 
     /** Janela das variacoes e da contagem de descartes do painel. */
     static final int WINDOW_DAYS = 30;
-    private static final int RECENT_ITEMS = 5;
     private static final int WORK_CENTER_LIMIT = 20;
 
     private final DashboardRepository dashboardRepository;
@@ -40,14 +40,12 @@ public class DashboardUseCases implements GetHomeSummary, GetWorkCenter {
     }
 
     @Override
-    public HomeSummary execute(UUID unitId) {
+    public HomeSummary execute(UUID unitId, Pagination recentItemsPage) {
         LocalDateTime since = LocalDateTime.now().minusDays(WINDOW_DAYS);
         InventoryCounts counts = dashboardRepository.countsOf(unitId, since);
         UnitInventorySettings settings = getUnitSettings.execute(unitId);
 
-        List<Item> recent = itemRepository
-                .findPage(unitId, ItemFilter.none(), new Pagination(0, RECENT_ITEMS))
-                .content();
+        PageResult<Item> recent = itemRepository.findPage(unitId, ItemFilter.none(), recentItemsPage);
 
         return new HomeSummary(
                 counts.activeItems(),

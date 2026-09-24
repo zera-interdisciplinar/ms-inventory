@@ -67,7 +67,7 @@ class DashboardUseCasesTest {
         when(itemRepository.findPage(any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(Fixtures.item(Fixtures.UNIT)), 0, 5, 1));
 
-        HomeSummary resumo = useCase().execute(Fixtures.UNIT);
+        HomeSummary resumo = useCase().execute(Fixtures.UNIT, new Pagination(0, 5));
 
         assertThat(resumo.activeItems()).isEqualTo(120);
         // 120 contra 100 na janela
@@ -79,7 +79,8 @@ class DashboardUseCasesTest {
         assertThat(resumo.awaitingEvaluation()).isEqualTo(1);
         assertThat(resumo.disposalsInWindow()).isEqualTo(7);
         assertThat(resumo.windowDays()).isEqualTo(30);
-        assertThat(resumo.recentItems()).hasSize(1);
+        assertThat(resumo.recentItems().content()).hasSize(1);
+        assertThat(resumo.recentItems().totalElements()).isEqualTo(1);
     }
 
     /** Sem capacidade configurada a ocupacao nao existe; nao pode virar 0% nem erro. */
@@ -91,7 +92,7 @@ class DashboardUseCasesTest {
         when(itemRepository.findPage(any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(), 0, 5, 0));
 
-        HomeSummary resumo = useCase().execute(Fixtures.UNIT);
+        HomeSummary resumo = useCase().execute(Fixtures.UNIT, new Pagination(0, 5));
 
         assertThat(resumo.occupancyPercent()).isNull();
         assertThat(resumo.stockCapacity()).isNull();
@@ -106,7 +107,27 @@ class DashboardUseCasesTest {
         when(itemRepository.findPage(any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(), 0, 5, 0));
 
-        assertThat(useCase().execute(Fixtures.UNIT).activeItemsChangePercent()).isNull();
+        assertThat(useCase().execute(Fixtures.UNIT, new Pagination(0, 5)).activeItemsChangePercent()).isNull();
+    }
+
+    /** O app pode virar a lista de recentes sem endpoint novo, entao a pagina vem do parametro. */
+    @Test
+    void shouldForwardTheRequestedPageOfRecentItems() {
+        when(dashboardRepository.countsOf(any(), any())).thenReturn(counts(30, 30));
+        when(dashboardRepository.countDisposalsSince(any(), any())).thenReturn(0L);
+        when(getUnitSettings.execute(Fixtures.UNIT)).thenReturn(settings(100));
+        when(itemRepository.findPage(any(), any(), any()))
+                .thenReturn(new PageResult<>(List.of(Fixtures.item(Fixtures.UNIT)), 2, 10, 25));
+
+        HomeSummary resumo = useCase().execute(Fixtures.UNIT, new Pagination(2, 10));
+
+        verify(itemRepository).findPage(Fixtures.UNIT, ItemFilter.none(), new Pagination(2, 10));
+        assertThat(resumo.recentItems().page()).isEqualTo(2);
+        assertThat(resumo.recentItems().size()).isEqualTo(10);
+        assertThat(resumo.recentItems().totalElements()).isEqualTo(25);
+        assertThat(resumo.recentItems().totalPages()).isEqualTo(3);
+        // os contadores seguem sendo da unidade inteira, nao da pagina
+        assertThat(resumo.activeItems()).isEqualTo(30);
     }
 
     @Test
@@ -117,7 +138,7 @@ class DashboardUseCasesTest {
         when(itemRepository.findPage(any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(), 0, 5, 0));
 
-        useCase().execute(Fixtures.UNIT);
+        useCase().execute(Fixtures.UNIT, new Pagination(0, 5));
 
         verify(itemRepository).findPage(Fixtures.UNIT, ItemFilter.none(), new Pagination(0, 5));
     }
@@ -188,7 +209,7 @@ class DashboardUseCasesTest {
         when(itemRepository.findPage(any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(), 0, 5, 0));
 
-        useCase().execute(Fixtures.UNIT);
+        useCase().execute(Fixtures.UNIT, new Pagination(0, 5));
 
         ArgumentCaptor<LocalDateTime> desde = ArgumentCaptor.forClass(LocalDateTime.class);
         verify(dashboardRepository).countsOf(org.mockito.ArgumentMatchers.eq(Fixtures.UNIT), desde.capture());

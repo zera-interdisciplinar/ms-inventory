@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.dashboard.GetDisposalIndicators;
 import com.zera.ms_inventory.core.usecase.dashboard.GetHomeSummary;
 import com.zera.ms_inventory.core.usecase.dashboard.GetWorkCenter;
@@ -41,10 +42,16 @@ public class DashboardController {
         this.itemResponses = itemResponses;
     }
 
-    /** Painel inicial da unidade: estoque, ocupacao, pendencias e ultimos itens. */
+    /**
+     * Painel inicial da unidade: estoque, ocupacao, pendencias e ultimos itens. A paginacao vale
+     * so para os itens recentes; os contadores sao sempre da unidade inteira.
+     */
     @GetMapping("/home")
-    public ResponseEntity<HomeSummaryResponse> home(@RequestHeader("X-Unit-Id") UUID unitId) {
-        return ResponseEntity.ok(HomeSummaryResponse.from(getHomeSummary.execute(unitId), itemResponses));
+    public ResponseEntity<HomeSummaryResponse> home(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                    @RequestParam(defaultValue = "0") int page,
+                                                    @RequestParam(defaultValue = "5") int size) {
+        return ResponseEntity.ok(HomeSummaryResponse.from(
+                getHomeSummary.execute(unitId, new Pagination(page, size)), itemResponses));
     }
 
     /** Central de Trabalho: o que quem esta logado precisa resolver. */
