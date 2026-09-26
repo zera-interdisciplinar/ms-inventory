@@ -1,9 +1,10 @@
 package com.zera.ms_inventory.core.usecase.rule;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.zera.ms_inventory.core.domain.entity.Rule;
 
 public interface FindAllRules {
-    List<Rule> execute();
+    List<Rule> execute(UUID unitId);
 }

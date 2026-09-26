@@ -4,6 +4,6 @@ import java.util.UUID;
 
 import com.zera.ms_inventory.core.domain.entity.Rule;
 
-public interface ActivateRule {
-    Rule execute(UUID id);
+public interface SetRuleActive {
+    Rule execute(UUID unitId, UUID id, boolean active);
 }

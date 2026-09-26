@@ -10,6 +10,7 @@ import com.zera.ms_inventory.core.repository.RuleRepository;
 
 @Service
 public class FindRuleByIdImpl implements FindRuleById {
+
     private final RuleRepository ruleRepository;
 
     public FindRuleByIdImpl(RuleRepository ruleRepository) {
@@ -17,8 +18,8 @@ public class FindRuleByIdImpl implements FindRuleById {
     }
 
     @Override
-    public Rule execute(UUID id) {
-        return ruleRepository.findById(id)
+    public Rule execute(UUID unitId, UUID id) {
+        return ruleRepository.findById(unitId, id)
                 .orElseThrow(() -> new RuleNotFoundException(id));
     }
 }
