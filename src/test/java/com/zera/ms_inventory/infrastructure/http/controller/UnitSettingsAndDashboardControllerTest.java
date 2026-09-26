@@ -22,6 +22,7 @@ import com.zera.ms_inventory.core.usecase.unit.GetUnitSettings;
 import com.zera.ms_inventory.core.usecase.unit.UpdateUnitSettings;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -31,7 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {UnitSettingsController.class, DashboardController.class})
-@org.springframework.context.annotation.Import(GlobalExceptionHandler.class)
+@org.springframework.context.annotation.Import({GlobalExceptionHandler.class,
+        com.zera.ms_inventory.infrastructure.http.response.ItemResponses.class})
 class UnitSettingsAndDashboardControllerTest {
 
     private static final UUID UNIT = Fixtures.UNIT;
@@ -42,6 +44,9 @@ class UnitSettingsAndDashboardControllerTest {
     @MockitoBean private GetUnitSettings getUnitSettings;
     @MockitoBean private UpdateUnitSettings updateUnitSettings;
     @MockitoBean private GetDisposalIndicators getDisposalIndicators;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.dashboard.GetHomeSummary getHomeSummary;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.dashboard.GetWorkCenter getWorkCenter;
+    @MockitoBean private com.zera.ms_inventory.core.repository.PhotoStorage photoStorage;
 
     @Test
     @DisplayName("GET /api/v1/unit-settings - unidade sem configuracao responde configured=false")
@@ -81,6 +86,98 @@ class UnitSettingsAndDashboardControllerTest {
                         .content("{\"stockCapacity\":-1}")
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/dashboard/home - devolve estoque, ocupacao e pendencias")
+    void shouldReturnHomePanel() throws Exception {
+        when(getHomeSummary.execute(eq(UNIT), any())).thenReturn(
+                new com.zera.ms_inventory.core.domain.valueobject.HomeSummary(
+                        120L, 20.0, 200, 60.0, 3L, 2L, 1L, 7L, 30,
+                        new com.zera.ms_inventory.core.domain.valueobject.PageResult<>(
+                                List.of(Fixtures.item(UNIT)), 0, 5, 12)));
+
+        mockMvc.perform(get("/api/v1/dashboard/home").header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activeItems").value(120))
+                .andExpect(jsonPath("$.activeItemsChangePercent").value(20.0))
+                .andExpect(jsonPath("$.occupancyPercent").value(60.0))
+                .andExpect(jsonPath("$.pendingApproval").value(3))
+                .andExpect(jsonPath("$.disposalsInWindow").value(7))
+                .andExpect(jsonPath("$.windowDays").value(30))
+                .andExpect(jsonPath("$.recentItems.content[0].barcode").value("7891234567890"))
+                .andExpect(jsonPath("$.recentItems.totalElements").value(12))
+                .andExpect(jsonPath("$.recentItems.totalPages").value(3));
+    }
+
+    /** Unidade sem capacidade: a ocupacao nao vem, em vez de vir zerada. */
+    @Test
+    @DisplayName("GET /api/v1/dashboard/home - ocupacao ausente sem capacidade")
+    void shouldOmitOccupancyWithoutCapacity() throws Exception {
+        when(getHomeSummary.execute(eq(UNIT), any())).thenReturn(
+                new com.zera.ms_inventory.core.domain.valueobject.HomeSummary(
+                        5L, null, null, null, 0L, 0L, 0L, 0L, 30,
+                        new com.zera.ms_inventory.core.domain.valueobject.PageResult<>(List.of(), 0, 5, 0)));
+
+        mockMvc.perform(get("/api/v1/dashboard/home").header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.occupancyPercent").doesNotExist())
+                .andExpect(jsonPath("$.activeItemsChangePercent").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/dashboard/home - deve repassar a pagina pedida dos itens recentes")
+    void shouldForwardTheRecentItemsPage() throws Exception {
+        when(getHomeSummary.execute(eq(UNIT), any())).thenReturn(
+                new com.zera.ms_inventory.core.domain.valueobject.HomeSummary(
+                        120L, null, null, null, 0L, 0L, 0L, 0L, 30,
+                        new com.zera.ms_inventory.core.domain.valueobject.PageResult<>(List.of(), 2, 10, 25)));
+
+        mockMvc.perform(get("/api/v1/dashboard/home")
+                        .param("page", "2").param("size", "10")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recentItems.page").value(2))
+                .andExpect(jsonPath("$.recentItems.size").value(10))
+                .andExpect(jsonPath("$.recentItems.totalElements").value(25));
+
+        org.mockito.ArgumentCaptor<com.zera.ms_inventory.core.domain.valueobject.Pagination> pagina =
+                org.mockito.ArgumentCaptor.forClass(
+                        com.zera.ms_inventory.core.domain.valueobject.Pagination.class);
+        org.mockito.Mockito.verify(getHomeSummary).execute(eq(UNIT), pagina.capture());
+        assertThat(pagina.getValue()).isEqualTo(
+                new com.zera.ms_inventory.core.domain.valueobject.Pagination(2, 10));
+    }
+
+    /** O limite de tamanho das listagens vale aqui tambem. */
+    @Test
+    @DisplayName("GET /api/v1/dashboard/home - deve recusar tamanho de pagina acima do maximo")
+    void shouldRejectAPageSizeAboveTheMaximum() throws Exception {
+        mockMvc.perform(get("/api/v1/dashboard/home")
+                        .param("size", "500")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/dashboard/work-center - traz o que falta e o motivo da reprovacao")
+    void shouldReturnWorkCenter() throws Exception {
+        com.zera.ms_inventory.core.domain.entity.Item rascunho = Fixtures.item(UNIT);
+        com.zera.ms_inventory.core.domain.entity.Item reprovado = Fixtures.item(UNIT);
+        when(getWorkCenter.execute(eq(UNIT), any())).thenReturn(
+                new com.zera.ms_inventory.core.domain.valueobject.WorkCenterSummary(
+                        List.of(rascunho), List.of(reprovado),
+                        java.util.Map.of(reprovado.getId(), "Foto ilegivel"),
+                        List.of(), 2L, 1L));
+
+        mockMvc.perform(get("/api/v1/dashboard/work-center")
+                        .principal(new TestingAuthenticationToken(MANAGER_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.drafts[0].missingFields").isArray())
+                .andExpect(jsonPath("$.rejected[0].rejectionReason").value("Foto ilegivel"))
+                .andExpect(jsonPath("$.inMaintenance").value(2))
+                .andExpect(jsonPath("$.awaitingEvaluation").value(1));
     }
 
     @Test
