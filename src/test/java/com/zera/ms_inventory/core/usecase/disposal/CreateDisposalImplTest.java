@@ -40,9 +40,11 @@ class CreateDisposalImplTest {
     @Mock private ItemRepository itemRepository;
     @Mock private DisposalRepository disposalRepository;
     @Mock private EventRepository eventRepository;
+    @Mock private com.zera.ms_inventory.core.usecase.rule.EvaluateDisposalRules evaluateDisposalRules;
 
     private CreateDisposalImpl useCase() {
-        return new CreateDisposalImpl(itemRepository, disposalRepository, eventRepository);
+        return new CreateDisposalImpl(itemRepository, disposalRepository, eventRepository,
+                evaluateDisposalRules);
     }
 
     private Model modelWeighing(Double kg) {
