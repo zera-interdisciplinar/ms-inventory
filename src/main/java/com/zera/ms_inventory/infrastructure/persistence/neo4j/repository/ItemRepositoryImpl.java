@@ -67,13 +67,14 @@ public class ItemRepositoryImpl implements ItemRepository {
     public PageResult<Item> findPage(UUID unitId, ItemFilter filter, Pagination pagination) {
         String status = filter.status() == null ? null : filter.status().name();
         boolean eligible = filter.onlyEligibleForDisposal();
+        String condition = filter.condition() == null ? null : filter.condition().name();
         long total = neo4jRepository.countFiltered(unitId, status, filter.categoryId(), filter.modelId(),
-                filter.query(), eligible, DISPOSABLE_STATUSES);
+                filter.query(), eligible, DISPOSABLE_STATUSES, filter.createdBy(), condition);
         if (total == 0) {
             return new PageResult<>(List.of(), pagination.page(), pagination.size(), 0);
         }
         List<ItemNode> nodes = neo4jRepository.findFilteredPage(unitId, status, filter.categoryId(),
-                filter.modelId(), filter.query(), eligible, DISPOSABLE_STATUSES,
+                filter.modelId(), filter.query(), eligible, DISPOSABLE_STATUSES, filter.createdBy(), condition,
                 (long) pagination.page() * pagination.size(), pagination.size());
         return new PageResult<>(nodes.stream().map(mapper::toDomain).toList(), pagination.page(), pagination.size(),
                 total);
