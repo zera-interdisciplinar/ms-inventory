@@ -15,8 +15,25 @@ import com.zera.ms_inventory.infrastructure.persistence.neo4j.entity.ItemNode;
 
 interface ItemNeo4jRepository extends Neo4jRepository<ItemNode, UUID> {
 
-    @Query("MATCH (i:Item {unitId: $unitId}) WHERE i.status <> 'REMOVED' RETURN i")
+    /**
+     * Devolvia so o no do item: sem o modelo no resultado, o SDN nao tinha como montar a relacao e
+     * {@code getModel()} vinha nulo em toda leitura sem pagina. Quem usa esta consulta olha
+     * garantia, categoria e material do modelo, entao o modelo precisa vir junto.
+     */
+    @Query("""
+            MATCH (i:Item {unitId: $unitId})-[r:IS_MODEL]->(m:Model)
+            WHERE i.status <> 'REMOVED'
+            OPTIONAL MATCH (m)-[bt:BELONGS_TO]->(c:Category)
+            OPTIONAL MATCH (m)-[mo:MADE_OF]->(mat:Material)
+            WITH i, r, m, collect(DISTINCT bt) AS bts, collect(DISTINCT c) AS cs,
+                 collect(DISTINCT mo) AS mos, collect(DISTINCT mat) AS mats
+            ORDER BY i.createdAt DESC
+            RETURN i, collect(r), collect(m), bts, cs, mos, mats
+            """)
     List<ItemNode> findAllByUnitId(@Param("unitId") UUID unitId);
+
+    @Query("MATCH (i:Item) WHERE i.status <> 'REMOVED' RETURN DISTINCT i.unitId")
+    List<String> findDistinctUnitIds();
 
     String FILTER = """
             MATCH (i:Item)-[r:IS_MODEL]->(m:Model)
