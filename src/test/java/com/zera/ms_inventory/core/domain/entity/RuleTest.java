@@ -84,6 +84,35 @@ class RuleTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    /** Numero sem unidade nao da para interpretar, e unidade sem numero nao limita nada. */
+    @Test
+    void shouldRefuseAHalfLimit() {
+        assertThatThrownBy(() -> new Rule(UUID.randomUUID(), Fixtures.UNIT, "x", RuleKind.STALE_ITEM, 90,
+                null, null, true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("both limitValue and limitUnit");
+        assertThatThrownBy(() -> new Rule(UUID.randomUUID(), Fixtures.UNIT, "x", RuleKind.STALE_ITEM, null,
+                RuleLimitUnit.DAYS, null, true))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        Rule regra = wholeUnitRule();
+        assertThatThrownBy(() -> regra.changeLimit(90, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> regra.changeLimit(null, RuleLimitUnit.DAYS))
+                .isInstanceOf(IllegalArgumentException.class);
+        // o limite antigo continua de pe apos a recusa
+        assertThat(regra.getLimitValue()).isEqualTo(30);
+    }
+
+    @Test
+    void shouldAllowClearingTheWholeLimit() {
+        Rule regra = wholeUnitRule();
+
+        regra.changeLimit(null, null);
+
+        assertThat(regra.getLimitValue()).isNull();
+        assertThat(regra.getLimitUnit()).isNull();
+    }
+
     @Test
     void shouldRequireUnitAndKindAndRefuseNegativeLimit() {
         assertThatThrownBy(() -> new Rule(UUID.randomUUID(), null, "x", RuleKind.STALE_ITEM, 1,

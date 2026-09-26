@@ -31,6 +31,11 @@ public record CreateRuleRequest(
         return (targetType == null) == (targetId == null);
     }
 
+    @AssertTrue(message = "inform both limitValue and limitUnit, or neither")
+    public boolean isLimitComplete() {
+        return (limitValue == null) == (limitUnit == null);
+    }
+
     public CreateRuleCommand toCommand(UUID unitId) {
         return new CreateRuleCommand(unitId, name, kind, limitValue, limitUnit,
                 RuleTarget.of(targetType, targetId), active);

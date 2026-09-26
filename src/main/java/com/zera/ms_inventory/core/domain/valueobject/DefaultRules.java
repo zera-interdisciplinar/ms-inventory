@@ -8,6 +8,10 @@ import com.zera.ms_inventory.core.domain.entity.Rule;
 /**
  * Regras que toda unidade ganha no primeiro acesso, para o alerta funcionar sem ninguem configurar
  * nada. Todas valem para a unidade inteira e podem ser editadas ou desligadas depois.
+ *
+ * <p>O id de cada padrao e derivado de (unidade, tipo), entao duas semeaduras simultaneas gravam
+ * os mesmos oito nos em vez de dezesseis: o save e um MERGE por id. Regra criada a mao continua
+ * com id aleatorio, porque a unidade pode ter varias do mesmo tipo com alvos diferentes.
  */
 public final class DefaultRules {
 
@@ -28,6 +32,12 @@ public final class DefaultRules {
 
     private static Rule rule(UUID unitId, String name, RuleKind kind, Integer limitValue,
                              RuleLimitUnit limitUnit) {
-        return new Rule(UUID.randomUUID(), unitId, name, kind, limitValue, limitUnit, null, true);
+        return new Rule(idOf(unitId, kind), unitId, name, kind, limitValue, limitUnit, null, true);
+    }
+
+    /** Mesmo par (unidade, tipo) sempre gera o mesmo id, o que torna a semeadura idempotente. */
+    public static UUID idOf(UUID unitId, RuleKind kind) {
+        return UUID.nameUUIDFromBytes(("zera:default-rule:" + unitId + ":" + kind.name())
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }

@@ -16,6 +16,8 @@ import com.zera.ms_inventory.core.domain.exception.RuleNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.RuleKind;
 import com.zera.ms_inventory.core.domain.valueobject.RuleLimitUnit;
 import com.zera.ms_inventory.core.domain.valueobject.RuleTarget;
+import com.zera.ms_inventory.core.repository.CategoryRepository;
+import com.zera.ms_inventory.core.repository.ModelRepository;
 import com.zera.ms_inventory.core.repository.RuleRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +31,12 @@ import static org.mockito.Mockito.when;
 class RuleUseCasesTest {
 
     @Mock private RuleRepository ruleRepository;
+    @Mock private ModelRepository modelRepository;
+    @Mock private CategoryRepository categoryRepository;
+
+    private RuleTargetResolver resolver() {
+        return new RuleTargetResolver(modelRepository, categoryRepository);
+    }
 
     private Rule rule(UUID id) {
         return new Rule(id, Fixtures.UNIT, "Garantia", RuleKind.WARRANTY_EXPIRATION, 30,
@@ -40,9 +48,11 @@ class RuleUseCasesTest {
     @Test
     void shouldCreateTheRuleInTheUnit() {
         UUID modelId = UUID.randomUUID();
+        when(modelRepository.findById(Fixtures.UNIT, modelId))
+                .thenReturn(Optional.of(Fixtures.model(modelId, Fixtures.UNIT)));
         when(ruleRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        Rule criada = new CreateRuleImpl(ruleRepository).execute(new CreateRuleCommand(Fixtures.UNIT,
+        Rule criada = new CreateRuleImpl(ruleRepository, resolver()).execute(new CreateRuleCommand(Fixtures.UNIT,
                 "Garantia", RuleKind.WARRANTY_EXPIRATION, 30, RuleLimitUnit.DAYS,
                 RuleTarget.model(modelId), true));
 
@@ -117,9 +127,11 @@ class RuleUseCasesTest {
         UUID id = UUID.randomUUID();
         Rule regra = rule(id);
         UUID categoryId = UUID.randomUUID();
+        when(categoryRepository.findById(Fixtures.UNIT, categoryId))
+                .thenReturn(Optional.of(Fixtures.category(categoryId, Fixtures.UNIT)));
         when(ruleRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(regra));
         when(ruleRepository.save(regra)).thenReturn(regra);
-        UpdateRuleUseCases useCases = new UpdateRuleUseCases(ruleRepository);
+        UpdateRuleUseCases useCases = new UpdateRuleUseCases(ruleRepository, resolver());
 
         useCases.execute(Fixtures.UNIT, id, "Outro nome");
         useCases.execute(Fixtures.UNIT, id, 60, RuleLimitUnit.DAYS);
@@ -142,10 +154,71 @@ class RuleUseCasesTest {
     void shouldNotEditARuleFromAnotherUnit() {
         UUID id = UUID.randomUUID();
         when(ruleRepository.findById(Fixtures.OTHER_UNIT, id)).thenReturn(Optional.empty());
-        UpdateRuleUseCases useCases = new UpdateRuleUseCases(ruleRepository);
+        UpdateRuleUseCases useCases = new UpdateRuleUseCases(ruleRepository, resolver());
 
         assertThatThrownBy(() -> useCases.execute(Fixtures.OTHER_UNIT, id, "x"))
                 .isInstanceOf(RuleNotFoundException.class);
         verify(ruleRepository, never()).save(any());
+    }
+
+    // ---- alvo inexistente ou de outra unidade ----
+
+    /**
+     * Sem essa checagem o alvo invalido nao viraria relacao e a regra passaria a valer para a
+     * unidade inteira, ampliando o alcance do alerta em silencio.
+     */
+    @Test
+    void shouldRefuseToCreateWithAModelFromAnotherUnit() {
+        UUID modelId = UUID.randomUUID();
+        when(modelRepository.findById(Fixtures.UNIT, modelId)).thenReturn(Optional.empty());
+        CreateRuleImpl useCase = new CreateRuleImpl(ruleRepository, resolver());
+        CreateRuleCommand comando = new CreateRuleCommand(Fixtures.UNIT, "x", RuleKind.STALE_ITEM, 6,
+                RuleLimitUnit.MONTHS, RuleTarget.model(modelId), true);
+
+        assertThatThrownBy(() -> useCase.execute(comando))
+                .isInstanceOf(com.zera.ms_inventory.core.domain.exception.ModelNotFoundException.class);
+        verify(ruleRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRefuseToCreateWithAnUnknownCategory() {
+        UUID categoryId = UUID.randomUUID();
+        when(categoryRepository.findById(Fixtures.UNIT, categoryId)).thenReturn(Optional.empty());
+        CreateRuleImpl useCase = new CreateRuleImpl(ruleRepository, resolver());
+        CreateRuleCommand comando = new CreateRuleCommand(Fixtures.UNIT, "x", RuleKind.STALE_ITEM, 6,
+                RuleLimitUnit.MONTHS, RuleTarget.category(categoryId), true);
+
+        assertThatThrownBy(() -> useCase.execute(comando))
+                .isInstanceOf(com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException.class);
+        verify(ruleRepository, never()).save(any());
+    }
+
+    /** Trocar um alvo valido por um invalido nao pode transformar a regra em regra da unidade. */
+    @Test
+    void shouldRefuseToPointTheRuleAtAModelFromAnotherUnit() {
+        UUID id = UUID.randomUUID();
+        UUID modelId = UUID.randomUUID();
+        when(modelRepository.findById(Fixtures.UNIT, modelId)).thenReturn(Optional.empty());
+        UpdateRuleUseCases useCases = new UpdateRuleUseCases(ruleRepository, resolver());
+
+        assertThatThrownBy(() -> useCases.execute(Fixtures.UNIT, id, RuleTarget.model(modelId)))
+                .isInstanceOf(com.zera.ms_inventory.core.domain.exception.ModelNotFoundException.class);
+        verify(ruleRepository, never()).findById(any(), any());
+        verify(ruleRepository, never()).save(any());
+    }
+
+    /** Alvo nulo e valido e nao consulta nada: e a regra voltando para a unidade inteira. */
+    @Test
+    void shouldNotLookUpAnythingWhenClearingTheTarget() {
+        UUID id = UUID.randomUUID();
+        Rule regra = rule(id);
+        when(ruleRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(regra));
+        when(ruleRepository.save(regra)).thenReturn(regra);
+
+        new UpdateRuleUseCases(ruleRepository, resolver()).execute(Fixtures.UNIT, id, (RuleTarget) null);
+
+        assertThat(regra.appliesToWholeUnit()).isTrue();
+        verify(modelRepository, never()).findById(any(), any());
+        verify(categoryRepository, never()).findById(any(), any());
     }
 }

@@ -9,7 +9,8 @@ import com.zera.ms_inventory.core.domain.valueobject.RuleTarget;
 
 /**
  * Regra de alerta configurada pela unidade. Sem alvo, vale para a unidade inteira; com alvo, so
- * para os itens daquele modelo ou categoria.
+ * para os itens daquele modelo ou categoria. O limite e opcional, mas vem inteiro: valor e
+ * unidade juntos, ou nenhum dos dois.
  */
 public class Rule {
 
@@ -55,6 +56,10 @@ public class Rule {
      * geraria alerta com numero sem sentido.
      */
     private static void validateLimit(RuleKind kind, Integer limitValue, RuleLimitUnit limitUnit) {
+        // valor sem unidade nao da para interpretar, e unidade sem valor nao limita nada
+        if ((limitValue == null) != (limitUnit == null)) {
+            throw new IllegalArgumentException("inform both limitValue and limitUnit, or neither");
+        }
         if (limitValue != null && limitValue < 0) {
             throw new IllegalArgumentException("limitValue cannot be negative");
         }

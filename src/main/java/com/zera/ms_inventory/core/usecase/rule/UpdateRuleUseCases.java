@@ -17,9 +17,11 @@ import com.zera.ms_inventory.core.repository.RuleRepository;
 public class UpdateRuleUseCases implements UpdateRuleName, UpdateRuleLimit, UpdateRuleTarget, SetRuleActive {
 
     private final RuleRepository ruleRepository;
+    private final RuleTargetResolver targetResolver;
 
-    public UpdateRuleUseCases(RuleRepository ruleRepository) {
+    public UpdateRuleUseCases(RuleRepository ruleRepository, RuleTargetResolver targetResolver) {
         this.ruleRepository = ruleRepository;
+        this.targetResolver = targetResolver;
     }
 
     @Override
@@ -34,6 +36,7 @@ public class UpdateRuleUseCases implements UpdateRuleName, UpdateRuleLimit, Upda
 
     @Override
     public Rule execute(UUID unitId, UUID id, RuleTarget target) {
+        targetResolver.requireExists(unitId, target);
         return change(unitId, id, rule -> rule.changeTarget(target));
     }
 

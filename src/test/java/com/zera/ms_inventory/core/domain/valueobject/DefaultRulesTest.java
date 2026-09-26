@@ -47,6 +47,28 @@ class DefaultRulesTest {
                 });
     }
 
+    /**
+     * Duas semeaduras simultaneas gravam os mesmos oito nos, nao dezesseis: o save e um MERGE por
+     * id, entao id deterministico resolve a corrida sem trava.
+     */
+    @Test
+    void shouldGenerateTheSameIdsForTheSameUnit() {
+        List<Rule> primeira = DefaultRules.forUnit(Fixtures.UNIT);
+        List<Rule> segunda = DefaultRules.forUnit(Fixtures.UNIT);
+
+        assertThat(segunda).extracting(Rule::getId)
+                .containsExactlyElementsOf(primeira.stream().map(Rule::getId).toList());
+        assertThat(primeira).extracting(Rule::getId).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void shouldDeriveTheIdFromUnitAndKind() {
+        assertThat(DefaultRules.idOf(Fixtures.UNIT, RuleKind.STALE_ITEM))
+                .isEqualTo(DefaultRules.idOf(Fixtures.UNIT, RuleKind.STALE_ITEM))
+                .isNotEqualTo(DefaultRules.idOf(Fixtures.UNIT, RuleKind.WARRANTY_EXPIRATION))
+                .isNotEqualTo(DefaultRules.idOf(Fixtures.OTHER_UNIT, RuleKind.STALE_ITEM));
+    }
+
     @Test
     void shouldGiveEachUnitItsOwnRules() {
         List<Rule> primeira = DefaultRules.forUnit(Fixtures.UNIT);

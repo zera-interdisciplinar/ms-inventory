@@ -108,6 +108,48 @@ class RuleControllerTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/rules - deve recusar limite pela metade")
+    void shouldRejectAHalfLimit() throws Exception {
+        mockMvc.perform(post("/api/v1/rules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"x\",\"kind\":\"STALE_ITEM\",\"limitValue\":90,\"active\":true}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/v1/rules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"x\",\"kind\":\"STALE_ITEM\",\"limitUnit\":\"DAYS\",\"active\":true}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/rules/{id}/limit - deve recusar limite pela metade")
+    void shouldRejectAHalfLimitOnUpdate() throws Exception {
+        mockMvc.perform(patch("/api/v1/rules/{id}/limit", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"limitValue\":90}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isBadRequest());
+    }
+
+    /** Alvo que nao existe na unidade vira 404, nao regra da unidade inteira. */
+    @Test
+    @DisplayName("PATCH /api/v1/rules/{id}/target - deve retornar 404 para alvo de outra unidade")
+    void shouldReturn404ForATargetFromAnotherUnit() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID modelId = UUID.randomUUID();
+        when(updateRuleTarget.execute(UNIT, id, RuleTarget.model(modelId)))
+                .thenThrow(new com.zera.ms_inventory.core.domain.exception.ModelNotFoundException(modelId));
+
+        mockMvc.perform(patch("/api/v1/rules/{id}/target", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetType\":\"MODEL\",\"targetId\":\"" + modelId + "\"}")
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("GET /api/v1/rules - deve listar as regras da unidade")
     void shouldListRules() throws Exception {
         when(findAllRules.execute(UNIT)).thenReturn(List.of(rule(null), rule(null)));
