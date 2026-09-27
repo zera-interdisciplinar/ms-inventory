@@ -34,7 +34,7 @@ valida contra ela.
 | Variável | Liga |
 |---|---|
 | `ADMIN_CORE_ENABLED=true` + `ADMIN_CORE_BASE_URL` + `MS_INVENTORY_CLIENT_SECRET` | Envio de alertas ao gestor via ms-administrative-core |
-| `PREDICTION_ENABLED=true` + `PREDICTION_BASE_URL` | Atualização diária de `predictedFailureDate` via `ml-failure-predictor` |
+| `PREDICTION_ENABLED=true` + `PREDICTION_BASE_URL` (+ `PREDICTION_API_KEY` quando via Kong) | Atualização diária de `predictedFailureDate` pelo preditivo de quebra (`POST /predict-batch`) |
 
 ### JDK errado
 
