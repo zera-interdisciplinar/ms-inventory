@@ -20,14 +20,20 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 
 /**
  * Resource server: cada request de API carrega um access token JWT (RS256) emitido pelo
  * ms-administrative-core. Validamos a assinatura com a chave publica compartilhada e aplicamos
  * autorizacao por {@code Role} (claim {@code role} -> {@code ROLE_*}).
  *
- * <p>Rotas liberadas: health, o endpoint MCP (chamada interna do AI core, nao exposta via Kong) e
- * o swagger.
+ * <p>Rotas liberadas: health e o endpoint MCP (chamada interna do AI core, nao exposta via Kong)
+ * ficam com {@code permitAll()} na propria cadeia. A documentacao (swagger, {@code /api-docs}) sai
+ * da cadeia via {@link #webSecurityCustomizer()}: com springdoc remapeando o path por propriedade,
+ * o {@code PathPatternRequestMatcher} do {@code permitAll()} decidia de forma nao deterministica
+ * qual entre {@code /api-docs} e {@code /v3/api-docs} ficava publico a cada subida — em alguns boots
+ * o time do app bateria em auth exigida onde deveria ser aberto. {@code ignoring()} tira essas rotas
+ * do FilterChainProxy inteiro, sem essa ambiguidade.</p>
  */
 @Configuration
 @EnableWebSecurity
@@ -38,12 +44,23 @@ public class SecurityConfig {
     private static final String[] PUBLIC = {
             "/actuator/health/**",
             "/mcp",
-            "/mcp/**",
+            "/mcp/**"
+    };
+
+    /** So documentacao, sem dado nenhum de negocio; ver o Javadoc da classe para o motivo. */
+    private static final String[] DOCUMENTATION = {
             "/index.html",
+            "/api-docs",
             "/api-docs/**",
             "/swagger-ui/**",
+            "/v3/api-docs",
             "/v3/api-docs/**"
     };
+
+    @Bean
+    WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> web.ignoring().requestMatchers(DOCUMENTATION);
+    }
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter converter)
