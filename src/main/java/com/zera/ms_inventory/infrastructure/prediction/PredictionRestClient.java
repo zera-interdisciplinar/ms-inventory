@@ -16,9 +16,14 @@ final class PredictionRestClient {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout((int) properties.timeout().toMillis());
         factory.setReadTimeout((int) properties.timeout().toMillis());
-        return RestClient.builder()
+
+        RestClient.Builder builder = RestClient.builder()
                 .baseUrl(properties.baseUrl())
-                .requestFactory(factory)
-                .build();
+                .requestFactory(factory);
+        if (!properties.apiKey().isBlank()) {
+            // chamada via Kong; direto no servico do cluster o cabecalho nao e exigido
+            builder.defaultHeader("apikey", properties.apiKey());
+        }
+        return builder.build();
     }
 }

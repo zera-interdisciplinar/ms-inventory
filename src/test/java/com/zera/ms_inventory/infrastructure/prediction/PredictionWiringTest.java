@@ -23,10 +23,6 @@ class PredictionWiringTest {
     @Configuration
     @EnableConfigurationProperties(PredictionProperties.class)
     static class Properties {
-        @org.springframework.context.annotation.Bean
-        tools.jackson.databind.json.JsonMapper jsonMapper() {
-            return tools.jackson.databind.json.JsonMapper.builder().build();
-        }
     }
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
