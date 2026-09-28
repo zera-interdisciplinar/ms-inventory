@@ -78,3 +78,18 @@ spec:
             secretKeyRef:
               name: ms-inventory-jwt
               key: public.pem
+        # Alertas ao gestor via ms-administrative-core (mesmo namespace, DNS interno do
+        # cluster — chamada servidor-a-servidor nao precisa passar pelo Kong).
+        - name: ADMIN_CORE_ENABLED
+          value: "true"
+        - name: ADMIN_CORE_BASE_URL
+          value: "http://ms-administrative-core.qa.svc.cluster.local"
+        # optional: true para o pod nao entrar em crash loop se o secret ainda nao existir —
+        # sem o segredo, a integracao so fica sem credencial e os alertas nao saem, ver
+        # AdminCoreProperties#isConfigured().
+        - name: MS_INVENTORY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ms-inventory-admin-core
+              key: client-secret
+              optional: true
