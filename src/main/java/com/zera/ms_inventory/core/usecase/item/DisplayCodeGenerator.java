@@ -1,5 +1,6 @@
 package com.zera.ms_inventory.core.usecase.item;
 
+import java.util.Random;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
 
@@ -20,9 +21,17 @@ public class DisplayCodeGenerator {
     private final ItemRepository itemRepository;
     private final RandomGenerator random;
 
+    /**
+     * {@code new Random()} em vez de {@code RandomGenerator.of("L64X128MixRandom")} de proposito:
+     * o algoritmo por nome depende de um provider SPI que o JRE minimo do container (jlink,
+     * eclipse-temurin:21-jre-alpine) nao registra, e a app cai no boot com
+     * "No implementation of the random number generator algorithm ... is available" — so aparece
+     * no container real, nao no JDK completo do build/teste. Nao e codigo sensivel (so um
+     * identificador de 6 digitos, nao um token), entao nao ha motivo para depender do SPI.
+     */
     @Autowired
     public DisplayCodeGenerator(ItemRepository itemRepository) {
-        this(itemRepository, RandomGenerator.of("L64X128MixRandom"));
+        this(itemRepository, new Random());
     }
 
     DisplayCodeGenerator(ItemRepository itemRepository, RandomGenerator random) {
