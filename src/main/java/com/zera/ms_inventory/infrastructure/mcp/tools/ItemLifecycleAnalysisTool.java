@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -21,9 +22,13 @@ public class ItemLifecycleAnalysisTool {
         this.findItemById = findItemById;
     }
 
+    // a descricao anunciava usageIntensity como LOW/MEDIUM/HIGH, que e o formato antigo; o valor
+    // sempre foi um inteiro, e o assistente traduzia errado ao explicar
     @McpTool(
         name = "item_lifecycle_analysis",
-        description = "Analyze the lifecycle of a specific item including age, usage intensity (LOW/MEDIUM/HIGH), manufacturing year and predicted failure date",
+        description = "Analyze one item's lifecycle: age, usage intensity (integer scale 0 to 10), "
+                + "physical condition, warranty expiry, expected end of life and predicted failure date, "
+                + "with the days remaining for each",
         annotations = @McpTool.McpAnnotations(
             readOnlyHint = true,
             title = "Item Lifecycle Analysis"
@@ -35,48 +40,44 @@ public class ItemLifecycleAnalysisTool {
 
         Item item = findItemById.execute(McpToolScope.require(unitId), itemId);
         LocalDate today = LocalDate.now();
+        Model model = item.getModel();
 
-        long ageInDays = 0;
-        if (item.getAcquiredAt() != null) {
-            ageInDays = ChronoUnit.DAYS.between(item.getAcquiredAt(), today);
-        }
+        LocalDate warrantyExpiry = plusMonths(item.getAcquiredAt(),
+                model == null ? null : model.getWarrantyMonths());
+        LocalDate expectedEndOfLife = plusMonths(item.getAcquiredAt(),
+                model == null ? null : model.getExpectedLifespanMonths());
 
         return new ItemLifecycleReport(
-            item.getId(),
-            item.getSerialNumber(),
-            item.getStatus().name(),
-            item.getAcquiredAt(),
-            ageInDays,
-            item.getUsageIntensity(),
-            item.getManufacturingYear(),
-            item.getPredictedFailureDate(),
-            item.getUnitId()
-        );
+                McpItemView.of(item),
+                daysBetween(item.getAcquiredAt(), today),
+                warrantyExpiry,
+                daysBetween(today, warrantyExpiry),
+                expectedEndOfLife,
+                daysBetween(today, expectedEndOfLife),
+                daysBetween(today, item.getPredictedFailureDate()));
     }
 
-    public static class ItemLifecycleReport {
-        public final UUID itemId;
-        public final String serialNumber;
-        public final String currentStatus;
-        public final LocalDate acquiredAt;
-        public final long ageInDays;
-        public final Integer usageIntensity;
-        public final Integer manufacturingYear;
-        public final LocalDate predictedFailureDate;
-        public final UUID unitId;
+    private static LocalDate plusMonths(LocalDate base, Integer months) {
+        return base == null || months == null ? null : base.plusMonths(months);
+    }
 
-        public ItemLifecycleReport(UUID itemId, String serialNumber, String currentStatus, LocalDate acquiredAt,
-                                  long ageInDays, Integer usageIntensity, Integer manufacturingYear,
-                                  LocalDate predictedFailureDate, UUID unitId) {
-            this.itemId = itemId;
-            this.serialNumber = serialNumber;
-            this.currentStatus = currentStatus;
-            this.acquiredAt = acquiredAt;
-            this.ageInDays = ageInDays;
-            this.usageIntensity = usageIntensity;
-            this.manufacturingYear = manufacturingYear;
-            this.predictedFailureDate = predictedFailureDate;
-            this.unitId = unitId;
-        }
+    /** Negativo quando a data ja passou, que e como o assistente descobre garantia vencida. */
+    private static Long daysBetween(LocalDate from, LocalDate to) {
+        return from == null || to == null ? null : ChronoUnit.DAYS.between(from, to);
+    }
+
+    /**
+     * Os dias restantes vem calculados, e nao so as datas: pedir ao modelo para subtrair datas e
+     * onde ele erra, e o erro chega ao gestor como "ainda tem garantia".
+     */
+    public record ItemLifecycleReport(
+            McpItemView item,
+            Long ageInDays,
+            LocalDate warrantyExpiresOn,
+            Long daysUntilWarrantyExpires,
+            LocalDate expectedEndOfLifeOn,
+            Long daysUntilExpectedEndOfLife,
+            Long daysUntilPredictedFailure
+    ) {
     }
 }

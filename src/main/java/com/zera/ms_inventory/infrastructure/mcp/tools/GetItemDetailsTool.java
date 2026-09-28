@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -21,15 +20,16 @@ public class GetItemDetailsTool {
 
     @McpTool(
         name = "get_item_details",
-        description = "Retrieve detailed information about a specific inventory item including status, dates, and assigned unit",
+        description = "Retrieve one inventory item: short code, name, status, physical condition, "
+                + "damages, model, category, usage intensity (0-10) and predicted failure date",
         annotations = @McpTool.McpAnnotations(
             readOnlyHint = true,
             title = "Get Item Details"
         )
     )
-    public Item getItemDetails(
+    public McpItemView getItemDetails(
             @McpToolParam(description = McpToolScope.UNIT_ID_DESCRIPTION, required = true) UUID unitId,
             @McpToolParam(description = "UUID of the item to retrieve", required = true) UUID itemId) {
-        return findItemById.execute(McpToolScope.require(unitId), itemId);
+        return McpItemView.of(findItemById.execute(McpToolScope.require(unitId), itemId));
     }
 }

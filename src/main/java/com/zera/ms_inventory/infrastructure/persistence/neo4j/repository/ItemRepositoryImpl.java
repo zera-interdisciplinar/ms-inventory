@@ -64,6 +64,11 @@ public class ItemRepositoryImpl implements ItemRepository {
     }
 
     @Override
+    public List<UUID> unitsWithItems() {
+        return neo4jRepository.findDistinctUnitIds().stream().map(UUID::fromString).toList();
+    }
+
+    @Override
     public PageResult<Item> findPage(UUID unitId, ItemFilter filter, Pagination pagination) {
         String status = filter.status() == null ? null : filter.status().name();
         boolean eligible = filter.onlyEligibleForDisposal();

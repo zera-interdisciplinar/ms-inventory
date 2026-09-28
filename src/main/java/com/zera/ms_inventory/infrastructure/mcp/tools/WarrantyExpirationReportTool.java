@@ -24,7 +24,9 @@ public class WarrantyExpirationReportTool {
 
     @McpTool(
         name = "warranty_expiration_report",
-        description = "Report on items with warranties expiring within a specified number of days",
+        description = "Report on items whose warranty expires within a number of days, with the short "
+                + "code, model and days remaining for each. Warranty comes from the model, counted from "
+                + "the item's acquisition date; items without either are left out.",
         annotations = @McpTool.McpAnnotations(
             readOnlyHint = true,
             title = "Warranty Expiration Report"
@@ -49,7 +51,10 @@ public class WarrantyExpirationReportTool {
             if (expiry == null || expiry.isBefore(today) || expiry.isAfter(deadline)) {
                 continue;
             }
-            expiring.add(new WarrantyExpiringItem(item.getId(), item.getSerialNumber(), item.getAcquiredAt(), expiry));
+            expiring.add(new WarrantyExpiringItem(item.getId(), item.getDisplayCode(), item.getName(),
+                    item.getModel().getName(), item.getSerialNumber(), item.getStatus().name(),
+                    item.getAcquiredAt(), expiry,
+                    java.time.temporal.ChronoUnit.DAYS.between(today, expiry)));
         }
 
         return expiring.stream().skip(actualOffset).limit(actualLimit).toList();
@@ -63,17 +68,20 @@ public class WarrantyExpirationReportTool {
         return item.getAcquiredAt().plusMonths(item.getModel().getWarrantyMonths());
     }
 
-    public static class WarrantyExpiringItem {
-        public final UUID itemId;
-        public final String serialNumber;
-        public final LocalDate acquiredAt;
-        public final LocalDate expiryDate;
-
-        public WarrantyExpiringItem(UUID itemId, String serialNumber, LocalDate acquiredAt, LocalDate expiryDate) {
-            this.itemId = itemId;
-            this.serialNumber = serialNumber;
-            this.acquiredAt = acquiredAt;
-            this.expiryDate = expiryDate;
-        }
+    /**
+     * O relatorio so identificava o item pelo numero de serie, que e opcional no v1: item sem
+     * serie aparecia como uma linha sem nome. O codigo curto e o que o gestor le na etiqueta.
+     */
+    public record WarrantyExpiringItem(
+            UUID itemId,
+            String displayCode,
+            String name,
+            String modelName,
+            String serialNumber,
+            String status,
+            LocalDate acquiredAt,
+            LocalDate expiryDate,
+            long daysUntilExpiry
+    ) {
     }
 }

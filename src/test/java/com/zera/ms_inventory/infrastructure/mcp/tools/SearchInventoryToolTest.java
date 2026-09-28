@@ -6,18 +6,25 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.valueobject.Barcode;
+import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
+import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
-import com.zera.ms_inventory.core.usecase.item.FindAllItems;
+import com.zera.ms_inventory.core.domain.valueobject.PageResult;
+import com.zera.ms_inventory.core.domain.valueobject.Pagination;
+import com.zera.ms_inventory.core.usecase.item.ListItems;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -25,57 +32,77 @@ import static org.mockito.Mockito.when;
 class SearchInventoryToolTest {
 
     @Mock
-    private FindAllItems findAllItems;
+    private ListItems listItems;
 
     private Item item(ItemStatus status, String serialNumber) {
         return new Item(UUID.randomUUID(), new Barcode("123456"), status, Fixtures.UNIT,
                 Fixtures.model(Fixtures.UNIT), null, 2024, 6, serialNumber, LocalDate.now());
     }
 
-    @Test
-    void shouldReturnEverythingInTheUnitWhenNoFilterIsGiven() {
-        when(findAllItems.execute(Fixtures.UNIT))
-                .thenReturn(List.of(item(ItemStatus.IN_STOCK, "SN-001"), item(ItemStatus.IN_MAINTENANCE, "SN-002")));
-
-        List<Item> result = new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, null, null);
-
-        assertEquals(2, result.size());
+    private void returning(Item... items) {
+        when(listItems.execute(any(), any(), any()))
+                .thenReturn(new PageResult<>(List.of(items), 0, 20, items.length));
     }
 
     @Test
-    void shouldFilterByStatus() {
-        when(findAllItems.execute(Fixtures.UNIT))
-                .thenReturn(List.of(item(ItemStatus.IN_STOCK, "SN-001"), item(ItemStatus.IN_MAINTENANCE, "SN-002")));
+    void shouldReturnTheItemsOfThePageWithTheTotal() {
+        returning(item(ItemStatus.IN_STOCK, "SN-001"), item(ItemStatus.IN_MAINTENANCE, "SN-002"));
 
-        List<Item> result = new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, "in_maintenance", null);
+        var page = new SearchInventoryTool(listItems)
+                .searchInventory(Fixtures.UNIT, null, null, null, null, null);
 
-        assertEquals(1, result.size());
-        assertEquals(ItemStatus.IN_MAINTENANCE, result.get(0).getStatus());
+        assertEquals(2, page.items().size());
+        assertEquals(2, page.totalItems());
+        assertEquals("IN_STOCK", page.items().get(0).status());
+    }
+
+    /** O filtro desce para o banco: a ferramenta nao varre mais a unidade inteira em memoria. */
+    @Test
+    void shouldPushStatusConditionAndQueryDownToTheRepository() {
+        returning();
+
+        new SearchInventoryTool(listItems)
+                .searchInventory(Fixtures.UNIT, "in_maintenance", "damaged", "notebook", null, null);
+
+        ArgumentCaptor<ItemFilter> filter = ArgumentCaptor.forClass(ItemFilter.class);
+        verify(listItems).execute(any(), filter.capture(), any());
+        assertEquals(ItemStatus.IN_MAINTENANCE, filter.getValue().status());
+        assertEquals(ItemCondition.DAMAGED, filter.getValue().condition());
+        assertEquals("notebook", filter.getValue().query());
+    }
+
+    /** O assistente erra o nome do enum de vez em quando; isso vira "sem filtro", nao erro 500. */
+    @Test
+    void shouldIgnoreAnUnknownStatusOrConditionInsteadOfFailing() {
+        returning();
+
+        new SearchInventoryTool(listItems)
+                .searchInventory(Fixtures.UNIT, "NOPE", "ALSO_NOPE", null, null, null);
+
+        ArgumentCaptor<ItemFilter> filter = ArgumentCaptor.forClass(ItemFilter.class);
+        verify(listItems).execute(any(), filter.capture(), any());
+        assertNull(filter.getValue().status());
+        assertNull(filter.getValue().condition());
     }
 
     @Test
-    void shouldReturnNothingForAnUnknownStatus() {
-        when(findAllItems.execute(Fixtures.UNIT)).thenReturn(List.of(item(ItemStatus.IN_STOCK, "SN-001")));
+    void shouldCapThePageSizeSoOneCallCannotDrainTheUnit() {
+        returning();
 
-        assertTrue(new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, "NOPE", null).isEmpty());
-    }
+        new SearchInventoryTool(listItems).searchInventory(Fixtures.UNIT, null, null, null, 5000, -3);
 
-    @Test
-    void shouldFilterBySerialNumberSubstringIgnoringCaseAndNulls() {
-        when(findAllItems.execute(Fixtures.UNIT))
-                .thenReturn(List.of(item(ItemStatus.IN_STOCK, "SN-ABC"), item(ItemStatus.IN_STOCK, null)));
-
-        List<Item> result = new SearchInventoryTool(findAllItems).searchInventory(Fixtures.UNIT, null, "abc");
-
-        assertEquals(1, result.size());
-        assertEquals("SN-ABC", result.get(0).getSerialNumber());
+        ArgumentCaptor<Pagination> pagination = ArgumentCaptor.forClass(Pagination.class);
+        verify(listItems).execute(any(), any(), pagination.capture());
+        assertEquals(Pagination.MAX_SIZE, pagination.getValue().size());
+        assertEquals(0, pagination.getValue().page());
     }
 
     @Test
     void shouldRejectMissingUnitIdInsteadOfFallingBackToAGlobalRead() {
-        SearchInventoryTool tool = new SearchInventoryTool(findAllItems);
+        SearchInventoryTool tool = new SearchInventoryTool(listItems);
 
-        assertThrows(IllegalArgumentException.class, () -> tool.searchInventory(null, null, null));
-        verifyNoInteractions(findAllItems);
+        assertThrows(IllegalArgumentException.class,
+                () -> tool.searchInventory(null, null, null, null, null, null));
+        verifyNoInteractions(listItems);
     }
 }
