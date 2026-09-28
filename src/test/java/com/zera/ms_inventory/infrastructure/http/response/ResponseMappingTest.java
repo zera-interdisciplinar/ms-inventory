@@ -12,6 +12,7 @@ import com.zera.ms_inventory.core.domain.valueobject.EventType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.valueobject.RuleKind;
 import com.zera.ms_inventory.core.domain.valueobject.RuleLimitUnit;
+import com.zera.ms_inventory.core.domain.valueobject.RuleTarget;
 import com.zera.ms_inventory.core.domain.valueobject.RuleTargetType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,14 +37,31 @@ class ResponseMappingTest {
     @Test
     void shouldMapRule() {
         UUID targetId = UUID.randomUUID();
-        Rule rule = new Rule(UUID.randomUUID(), "Garantia", RuleKind.WARRANTY_EXPIRATION, 30,
-                RuleLimitUnit.DAYS, RuleTargetType.MODEL, targetId, true);
+        Rule rule = new Rule(UUID.randomUUID(), Fixtures.UNIT, "Garantia", RuleKind.WARRANTY_EXPIRATION, 30,
+                RuleLimitUnit.DAYS, RuleTarget.model(targetId), true);
 
         RuleResponse response = RuleResponse.from(rule);
 
         assertEquals(RuleKind.WARRANTY_EXPIRATION, response.kind());
+        assertEquals(RuleTargetType.MODEL, response.targetType());
         assertEquals(targetId, response.targetId());
+        assertEquals(Fixtures.UNIT, response.unitId());
         assertTrue(response.active());
+        assertTrue(!response.appliesToWholeUnit());
+    }
+
+    /** Regra sem alvo vale para a unidade inteira, e a resposta diz isso explicitamente. */
+    @Test
+    void shouldMapAWholeUnitRule() {
+        Rule rule = new Rule(UUID.randomUUID(), Fixtures.UNIT, "Estoque cheio",
+                RuleKind.STOCK_QUANTITY_LIMIT, 90, RuleLimitUnit.PERCENT, null, true);
+
+        RuleResponse response = RuleResponse.from(rule);
+
+        assertNull(response.targetType());
+        assertNull(response.targetId());
+        assertTrue(response.appliesToWholeUnit());
+        assertEquals(RuleLimitUnit.PERCENT, response.limitUnit());
     }
 
     @Test

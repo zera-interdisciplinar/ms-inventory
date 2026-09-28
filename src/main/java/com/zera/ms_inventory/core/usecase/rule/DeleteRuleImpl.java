@@ -9,6 +9,7 @@ import com.zera.ms_inventory.core.repository.RuleRepository;
 
 @Service
 public class DeleteRuleImpl implements DeleteRule {
+
     private final RuleRepository ruleRepository;
 
     public DeleteRuleImpl(RuleRepository ruleRepository) {
@@ -16,9 +17,9 @@ public class DeleteRuleImpl implements DeleteRule {
     }
 
     @Override
-    public void execute(UUID id) {
-        ruleRepository.findById(id)
+    public void execute(UUID unitId, UUID id) {
+        ruleRepository.findById(unitId, id)
                 .orElseThrow(() -> new RuleNotFoundException(id));
-        ruleRepository.deleteById(id);
+        ruleRepository.deleteById(unitId, id);
     }
 }

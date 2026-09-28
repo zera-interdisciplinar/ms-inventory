@@ -65,11 +65,11 @@ class ListCategoryInventoryToolTest {
                         .listCategoryInventory(Fixtures.UNIT, null, null);
 
         assertEquals(2, result.size());
-        assertEquals(2, result.get(0).totalItems);
-        assertEquals(1, result.get(0).okItems);
-        assertEquals(1, result.get(0).damagedItems);
+        assertEquals(2, result.get(0).totalItems());
+        assertEquals(1, result.get(0).itemsInStock());
+        assertEquals(1, result.get(0).damagedItems());
         // a categoria sem modelo nenhum nao herda a contagem global
-        assertEquals(0, result.get(1).totalItems);
+        assertEquals(0, result.get(1).totalItems());
     }
 
     @Test
@@ -82,7 +82,7 @@ class ListCategoryInventoryToolTest {
                 new ListCategoryInventoryTool(findAllCategories, findAllItems)
                         .listCategoryInventory(Fixtures.UNIT, 10, 0);
 
-        assertEquals(0, result.get(0).totalItems);
+        assertEquals(0, result.get(0).totalItems());
     }
 
     @Test

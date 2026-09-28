@@ -17,6 +17,11 @@ public interface ItemRepository {
     Item save(Item item);
     Optional<Item> findById(UUID unitId, UUID id);
     List<Item> findAll(UUID unitId);
+    /**
+     * Unidades que tem ao menos um item, para os jobs saberem por onde passar. E a segunda leitura
+     * sem unitId, e como {@link #existsAnyWithId} nao devolve item nenhum, so a chave da unidade.
+     */
+    List<UUID> unitsWithItems();
     PageResult<Item> findPage(UUID unitId, ItemFilter filter, Pagination pagination);
     PageResult<Item> findPageByModel(UUID unitId, UUID modelId, Pagination pagination);
     boolean existsByModel(UUID unitId, UUID modelId);

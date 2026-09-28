@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.zera.ms_inventory.Fixtures;
-import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.usecase.item.SemanticSearchInventory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,7 +27,7 @@ class SemanticSearchInventoryToolTest {
         when(semanticSearchInventory.execute(Fixtures.UNIT, "bateria de litio", 10))
                 .thenReturn(List.of(Fixtures.item(Fixtures.UNIT)));
 
-        List<Item> result = new SemanticSearchInventoryTool(semanticSearchInventory)
+        List<McpItemView> result = new SemanticSearchInventoryTool(semanticSearchInventory)
                 .semanticSearch(Fixtures.UNIT, "bateria de litio", null);
 
         assertEquals(1, result.size());

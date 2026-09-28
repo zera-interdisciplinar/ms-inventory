@@ -6,5 +6,5 @@ import com.zera.ms_inventory.core.domain.entity.Rule;
 import com.zera.ms_inventory.core.domain.valueobject.RuleLimitUnit;
 
 public interface UpdateRuleLimit {
-    Rule execute(UUID id, Integer limitValue, RuleLimitUnit limitUnit);
+    Rule execute(UUID unitId, UUID id, Integer limitValue, RuleLimitUnit limitUnit);
 }

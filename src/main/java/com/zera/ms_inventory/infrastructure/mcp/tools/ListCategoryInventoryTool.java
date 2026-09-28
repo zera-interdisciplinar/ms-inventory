@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import com.zera.ms_inventory.core.domain.entity.Category;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
+import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.usecase.category.FindAllCategories;
 import com.zera.ms_inventory.core.usecase.item.FindAllItems;
 
@@ -26,9 +27,12 @@ public class ListCategoryInventoryTool {
         this.findAllItems = findAllItems;
     }
 
+    // o resumo dividia a categoria em "ok" e "danificado", que era o modelo antigo de duas
+    // condicoes; agora sao quatro, e um item descartado nao deve contar como estoque
     @McpTool(
         name = "list_category_inventory",
-        description = "List inventory items grouped by category with item counts and status breakdown",
+        description = "List the unit's categories with, for each one, how many items exist, how many are "
+                + "still in stock, how many are damaged and how many were already disposed of",
         annotations = @McpTool.McpAnnotations(
             readOnlyHint = true,
             title = "List Category Inventory"
@@ -58,19 +62,20 @@ public class ListCategoryInventoryTool {
             .filter(item -> belongsTo(item, category))
             .toList();
 
-        long totalItems = categoryItems.size();
-        long damagedItems = categoryItems.stream()
-            .filter(item -> item.getCondition() == ItemCondition.DAMAGED)
-            .count();
-
         return new CategoryInventorySummary(
             category.getId(),
             category.getName(),
             category.getDescription(),
-            totalItems,
-            totalItems - damagedItems,
-            damagedItems
+            categoryItems.size(),
+            count(categoryItems, item -> item.getStatus() == ItemStatus.IN_STOCK),
+            count(categoryItems, item -> item.getCondition() == ItemCondition.DAMAGED
+                    || item.getCondition() == ItemCondition.SEMI_DAMAGED),
+            count(categoryItems, item -> item.getStatus() == ItemStatus.DISPOSED)
         );
+    }
+
+    private static long count(List<Item> items, java.util.function.Predicate<Item> predicate) {
+        return items.stream().filter(predicate).count();
     }
 
     private boolean belongsTo(Item item, Category category) {
@@ -79,22 +84,14 @@ public class ListCategoryInventoryTool {
                 && category.getId().equals(item.getModel().getCategory().getId());
     }
 
-    public static class CategoryInventorySummary {
-        public final UUID categoryId;
-        public final String categoryName;
-        public final String description;
-        public final long totalItems;
-        public final long okItems;
-        public final long damagedItems;
-
-        public CategoryInventorySummary(UUID categoryId, String categoryName, String description,
-                                       long totalItems, long okItems, long damagedItems) {
-            this.categoryId = categoryId;
-            this.categoryName = categoryName;
-            this.description = description;
-            this.totalItems = totalItems;
-            this.okItems = okItems;
-            this.damagedItems = damagedItems;
-        }
+    public record CategoryInventorySummary(
+            UUID categoryId,
+            String categoryName,
+            String description,
+            long totalItems,
+            long itemsInStock,
+            long damagedItems,
+            long disposedItems
+    ) {
     }
 }

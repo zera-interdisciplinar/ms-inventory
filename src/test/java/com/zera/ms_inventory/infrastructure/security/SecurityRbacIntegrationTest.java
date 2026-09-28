@@ -68,9 +68,11 @@ class SecurityRbacIntegrationTest {
 
     @Test
     void readsAllowedForAnyAuthenticatedRole() throws Exception {
-        when(findAllRules.execute()).thenReturn(List.of());
+        when(findAllRules.execute(Fixtures.UNIT)).thenReturn(List.of());
 
-        mockMvc.perform(asRole(get("/api/v1/rules"), "EMPLOYEE")).andExpect(status().isOk());
+        mockMvc.perform(asRole(get("/api/v1/rules"), "EMPLOYEE")
+                        .header("X-Unit-Id", Fixtures.UNIT.toString()))
+                .andExpect(status().isOk());
     }
 
     @Test

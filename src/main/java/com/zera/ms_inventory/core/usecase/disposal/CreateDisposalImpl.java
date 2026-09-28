@@ -18,6 +18,7 @@ import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.repository.DisposalRepository;
 import com.zera.ms_inventory.core.repository.EventRepository;
 import com.zera.ms_inventory.core.repository.ItemRepository;
+import com.zera.ms_inventory.core.usecase.rule.EvaluateDisposalRules;
 
 @Service
 public class CreateDisposalImpl implements CreateDisposal {
@@ -25,12 +26,15 @@ public class CreateDisposalImpl implements CreateDisposal {
     private final ItemRepository itemRepository;
     private final DisposalRepository disposalRepository;
     private final EventRepository eventRepository;
+    private final EvaluateDisposalRules evaluateDisposalRules;
 
     public CreateDisposalImpl(ItemRepository itemRepository, DisposalRepository disposalRepository,
-                              EventRepository eventRepository) {
+                              EventRepository eventRepository,
+                              EvaluateDisposalRules evaluateDisposalRules) {
         this.itemRepository = itemRepository;
         this.disposalRepository = disposalRepository;
         this.eventRepository = eventRepository;
+        this.evaluateDisposalRules = evaluateDisposalRules;
     }
 
     /**
@@ -61,6 +65,8 @@ public class CreateDisposalImpl implements CreateDisposal {
                 command.placeId(), command.placeName(), command.disposedAt(), command.notes(), disposed,
                 command.actor()));
         events.forEach(eventRepository::save);
+        // reciclavel indo para o aterro avisa agora, enquanto da para corrigir o destino
+        evaluateDisposalRules.execute(disposal);
         return disposal;
     }
 
