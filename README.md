@@ -3,6 +3,20 @@
 Microsserviço de gerenciamento de inventário eletrônico: categorias, modelos, materiais, itens
 (com ciclo de vida, manutenção e previsão de quebra), descartes, regras/alertas e dashboard.
 
+## Domínio, em uma leitura rápida
+
+Um **item** nasce como `DRAFT` (rascunho, cadastrado pelo operário) e percorre uma máquina de
+estados: `DRAFT` → `PENDING_APPROVAL` (submetido, esperando o gestor) → `IN_STOCK`. Um submit
+feito pelo próprio gestor pula direto para `IN_STOCK` — ele é quem aprovaria de qualquer forma.
+De `IN_STOCK` o item pode ir para `IN_MAINTENANCE` → `AWAITING_EVALUATION` → de volta a `IN_STOCK`
+(ou seguir para descarte), ou ser `DISPOSED` diretamente. `REJECTED` e `REMOVED` (remoção lógica,
+reversível) completam os oito estados. Cada transição gera um `Event`, que é o histórico do item.
+
+Um item pertence a um **modelo** (ex.: "Latitude 5420"), que pertence a uma **categoria** e é
+feito de um ou mais **materiais** do catálogo global (semeado por migração). **Regras** por
+unidade (garantia vencendo, uso acima do limite, estoque cheio, reciclável indo para o aterro
+etc.) alimentam alertas mandados ao gestor via ms-administrative-core.
+
 ## Stack
 
 - **Java 21** (build e runtime — o `pom.xml` fixa `java.version=21`, e um `maven-enforcer-plugin`
@@ -29,7 +43,15 @@ A aplicação sobe em `http://localhost:8080`. Sem `JWT_PUBLIC_KEY`, o serviço 
 efêmera e loga um aviso — útil para subir localmente sem o admin-core, mas nenhum token real
 valida contra ela.
 
-**Integrações opcionais** (todas desligadas por padrão, o serviço funciona sem elas):
+### `PHOTOS_BUCKET` não é opcional na prática
+
+Diferente das integrações da tabela abaixo, esta bloqueia o fluxo central do produto: a foto é
+campo obrigatório para submeter um item, e sem `PHOTOS_BUCKET` (nome de um bucket GCS) o upload
+responde 503, então **nenhum item sai de `DRAFT`** — não aprova, não vai a estoque, não descarta.
+Se o objetivo é só ler/listar, não precisa configurar; para exercitar o ciclo de vida completo,
+precisa de um bucket real (ou, em teste, um `PhotoStorage` fake — veja `FullInventoryLifecycleIntegrationTest`).
+
+**Integrações verdadeiramente opcionais** (o serviço funciona sem elas, com graceful degradation):
 
 | Variável | Liga |
 |---|---|
