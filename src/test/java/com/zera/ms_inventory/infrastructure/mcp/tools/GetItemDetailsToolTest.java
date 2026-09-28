@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.zera.ms_inventory.Fixtures;
-import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,9 +27,9 @@ class GetItemDetailsToolTest {
         UUID id = UUID.randomUUID();
         when(findItemById.execute(Fixtures.UNIT, id)).thenReturn(Fixtures.item(id, Fixtures.UNIT));
 
-        Item result = new GetItemDetailsTool(findItemById).getItemDetails(Fixtures.UNIT, id);
+        McpItemView result = new GetItemDetailsTool(findItemById).getItemDetails(Fixtures.UNIT, id);
 
-        assertEquals(id, result.getId());
+        assertEquals(id, result.itemId());
         verify(findItemById).execute(Fixtures.UNIT, id);
     }
 

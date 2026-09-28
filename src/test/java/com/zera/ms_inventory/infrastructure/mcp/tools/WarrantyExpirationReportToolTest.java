@@ -52,8 +52,8 @@ class WarrantyExpirationReportToolTest {
                         .getWarrantyExpirationReport(Fixtures.UNIT, 30, null, null);
 
         assertEquals(1, result.size());
-        assertEquals(expiring.getId(), result.get(0).itemId);
-        assertEquals(expiring.getAcquiredAt().plusMonths(12), result.get(0).expiryDate);
+        assertEquals(expiring.getId(), result.get(0).itemId());
+        assertEquals(expiring.getAcquiredAt().plusMonths(12), result.get(0).expiryDate());
     }
 
     @Test
