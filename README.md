@@ -1,6 +1,6 @@
 # ms-inventory
 
-![CI](https://github.com/zera-interdisciplinar/ms-inventory/actions/workflows/ci.yml/badge.svg)
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/projects/jdk/21/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Microsserviço de inventário eletrônico do sistema Zera: cadastro e ciclo de vida dos itens,
