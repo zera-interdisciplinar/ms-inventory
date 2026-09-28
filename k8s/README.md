@@ -1,6 +1,6 @@
 # k8s — ms-inventory
 
-Além dos manifests versionados, cada ambiente precisa do Secret abaixo (criado
+Além dos manifests versionados, cada ambiente precisa dos Secrets abaixo (criados
 uma vez, manualmente).
 
 ## `ms-inventory-jwt` (obrigatório)
@@ -61,3 +61,37 @@ Depois, no `deployment-qa.yaml` / `deployment.yaml`:
 ```
 
 As URLs assinadas duram `zera.storage.photo-url-ttl` (padrão 15 minutos).
+
+## Alertas ao gestor — ms-administrative-core (opcional até existir o secret)
+
+O job de avaliação de regras chama `POST /api/v1/notifications/alerts` no ms-administrative-core
+para avisar o gestor (garantia vencendo, item parado, etc.). Autenticação servidor-a-servidor:
+o `MS_INVENTORY_CLIENT_SECRET` é trocado por um token de serviço em
+`POST /api/v1/auth/service-token`.
+
+O mesmo valor precisa existir **nos dois serviços** — aqui e no Secret `zera-service-clients`
+(chave `ms-inventory`) do ms-administrative-core. Gere uma vez e use nos dois:
+
+```sh
+openssl rand -base64 48 > ms-inventory-secret.txt
+
+# aqui (ms-inventory)
+kubectl create secret generic ms-inventory-admin-core -n qa \
+  --from-file=client-secret=ms-inventory-secret.txt
+
+kubectl create secret generic ms-inventory-admin-core -n production \
+  --from-file=client-secret=ms-inventory-secret.txt
+
+# no ms-administrative-core, com o MESMO arquivo — ver o k8s/README.md de lá
+kubectl create secret generic zera-service-clients -n qa \
+  --from-file=ms-inventory=ms-inventory-secret.txt
+```
+
+Sem este Secret, o deployment sobe normalmente (`optional: true` no `secretKeyRef`) e a
+integração só fica sem credencial: nenhum alerta sai, sem crash-loop. `ADMIN_CORE_BASE_URL`
+aponta para o Service do ms-administrative-core pelo DNS interno do cluster
+(`http://ms-administrative-core.<namespace>.svc.cluster.local`) — a chamada é entre pods no
+mesmo cluster, não precisa passar pelo Kong.
+
+Rotação: gere um novo segredo, atualize o Secret **nos dois serviços** e faça `kubectl rollout
+restart` em ambos.
