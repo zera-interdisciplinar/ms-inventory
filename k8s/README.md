@@ -3,6 +3,32 @@
 Além dos manifests versionados, cada ambiente precisa dos Secrets abaixo (criados
 uma vez, manualmente).
 
+## `neo4j-secrets` (obrigatório)
+
+Credenciais do Neo4j, consumidas por dois manifests diferentes com formatos diferentes:
+`neo4j-qa.yaml`/`neo4j.yaml` (o banco em si, via `NEO4J_AUTH`, formato `usuario/senha` do
+próprio Docker Hub) e `deployment-qa.yaml`/`deployment.yaml` (a aplicação, via `DB_USER`/
+`DB_PASSWORD`/`DB_NAME` separados). **As quatro chaves precisam ser consistentes** — usuário e
+senha em `NEO4J_AUTH` têm que ser os mesmos de `NEO4J_USER`/`NEO4J_PASSWORD`, senão a aplicação
+sobe mas não autentica contra o banco.
+
+Nenhuma das duas referências usa `optional: true`: sem este Secret, nem o Neo4j nem a aplicação
+sobem (o pod trava em `CreateContainerConfigError`).
+
+```sh
+kubectl create secret generic neo4j-secrets -n qa \
+  --from-literal=NEO4J_AUTH=neo4j/<senha-forte> \
+  --from-literal=NEO4J_USER=neo4j \
+  --from-literal=NEO4J_PASSWORD=<a-mesma-senha-forte> \
+  --from-literal=NEO4J_DB=neo4j
+
+kubectl create secret generic neo4j-secrets -n production \
+  --from-literal=NEO4J_AUTH=neo4j/<outra-senha-forte> \
+  --from-literal=NEO4J_USER=neo4j \
+  --from-literal=NEO4J_PASSWORD=<a-mesma-outra-senha-forte> \
+  --from-literal=NEO4J_DB=neo4j
+```
+
 ## `ms-inventory-jwt` (obrigatório)
 
 Chave **pública** RSA do `ms-administrative-core` (o emissor dos tokens). É a mesma
