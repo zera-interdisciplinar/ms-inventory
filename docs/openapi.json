@@ -1,0 +1,3960 @@
+{
+  "components": {
+    "schemas": {
+      "Actor": {
+        "properties": {
+          "manager": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "MANAGER",
+              "EMPLOYEE"
+            ],
+            "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "AssignItemUnitRequest": {
+        "properties": {
+          "unitId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unitId"
+        ],
+        "type": "object"
+      },
+      "CategoryResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unitId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CorrectDisposalDestinationRequest": {
+        "properties": {
+          "destination": {
+            "enum": [
+              "RECYCLING",
+              "LANDFILL",
+              "DONATION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "destination"
+        ],
+        "type": "object"
+      },
+      "CreateCategoryRequest": {
+        "properties": {
+          "description": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "name"
+        ],
+        "type": "object"
+      },
+      "CreateDisposalRequest": {
+        "properties": {
+          "destination": {
+            "enum": [
+              "RECYCLING",
+              "LANDFILL",
+              "DONATION"
+            ],
+            "type": "string"
+          },
+          "disposedAt": {
+            "format": "date",
+            "type": "string"
+          },
+          "itemIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "notes": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "placeId": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "placeName": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "destination",
+          "itemIds"
+        ],
+        "type": "object"
+      },
+      "CreateItemRequest": {
+        "properties": {
+          "acquiredAt": {
+            "format": "date",
+            "type": "string"
+          },
+          "barcode": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "condition": {
+            "enum": [
+              "NEW",
+              "USED",
+              "SEMI_DAMAGED",
+              "DAMAGED"
+            ],
+            "type": "string"
+          },
+          "damages": {
+            "items": {
+              "enum": [
+                "BROKEN_SCREEN",
+                "MISSING_PART",
+                "DOES_NOT_POWER_ON",
+                "OXIDATION",
+                "OTHER"
+              ],
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "exactlyOneModelInformed": {
+            "type": "boolean"
+          },
+          "hasDamages": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "manufacturingYear": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "model": {
+            "$ref": "#/components/schemas/NewItemModelRequest"
+          },
+          "modelId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 0,
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "serialNumber": {
+            "type": "string"
+          },
+          "usageIntensity": {
+            "format": "int32",
+            "maximum": 10,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "barcode"
+        ],
+        "type": "object"
+      },
+      "CreateModelRequest": {
+        "properties": {
+          "categoryId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "estimatedWeightKg": {
+            "format": "double",
+            "type": "number"
+          },
+          "expectedLifespanMonths": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "manufacturer": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "materials": {
+            "items": {
+              "enum": [
+                "PLASTIC",
+                "METAL",
+                "GLASS",
+                "PAPER",
+                "BATTERY",
+                "CIRCUIT_BOARD",
+                "CABLE",
+                "SCREEN",
+                "OTHER"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "warrantyMonths": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "categoryId",
+          "manufacturer",
+          "materials",
+          "name"
+        ],
+        "type": "object"
+      },
+      "CreateRuleRequest": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "WARRANTY_EXPIRATION",
+              "LIFESPAN_EXPIRATION",
+              "USAGE_INTENSITY_LIMIT",
+              "STOCK_QUANTITY_LIMIT",
+              "TIME_IN_STOCK_LIMIT",
+              "STALE_ITEM",
+              "RECYCLABLE_TO_LANDFILL",
+              "PREDICTED_FAILURE"
+            ],
+            "type": "string"
+          },
+          "limitComplete": {
+            "type": "boolean"
+          },
+          "limitUnit": {
+            "enum": [
+              "MONTHS",
+              "DAYS",
+              "UNITS",
+              "PERCENT"
+            ],
+            "type": "string"
+          },
+          "limitValue": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "targetComplete": {
+            "type": "boolean"
+          },
+          "targetId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "targetType": {
+            "enum": [
+              "CATEGORY",
+              "MODEL"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name"
+        ],
+        "type": "object"
+      },
+      "DisposalIndicatorsResponse": {
+        "properties": {
+          "from": {
+            "format": "date",
+            "type": "string"
+          },
+          "monthlyWeightKg": {
+            "items": {
+              "$ref": "#/components/schemas/MonthlyWeightResponse"
+            },
+            "type": "array"
+          },
+          "recyclingRateChangePoints": {
+            "format": "double",
+            "type": "number"
+          },
+          "recyclingRatePercent": {
+            "format": "double",
+            "type": "number"
+          },
+          "to": {
+            "format": "date",
+            "type": "string"
+          },
+          "totalWeightChangePercent": {
+            "format": "double",
+            "type": "number"
+          },
+          "totalWeightKg": {
+            "format": "double",
+            "type": "number"
+          },
+          "weightByMaterial": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialShareResponse"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "DisposalResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdByName": {
+            "type": "string"
+          },
+          "destination": {
+            "enum": [
+              "RECYCLING",
+              "LANDFILL",
+              "DONATION"
+            ],
+            "type": "string"
+          },
+          "disposedAt": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DisposedItemResponse"
+            },
+            "type": "array"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "placeId": {
+            "type": "string"
+          },
+          "placeName": {
+            "type": "string"
+          },
+          "totalWeightKg": {
+            "format": "double",
+            "type": "number"
+          },
+          "unitId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DisposedItemResponse": {
+        "properties": {
+          "displayCode": {
+            "type": "string"
+          },
+          "itemId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "weightKg": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "EvaluateItemRequest": {
+        "properties": {
+          "condition": {
+            "enum": [
+              "NEW",
+              "USED",
+              "SEMI_DAMAGED",
+              "DAMAGED"
+            ],
+            "type": "string"
+          },
+          "damages": {
+            "items": {
+              "enum": [
+                "BROKEN_SCREEN",
+                "MISSING_PART",
+                "DOES_NOT_POWER_ON",
+                "OXIDATION",
+                "OTHER"
+              ],
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "hasDamages": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "condition"
+        ],
+        "type": "object"
+      },
+      "EventResponse": {
+        "properties": {
+          "actorId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "actorName": {
+            "type": "string"
+          },
+          "fromStatus": {
+            "enum": [
+              "DRAFT",
+              "PENDING_APPROVAL",
+              "REJECTED",
+              "IN_STOCK",
+              "IN_MAINTENANCE",
+              "AWAITING_EVALUATION",
+              "DISPOSED",
+              "REMOVED"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "itemId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "toStatus": {
+            "enum": [
+              "DRAFT",
+              "PENDING_APPROVAL",
+              "REJECTED",
+              "IN_STOCK",
+              "IN_MAINTENANCE",
+              "AWAITING_EVALUATION",
+              "DISPOSED",
+              "REMOVED"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CREATED",
+              "SUBMITTED",
+              "APPROVED",
+              "REJECTED",
+              "MAINTENANCE_STARTED",
+              "MAINTENANCE_FINISHED",
+              "EVALUATED",
+              "DISPOSED",
+              "REMOVED",
+              "RESTORED",
+              "STATUS_CHANGED"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "HomeSummaryResponse": {
+        "properties": {
+          "activeItems": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "activeItemsChangePercent": {
+            "format": "double",
+            "type": "number"
+          },
+          "awaitingEvaluation": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "disposalsInWindow": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "inMaintenance": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "occupancyPercent": {
+            "format": "double",
+            "type": "number"
+          },
+          "pendingApproval": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "recentItems": {
+            "$ref": "#/components/schemas/PageResponseItemResponse"
+          },
+          "stockCapacity": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "windowDays": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ItemResponse": {
+        "properties": {
+          "acquiredAt": {
+            "format": "date",
+            "type": "string"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "condition": {
+            "enum": [
+              "NEW",
+              "USED",
+              "SEMI_DAMAGED",
+              "DAMAGED"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdByName": {
+            "type": "string"
+          },
+          "damages": {
+            "items": {
+              "enum": [
+                "BROKEN_SCREEN",
+                "MISSING_PART",
+                "DOES_NOT_POWER_ON",
+                "OXIDATION",
+                "OTHER"
+              ],
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "displayCode": {
+            "type": "string"
+          },
+          "hasDamages": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastEventAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "manufacturingYear": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "missingFields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelResponse"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "photoUrl": {
+            "type": "string"
+          },
+          "predictedFailureDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "predictionUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "serialNumber": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PENDING_APPROVAL",
+              "REJECTED",
+              "IN_STOCK",
+              "IN_MAINTENANCE",
+              "AWAITING_EVALUATION",
+              "DISPOSED",
+              "REMOVED"
+            ],
+            "type": "string"
+          },
+          "unitId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "usageIntensity": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "MaterialResponse": {
+        "properties": {
+          "code": {
+            "enum": [
+              "PLASTIC",
+              "METAL",
+              "GLASS",
+              "PAPER",
+              "BATTERY",
+              "CIRCUIT_BOARD",
+              "CABLE",
+              "SCREEN",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "disposalGuide": {
+            "type": "string"
+          },
+          "hazardous": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "recyclable": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "MaterialShareResponse": {
+        "properties": {
+          "material": {
+            "enum": [
+              "PLASTIC",
+              "METAL",
+              "GLASS",
+              "PAPER",
+              "BATTERY",
+              "CIRCUIT_BOARD",
+              "CABLE",
+              "SCREEN",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "percent": {
+            "format": "double",
+            "type": "number"
+          },
+          "weightKg": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "ModelResponse": {
+        "properties": {
+          "approvalStatus": {
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CategoryResponse"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "estimatedWeightKg": {
+            "format": "double",
+            "type": "number"
+          },
+          "expectedLifespanMonths": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "hazardous": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "materials": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialResponse"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "rejectionReason": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reviewedBy": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "unitId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "warrantyMonths": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "MonthlyWeightResponse": {
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "weightKg": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "NewItemModelRequest": {
+        "properties": {
+          "categoryId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "estimatedWeightKg": {
+            "format": "double",
+            "type": "number"
+          },
+          "manufacturer": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "materials": {
+            "items": {
+              "enum": [
+                "PLASTIC",
+                "METAL",
+                "GLASS",
+                "PAPER",
+                "BATTERY",
+                "CIRCUIT_BOARD",
+                "CABLE",
+                "SCREEN",
+                "OTHER"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "categoryId",
+          "manufacturer",
+          "materials",
+          "name"
+        ],
+        "type": "object"
+      },
+      "PageResponseDisposalResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/DisposalResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseEventResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/EventResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseItemResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/ItemResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseModelResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/ModelResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PendingItemResponse": {
+        "properties": {
+          "displayCode": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "missingFields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rejectionReason": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RejectItemRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
+      "RuleResponse": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "appliesToWholeUnit": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "WARRANTY_EXPIRATION",
+              "LIFESPAN_EXPIRATION",
+              "USAGE_INTENSITY_LIMIT",
+              "STOCK_QUANTITY_LIMIT",
+              "TIME_IN_STOCK_LIMIT",
+              "STALE_ITEM",
+              "RECYCLABLE_TO_LANDFILL",
+              "PREDICTED_FAILURE"
+            ],
+            "type": "string"
+          },
+          "limitUnit": {
+            "enum": [
+              "MONTHS",
+              "DAYS",
+              "UNITS",
+              "PERCENT"
+            ],
+            "type": "string"
+          },
+          "limitValue": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "targetId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "targetType": {
+            "enum": [
+              "CATEGORY",
+              "MODEL"
+            ],
+            "type": "string"
+          },
+          "unitId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "StartMaintenanceRequest": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
+      "UnitSettingsResponse": {
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "stockCapacity": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "unitId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedBy": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "updatedByName": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateCategoryDescriptionRequest": {
+        "properties": {
+          "description": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "type": "object"
+      },
+      "UpdateCategoryNameRequest": {
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "UpdateItemRequest": {
+        "properties": {
+          "acquiredAt": {
+            "format": "date",
+            "type": "string"
+          },
+          "condition": {
+            "enum": [
+              "NEW",
+              "USED",
+              "SEMI_DAMAGED",
+              "DAMAGED"
+            ],
+            "type": "string"
+          },
+          "damages": {
+            "items": {
+              "enum": [
+                "BROKEN_SCREEN",
+                "MISSING_PART",
+                "DOES_NOT_POWER_ON",
+                "OXIDATION",
+                "OTHER"
+              ],
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "hasDamages": {
+            "type": "boolean"
+          },
+          "manufacturingYear": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "serialNumber": {
+            "maxLength": 120,
+            "minLength": 0,
+            "type": "string"
+          },
+          "usageIntensity": {
+            "format": "int32",
+            "maximum": 10,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateItemStatusRequest": {
+        "properties": {
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PENDING_APPROVAL",
+              "REJECTED",
+              "IN_STOCK",
+              "IN_MAINTENANCE",
+              "AWAITING_EVALUATION",
+              "DISPOSED",
+              "REMOVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "UpdateModelExpectedLifespanMonthsRequest": {
+        "properties": {
+          "expectedLifespanMonths": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedLifespanMonths"
+        ],
+        "type": "object"
+      },
+      "UpdateModelManufacturerRequest": {
+        "properties": {
+          "manufacturer": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "manufacturer"
+        ],
+        "type": "object"
+      },
+      "UpdateModelMaterialsRequest": {
+        "properties": {
+          "materials": {
+            "items": {
+              "enum": [
+                "PLASTIC",
+                "METAL",
+                "GLASS",
+                "PAPER",
+                "BATTERY",
+                "CIRCUIT_BOARD",
+                "CABLE",
+                "SCREEN",
+                "OTHER"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "materials"
+        ],
+        "type": "object"
+      },
+      "UpdateModelNameRequest": {
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "UpdateModelWarrantyMonthsRequest": {
+        "properties": {
+          "warrantyMonths": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "warrantyMonths"
+        ],
+        "type": "object"
+      },
+      "UpdateRuleLimitRequest": {
+        "properties": {
+          "limitComplete": {
+            "type": "boolean"
+          },
+          "limitUnit": {
+            "enum": [
+              "MONTHS",
+              "DAYS",
+              "UNITS",
+              "PERCENT"
+            ],
+            "type": "string"
+          },
+          "limitValue": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateRuleNameRequest": {
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "UpdateRuleTargetRequest": {
+        "properties": {
+          "targetComplete": {
+            "type": "boolean"
+          },
+          "targetId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "targetType": {
+            "enum": [
+              "CATEGORY",
+              "MODEL"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateUnitSettingsRequest": {
+        "properties": {
+          "stockCapacity": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "stockCapacity"
+        ],
+        "type": "object"
+      },
+      "WorkCenterResponse": {
+        "properties": {
+          "awaitingEvaluation": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "damagedWithoutDestination": {
+            "items": {
+              "$ref": "#/components/schemas/PendingItemResponse"
+            },
+            "type": "array"
+          },
+          "drafts": {
+            "items": {
+              "$ref": "#/components/schemas/PendingItemResponse"
+            },
+            "type": "array"
+          },
+          "inMaintenance": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rejected": {
+            "items": {
+              "$ref": "#/components/schemas/PendingItemResponse"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "API de gestão de inventário: categorias, modelos, materiais, itens (com ciclo de vida e manutenção), descartes, regras e dashboard.",
+    "title": "ms-inventory",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/categories": {
+      "get": {
+        "operationId": "findAll_4",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "category-controller"
+        ]
+      },
+      "post": {
+        "operationId": "create_4",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "category-controller"
+        ]
+      }
+    },
+    "/api/v1/categories/{id}": {
+      "delete": {
+        "operationId": "delete_3",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "category-controller"
+        ]
+      },
+      "get": {
+        "operationId": "findById_4",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "category-controller"
+        ]
+      }
+    },
+    "/api/v1/categories/{id}/description": {
+      "patch": {
+        "operationId": "updateDescription",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryDescriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "category-controller"
+        ]
+      }
+    },
+    "/api/v1/categories/{id}/name": {
+      "patch": {
+        "operationId": "rename_2",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "category-controller"
+        ]
+      }
+    },
+    "/api/v1/dashboard/home": {
+      "get": {
+        "operationId": "home",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "dashboard-controller"
+        ]
+      }
+    },
+    "/api/v1/dashboard/indicators": {
+      "get": {
+        "operationId": "indicators",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisposalIndicatorsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "dashboard-controller"
+        ]
+      }
+    },
+    "/api/v1/dashboard/work-center": {
+      "get": {
+        "operationId": "workCenter",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCenterResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "dashboard-controller"
+        ]
+      }
+    },
+    "/api/v1/disposals": {
+      "get": {
+        "operationId": "findAll_3",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseDisposalResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "disposal-controller"
+        ]
+      },
+      "post": {
+        "operationId": "create_3",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDisposalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisposalResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "disposal-controller"
+        ]
+      }
+    },
+    "/api/v1/disposals/{id}": {
+      "get": {
+        "operationId": "findById_1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisposalResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "disposal-controller"
+        ]
+      },
+      "patch": {
+        "operationId": "correctDestination",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectDisposalDestinationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisposalResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "disposal-controller"
+        ]
+      }
+    },
+    "/api/v1/items": {
+      "get": {
+        "operationId": "findAll_2",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "DRAFT",
+                "PENDING_APPROVAL",
+                "REJECTED",
+                "IN_STOCK",
+                "IN_MAINTENANCE",
+                "AWAITING_EVALUATION",
+                "DISPOSED",
+                "REMOVED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "categoryId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "modelId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eligibleForDisposal",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      },
+      "post": {
+        "operationId": "create_2",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/by-barcode/{barcode}": {
+      "get": {
+        "operationId": "findByBarcode",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "barcode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}": {
+      "delete": {
+        "operationId": "delete",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      },
+      "get": {
+        "operationId": "findById",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      },
+      "patch": {
+        "operationId": "update_1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/approve": {
+      "post": {
+        "operationId": "approve",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/evaluate": {
+      "post": {
+        "operationId": "evaluate",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/events": {
+      "get": {
+        "operationId": "findEvents",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseEventResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/maintenance/finish": {
+      "post": {
+        "operationId": "finishMaintenance",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/maintenance/start": {
+      "post": {
+        "operationId": "startMaintenance",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartMaintenanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/photo": {
+      "post": {
+        "operationId": "uploadPhoto",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "photo": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "photo"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/reject": {
+      "post": {
+        "operationId": "reject",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/restore": {
+      "post": {
+        "operationId": "restore",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/status": {
+      "patch": {
+        "operationId": "updateStatus",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateItemStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/submit": {
+      "post": {
+        "operationId": "submit",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/unit": {
+      "patch": {
+        "operationId": "assignUnit",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignItemUnitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/materials": {
+      "get": {
+        "operationId": "findAll_5",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MaterialResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "material-controller"
+        ]
+      }
+    },
+    "/api/v1/materials/{code}": {
+      "get": {
+        "operationId": "findByCode",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "enum": [
+                "PLASTIC",
+                "METAL",
+                "GLASS",
+                "PAPER",
+                "BATTERY",
+                "CIRCUIT_BOARD",
+                "CABLE",
+                "SCREEN",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "material-controller"
+        ]
+      }
+    },
+    "/api/v1/models": {
+      "get": {
+        "operationId": "findAll_1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "approvalStatus",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      },
+      "post": {
+        "operationId": "create_1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateModelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/models/{id}": {
+      "delete": {
+        "operationId": "delete_2",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      },
+      "get": {
+        "operationId": "findById_3",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/models/{id}/expected-lifespan-months": {
+      "patch": {
+        "operationId": "updateExpectedLifespanMonths",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateModelExpectedLifespanMonthsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/models/{id}/items": {
+      "get": {
+        "operationId": "findItems",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/models/{id}/manufacturer": {
+      "patch": {
+        "operationId": "updateManufacturer",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateModelManufacturerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/models/{id}/materials": {
+      "patch": {
+        "operationId": "updateMaterials",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateModelMaterialsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/models/{id}/name": {
+      "patch": {
+        "operationId": "rename_1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateModelNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/models/{id}/warranty-months": {
+      "patch": {
+        "operationId": "updateWarrantyMonths",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateModelWarrantyMonthsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/rules": {
+      "get": {
+        "operationId": "findAll",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RuleResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      },
+      "post": {
+        "operationId": "create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRuleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      }
+    },
+    "/api/v1/rules/{id}": {
+      "delete": {
+        "operationId": "delete_1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      },
+      "get": {
+        "operationId": "findById_2",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      }
+    },
+    "/api/v1/rules/{id}/activate": {
+      "patch": {
+        "operationId": "activate",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      }
+    },
+    "/api/v1/rules/{id}/deactivate": {
+      "patch": {
+        "operationId": "deactivate",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      }
+    },
+    "/api/v1/rules/{id}/limit": {
+      "patch": {
+        "operationId": "updateLimit",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRuleLimitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      }
+    },
+    "/api/v1/rules/{id}/name": {
+      "patch": {
+        "operationId": "rename",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRuleNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      }
+    },
+    "/api/v1/rules/{id}/target": {
+      "patch": {
+        "operationId": "updateTarget",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRuleTargetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "rule-controller"
+        ]
+      }
+    },
+    "/api/v1/unit-settings": {
+      "get": {
+        "operationId": "find",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "unit-settings-controller"
+        ]
+      },
+      "put": {
+        "operationId": "update",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUnitSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "unit-settings-controller"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

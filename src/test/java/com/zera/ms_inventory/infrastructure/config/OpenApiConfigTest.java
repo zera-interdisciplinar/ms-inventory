@@ -33,7 +33,7 @@ class OpenApiConfigTest {
     @DisplayName("Should set correct version")
     void shouldSetCorrectVersion() {
         OpenAPI openAPI = config.openAPI();
-        assertEquals("v0", openAPI.getInfo().getVersion());
+        assertEquals("v1", openAPI.getInfo().getVersion());
     }
 
     @Test
@@ -41,5 +41,14 @@ class OpenApiConfigTest {
     void shouldSetDescription() {
         OpenAPI openAPI = config.openAPI();
         assertNotNull(openAPI.getInfo().getDescription());
+    }
+
+    /** Fixo e relativo, para o contrato versionado nao depender do host que o gerou. */
+    @Test
+    @DisplayName("Should set a fixed relative server url")
+    void shouldSetAFixedRelativeServerUrl() {
+        OpenAPI openAPI = config.openAPI();
+        assertEquals(1, openAPI.getServers().size());
+        assertEquals("/", openAPI.getServers().get(0).getUrl());
     }
 }
