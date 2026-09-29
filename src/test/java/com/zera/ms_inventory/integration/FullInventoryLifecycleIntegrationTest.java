@@ -74,8 +74,9 @@ class FullInventoryLifecycleIntegrationTest {
 
     /**
      * O storage real e GCS; sem bucket configurado (nenhum ambiente de teste tem um), o upload
-     * responde 503 de proposito. O fluxo completo do cadastro exige a foto para submeter, entao o
-     * armazenamento real e substituido aqui por um fake que so devolve uma URL.
+     * responde 503 de proposito. A foto nao e mais obrigatoria para submeter, mas o passo continua
+     * no roteiro porque anexar foto e parte do fluxo real — entao o armazenamento e substituido
+     * aqui por um fake que so devolve uma URL.
      */
     @MockitoBean
     private PhotoStorage photoStorage;
@@ -152,7 +153,7 @@ class FullInventoryLifecycleIntegrationTest {
         itemId = UUID.fromString(JsonPath.read(body, "$.id"));
     }
 
-    /** Foto e campo obrigatorio do cadastro (missingRequiredFields); sem ela o submit responde 422. */
+    /** Foto e opcional para submeter; anexar segue funcionando e devolve a URL assinada. */
     @Test
     @Order(4)
     void operarioAnexaAFoto() throws Exception {

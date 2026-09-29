@@ -42,7 +42,7 @@ class SubmitItemImplTest {
         return new SubmitItemImpl(itemRepository, modelRepository, eventRepository);
     }
 
-    /** Rascunho completo: tem os 7 obrigatorios do cadastro, foto inclusa. */
+    /** Rascunho completo: tem os obrigatorios do cadastro. A foto e opcional, vai junto de brinde. */
     private Item completeDraft(UUID id, Model model) {
         Item item = Fixtures.item(id, Fixtures.UNIT, model);
         item.restoreStatus(ItemStatus.DRAFT);
@@ -110,9 +110,29 @@ class SubmitItemImplTest {
         assertThatThrownBy(() -> useCase.execute(Fixtures.UNIT, id, Fixtures.OPERATOR))
                 .isInstanceOf(IncompleteItemException.class)
                 .satisfies(e -> assertThat(((IncompleteItemException) e).getMissingFields())
-                        .containsExactly("name", "condition", "hasDamages", "photo"));
+                        .containsExactly("name", "condition", "hasDamages"));
         verify(itemRepository, never()).save(any());
         verify(eventRepository, never()).save(any());
+    }
+
+    /**
+     * Sem foto o rascunho sobe do mesmo jeito: exigi-la deixava o item preso em DRAFT em qualquer
+     * ambiente sem bucket de storage, porque o upload respondia 503 e o submit devolvia 422.
+     */
+    @Test
+    void shouldSubmitADraftWithoutAPhoto() {
+        UUID id = UUID.randomUUID();
+        Item item = Fixtures.item(id, Fixtures.UNIT, Fixtures.model(Fixtures.UNIT));
+        item.restoreStatus(ItemStatus.DRAFT);
+        item.describe("Notebook", ItemCondition.USED, false, Set.of(), null);
+        when(itemRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(item));
+        when(itemRepository.save(item)).thenReturn(item);
+
+        Item submitted = useCase().execute(Fixtures.UNIT, id, Fixtures.OPERATOR);
+
+        assertThat(item.getPhotoKey()).isNull();
+        assertThat(submitted.getStatus()).isEqualTo(ItemStatus.PENDING_APPROVAL);
+        verify(eventRepository).save(any());
     }
 
     @Test

@@ -100,6 +100,41 @@ class CreateItemImplTest {
         verifyNoInteractions(createModel);
     }
 
+    /**
+     * Mesmo com o cadastro ja completo — e com a foto opcional, ele fica completo logo no POST —
+     * quem tira o item do rascunho e sempre o submit. Existia aqui um atalho que mandava o
+     * cadastro completo direto para PENDING_APPROVAL, e o app levava 409 no submit seguinte.
+     */
+    @Test
+    void shouldAlwaysCreateTheItemAsADraftEvenWhenTheFormIsComplete() {
+        UUID modelId = UUID.randomUUID();
+        when(modelRepository.findById(Fixtures.UNIT, modelId))
+                .thenReturn(Optional.of(Fixtures.model(modelId, Fixtures.UNIT)));
+        stubSave();
+
+        Item item = useCase().execute(command(null, modelId, null)).item();
+
+        assertTrue(item.isReadyToSubmit(), "o comando de teste preenche todos os obrigatorios");
+        assertEquals(ItemStatus.DRAFT, item.getStatus());
+    }
+
+    /** O mesmo vale para o gestor, que antes pulava direto para IN_STOCK. */
+    @Test
+    void shouldAlsoCreateAsADraftWhenTheAuthorIsAManager() {
+        UUID modelId = UUID.randomUUID();
+        when(modelRepository.findById(Fixtures.UNIT, modelId))
+                .thenReturn(Optional.of(Fixtures.model(modelId, Fixtures.UNIT)));
+        stubSave();
+        CreateItemCommand asManager = new CreateItemCommand(null, new Barcode("7891234567890"), Fixtures.UNIT,
+                modelId, null, 2024, 9, "SN-001", LocalDate.of(2026, 8, 4), "Placa de vídeo",
+                ItemCondition.SEMI_DAMAGED, true, Set.of(DamageType.OXIDATION), "Pino torto",
+                new Actor(UUID.randomUUID(), ActorRole.MANAGER, "Kevin Gestor"));
+
+        Item item = useCase().execute(asManager).item();
+
+        assertEquals(ItemStatus.DRAFT, item.getStatus());
+    }
+
     @Test
     void shouldCreateTheModelTogetherWhenItIsNew() {
         CreateModelCommand newModel = new CreateModelCommand(Fixtures.UNIT, "Placa de vídeo", "Nvidia", null, null,
