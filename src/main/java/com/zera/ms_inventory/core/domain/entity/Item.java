@@ -263,6 +263,11 @@ public class Item {
     /**
      * Campos que o app exige para o item sair do rascunho (ZERA-236). Devolve os nomes como o
      * cadastro os envia, em ordem fixa, para a tela marcar o que falta preencher.
+     *
+     * <p>A foto <strong>nao</strong> entra nesta lista: ela continua sendo aceita e exibida, mas
+     * exigi-la travava o cadastro inteiro em {@code DRAFT} em qualquer ambiente sem bucket de
+     * storage configurado — o item nao aprovava, nao ia a estoque e nao era descartado por causa
+     * de um campo que o operario muitas vezes nao tem como tirar na hora.</p>
      */
     public List<String> missingRequiredFields() {
         List<String> missing = new ArrayList<>();
@@ -286,9 +291,6 @@ public class Item {
         }
         if (usageIntensity == null) {
             missing.add("usageIntensity");
-        }
-        if (photoKey == null || photoKey.isBlank()) {
-            missing.add("photo");
         }
         return List.copyOf(missing);
     }

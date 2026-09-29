@@ -158,11 +158,11 @@ def upload_fake_photo(client, item_id):
         with urllib.request.urlopen(request, timeout=15):
             return True
     except urllib.error.HTTPError as e:
-        # 503: zera.storage.photos-bucket nao configurado neste ambiente. O item fica em DRAFT
-        # (sem foto, o submit responde 422) em vez do script inteiro parar por isso.
+        # 503: zera.storage.photos-bucket nao configurado neste ambiente. A foto e opcional para
+        # submeter, entao o item segue o fluxo normalmente — so fica sem imagem.
         if e.code == 503:
             print(f"  aviso: upload de foto indisponivel (503) para o item {item_id}; "
-                  f"ele fica em DRAFT, sem submeter", file=sys.stderr)
+                  f"ele segue o fluxo sem imagem", file=sys.stderr)
             return False
         raise
 
@@ -241,55 +241,54 @@ def main():
         codigo += 1
         return f"78912345{codigo}"
 
-    # DRAFT: cadastrado, nunca submetido (falta a foto de proposito)
+    # DRAFT: cadastrado e deixado sem submeter de proposito
     create_draft_item(employee, monitor_24, barcode(), "Monitor recem-cadastrado")
 
     # PENDING_APPROVAL: o operario submete e fica na fila do gestor (submit de gestor pularia
     # direto para IN_STOCK, entao este estado exige o token de EMPLOYEE)
     pending = create_draft_item(employee, dell_5420, barcode(), "Notebook aguardando aprovacao")
-    if upload_fake_photo(employee, pending):
-        employee.post(f"/api/v1/items/{pending}/submit")
+    upload_fake_photo(employee, pending)
+    employee.post(f"/api/v1/items/{pending}/submit")
 
     # REJECTED: submetido pelo operario e recusado pelo gestor, com motivo
     rejected = create_draft_item(employee, think_t14, barcode(), "Notebook recusado", condition="DAMAGED",
                                   has_damages=True, damages=["BROKEN_SCREEN"])
-    if upload_fake_photo(employee, rejected):
-        employee.post(f"/api/v1/items/{rejected}/submit")
-        manager.post(f"/api/v1/items/{rejected}/reject", {"reason": "Tela trincada, sem nota fiscal do dano"})
+    upload_fake_photo(employee, rejected)
+    employee.post(f"/api/v1/items/{rejected}/submit")
+    manager.post(f"/api/v1/items/{rejected}/reject", {"reason": "Tela trincada, sem nota fiscal do dano"})
 
     # IN_STOCK: aprovado e disponivel
     in_stock = create_draft_item(employee, macbook_air, barcode(), "MacBook em estoque")
-    if upload_fake_photo(employee, in_stock):
-        employee.post(f"/api/v1/items/{in_stock}/submit")
-        manager.post(f"/api/v1/items/{in_stock}/approve")
+    upload_fake_photo(employee, in_stock)
+    employee.post(f"/api/v1/items/{in_stock}/submit")
+    manager.post(f"/api/v1/items/{in_stock}/approve")
 
     # IN_MAINTENANCE: em conserto
     maintenance = create_draft_item(employee, teclado, barcode(), "Teclado em manutencao")
-    if upload_fake_photo(employee, maintenance):
-        employee.post(f"/api/v1/items/{maintenance}/submit")
-        manager.post(f"/api/v1/items/{maintenance}/approve")
-        employee.post(f"/api/v1/items/{maintenance}/maintenance/start", {"reason": "Teclas travando"})
+    upload_fake_photo(employee, maintenance)
+    employee.post(f"/api/v1/items/{maintenance}/submit")
+    manager.post(f"/api/v1/items/{maintenance}/approve")
+    employee.post(f"/api/v1/items/{maintenance}/maintenance/start", {"reason": "Teclas travando"})
 
     # AWAITING_EVALUATION: voltou da manutencao, esperando avaliacao
     evaluation = create_draft_item(employee, monitor_27, barcode(), "Monitor aguardando avaliacao")
-    if upload_fake_photo(employee, evaluation):
-        employee.post(f"/api/v1/items/{evaluation}/submit")
-        manager.post(f"/api/v1/items/{evaluation}/approve")
-        employee.post(f"/api/v1/items/{evaluation}/maintenance/start", {"reason": "Sem imagem"})
-        employee.post(f"/api/v1/items/{evaluation}/maintenance/finish")
+    upload_fake_photo(employee, evaluation)
+    employee.post(f"/api/v1/items/{evaluation}/submit")
+    manager.post(f"/api/v1/items/{evaluation}/approve")
+    employee.post(f"/api/v1/items/{evaluation}/maintenance/start", {"reason": "Sem imagem"})
+    employee.post(f"/api/v1/items/{evaluation}/maintenance/finish")
 
     # DISPOSED: aprovado e depois descartado (entra no indicador de reciclagem)
     disposed = create_draft_item(employee, dell_5420, barcode(), "Notebook descartado")
-    disposed_ok = upload_fake_photo(employee, disposed)
-    if disposed_ok:
-        employee.post(f"/api/v1/items/{disposed}/submit")
-        manager.post(f"/api/v1/items/{disposed}/approve")
-        employee.post("/api/v1/disposals", {
-            "destination": "RECYCLING",
-            "placeName": "Recicladora Central de QA",
-            "disposedAt": date.today().isoformat(),
-            "itemIds": [disposed],
-        })
+    upload_fake_photo(employee, disposed)
+    employee.post(f"/api/v1/items/{disposed}/submit")
+    manager.post(f"/api/v1/items/{disposed}/approve")
+    employee.post("/api/v1/disposals", {
+        "destination": "RECYCLING",
+        "placeName": "Recicladora Central de QA",
+        "disposedAt": date.today().isoformat(),
+        "itemIds": [disposed],
+    })
 
     # REMOVED: removido logicamente (some das listagens, mas o gestor consegue restaurar)
     removed = create_draft_item(employee, monitor_24, barcode(), "Monitor removido por engano")
@@ -302,10 +301,6 @@ def main():
     print(f"  categorias: Notebooks={notebooks}, Perifericos={perifericos}")
     print(f"  modelos: Dell 5420={dell_5420}, ThinkPad T14={think_t14}, MacBook Air={macbook_air}, "
           f"UltraSharp 27={monitor_27}, MX Keys={teclado}, P2422H={monitor_24}")
-    if not disposed_ok:
-        print("  aviso: nenhum item chegou a IN_STOCK/DISPOSED — configure "
-              "zera.storage.photos-bucket (PHOTOS_BUCKET) neste ambiente para o submit funcionar",
-              file=sys.stderr)
 
 
 if __name__ == "__main__":
