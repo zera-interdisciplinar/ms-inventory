@@ -221,14 +221,14 @@ class ItemControllerTest {
         when(submitItem.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
                 org.mockito.ArgumentMatchers.any()))
                 .thenThrow(new com.zera.ms_inventory.core.domain.exception.IncompleteItemException(
-                        id, List.of("condition", "photo")));
+                        id, List.of("condition", "usageIntensity")));
 
         mockMvc.perform(post("/api/v1/items/{id}/submit", id)
                         .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.missingFields[0]").value("condition"))
-                .andExpect(jsonPath("$.missingFields[1]").value("photo"));
+                .andExpect(jsonPath("$.missingFields[1]").value("usageIntensity"));
     }
 
     @Test

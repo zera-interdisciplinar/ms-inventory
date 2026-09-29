@@ -120,15 +120,12 @@ token real (emitido pelo admin-core de verdade) vai validar contra ela.
 > **`./mvnw test` com um JDK diferente do 25 falha logo na fase de build**, com uma mensagem
 > explicando o que instalar — não é preciso adivinhar pelo erro cru do compilador.
 
-### `PHOTOS_BUCKET` merece atenção antes das demais
+### Sobre `PHOTOS_BUCKET`
 
-Diferente das integrações listadas abaixo, esta bloqueia o **fluxo central do produto**: a foto é
-campo obrigatório para submeter um item (`missingRequiredFields`), e sem `PHOTOS_BUCKET`
-configurado o upload responde 503 — então **nenhum item sai de `DRAFT`**: não aprova, não vai a
-estoque, não é enviado para manutenção nem descartado. Para só ler/listar dados existentes não é
-preciso configurar; para exercitar o ciclo de vida completo (localmente ou escrevendo um teste),
-configure um bucket real ou substitua o bean `PhotoStorage` por um fake — é o que
-`FullInventoryLifecycleIntegrationTest` faz. Provisionamento do bucket em produção/QA:
+Sem `PHOTOS_BUCKET` configurado, o upload de foto responde 503 e as respostas não trazem
+`photoUrl` — mas **o ciclo de vida do item funciona normalmente**: a foto é opcional para sair do
+rascunho, então o item aprova, vai a estoque, entra em manutenção e é descartado sem ela. Só a
+funcionalidade de foto em si fica indisponível. Provisionamento do bucket em produção/QA:
 [`k8s/README.md`](k8s/README.md).
 
 ## Configuração
@@ -144,12 +141,12 @@ código. Referência completa em `src/main/resources/application.properties`.
 | `DB_HOST` (default `localhost`), `DB_NAME` (default `neo4j`) | Endereço e database do Neo4j |
 | `JWT_PUBLIC_KEY` | Chave pública RSA (PEM) para validar os tokens emitidos pelo ms-administrative-core |
 | `GEMINI_API_KEY` | Habilita os embeddings usados pela busca semântica (`semantic_search_inventory`) |
-| `PHOTOS_BUCKET` | Ver seção acima — sem ela, o ciclo de vida do item trava em `DRAFT` |
 
 ### Integrações opcionais (o serviço funciona sem elas, com degradação graciosa)
 
 | Variável | Liga |
 |---|---|
+| `PHOTOS_BUCKET` | Upload e exibição da foto do item (bucket GCS). Sem ela o upload responde 503; o ciclo de vida do item não é afetado |
 | `ADMIN_CORE_ENABLED=true` + `ADMIN_CORE_BASE_URL` + `MS_INVENTORY_CLIENT_SECRET` | Envio de alertas ao gestor da unidade via ms-administrative-core (autenticação serviço-a-serviço) |
 | `PREDICTION_ENABLED=true` + `PREDICTION_BASE_URL` (+ `PREDICTION_API_KEY` quando atrás de um gateway) | Atualização diária de `predictedFailureDate` via o sistema preditivo de quebra (`POST /predict-batch`) |
 | `LOG_STRUCTURED_FORMAT=ecs` | Logs em JSON (formato ECS) em vez de texto simples |
@@ -230,8 +227,8 @@ estados do domínio, e replicar essa lógica em outro lugar divergiria na primei
 regra. Rode com `--help` para ver como autenticar via login em vez de passar um token pronto.
 
 Exige um `--employee-token` para os itens em `PENDING_APPROVAL`/`REJECTED` — como visto acima,
-submit feito por um gestor pula direto para `IN_STOCK`. Sem `PHOTOS_BUCKET` configurado, os itens
-que dependeriam de foto ficam em `DRAFT` e o script avisa em vez de falhar silenciosamente.
+submit feito por um gestor pula direto para `IN_STOCK`. Sem `PHOTOS_BUCKET` configurado o script
+segue normalmente, apenas sem anexar as fotos: a foto não é mais obrigatória para submeter.
 
 ## Deploy
 

@@ -146,8 +146,21 @@ class ItemTest {
                 null, null, null, null, null, null);
 
         org.assertj.core.api.Assertions.assertThat(item.missingRequiredFields())
-                .containsExactly("name", "condition", "hasDamages", "usageIntensity", "photo");
+                .containsExactly("name", "condition", "hasDamages", "usageIntensity");
         assertTrue(!item.isReadyToSubmit());
+    }
+
+    /** A foto e opcional: exigi-la travava o cadastro em ambiente sem bucket de storage. */
+    @Test
+    void shouldConsiderTheDraftReadyWithoutAPhoto() {
+        UUID unitId = UUID.randomUUID();
+        Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.DRAFT, unitId, model(unitId),
+                null, 2024, 0, null, null);
+        item.describe("Notebook", ItemCondition.NEW, false, Set.of(), null);
+
+        org.assertj.core.api.Assertions.assertThat(item.getPhotoKey()).isNull();
+        org.assertj.core.api.Assertions.assertThat(item.missingRequiredFields()).isEmpty();
+        assertTrue(item.isReadyToSubmit());
     }
 
     /** Respondeu que ha danos mas nao disse quais: o cadastro continua incompleto. */
