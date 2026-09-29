@@ -27,7 +27,7 @@
 		<url/>
 	</scm>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 		<spring-ai.version>2.0.0</spring-ai.version>
 	</properties>
 	<dependencyManagement>
@@ -151,9 +151,9 @@
 	<build>
 		<plugins>
 			<plugin>
-				<!-- Falha cedo e com mensagem clara: sem isso, quem builda com JDK 17 via
-				./mvnw test recebe um erro de "release version 21 not supported" cru do
-				javac, sem dizer que a versao exigida e a 21. -->
+				<!-- Falha cedo e com mensagem clara: sem isso, quem builda com um JDK antigo via
+				./mvnw test recebe um erro de "release version 25 not supported" cru do
+				javac, sem dizer que a versao exigida e a 25. -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
 				<version>3.5.0</version>
@@ -166,11 +166,11 @@
 						<configuration>
 							<rules>
 								<requireJavaVersion>
-									<version>[21,22)</version>
-									<!-- ${java.version} aqui seria a propriedade do projeto (sempre "21"), nao a
+									<version>[25,26)</version>
+									<!-- ${java.version} aqui seria a propriedade do projeto (sempre "25"), nao a
 									JVM em uso; ${java.runtime.version} e a do runtime real e nao colide -->
-									<message>ms-inventory exige JDK 21 (Spring Boot 4.1 + Neo4j driver).
-Voce esta rodando ${java.runtime.version}. Instale um JDK 21 (ex.: Temurin) e aponte JAVA_HOME para ele.</message>
+									<message>ms-inventory exige JDK 25 (Spring Boot 4.1 + Neo4j driver).
+Voce esta rodando ${java.runtime.version}. Instale um JDK 25 (ex.: Temurin) e aponte JAVA_HOME para ele.</message>
 								</requireJavaVersion>
 							</rules>
 							<fail>true</fail>

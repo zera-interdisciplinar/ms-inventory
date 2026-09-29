@@ -1,6 +1,6 @@
 # ms-inventory
 
-[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/projects/jdk/21/)
+[![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://openjdk.org/projects/jdk/25/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Microsserviço de inventário eletrônico do sistema Zera: cadastro e ciclo de vida dos itens,
@@ -93,7 +93,7 @@ qualquer migração impede a aplicação de subir, e migrações já aplicadas n
 
 | | |
 |---|---|
-| Linguagem | **Java 21** — o `pom.xml` fixa `java.version=21`, e um `maven-enforcer-plugin` recusa o build com outra versão, com mensagem explicando o motivo |
+| Linguagem | **Java 25** — o `pom.xml` fixa `java.version=25`, e um `maven-enforcer-plugin` recusa o build com outra versão, com mensagem explicando o motivo |
 | Framework | Spring Boot 4.1.0 (Web MVC, Security, Actuator, Spring AI) |
 | Banco | Neo4j (Spring Data Neo4j) |
 | Documentação da API | springdoc-openapi |
@@ -102,7 +102,7 @@ qualquer migração impede a aplicação de subir, e migrações já aplicadas n
 
 ## Executando localmente
 
-Pré-requisitos: JDK 21 e um Neo4j acessível (local, Docker ou remoto).
+Pré-requisitos: JDK 25 e um Neo4j acessível (local, Docker ou remoto).
 
 ```bash
 export DB_USER=neo4j
@@ -117,7 +117,7 @@ A aplicação sobe em `http://localhost:8080`. Sem `JWT_PUBLIC_KEY`, o serviço 
 efêmera no boot e loga um aviso — permite subir localmente sem o admin-core no ar, mas nenhum
 token real (emitido pelo admin-core de verdade) vai validar contra ela.
 
-> **`./mvnw test` com um JDK diferente do 21 falha logo na fase de build**, com uma mensagem
+> **`./mvnw test` com um JDK diferente do 25 falha logo na fase de build**, com uma mensagem
 > explicando o que instalar — não é preciso adivinhar pelo erro cru do compilador.
 
 ### `PHOTOS_BUCKET` merece atenção antes das demais
