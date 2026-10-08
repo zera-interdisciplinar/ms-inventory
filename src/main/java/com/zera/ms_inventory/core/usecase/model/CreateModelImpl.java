@@ -9,6 +9,7 @@ import com.zera.ms_inventory.core.domain.entity.Category;
 import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
+import com.zera.ms_inventory.core.domain.exception.ModelNameAlreadyExistsException;
 import com.zera.ms_inventory.core.repository.CategoryRepository;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 import com.zera.ms_inventory.core.usecase.material.MaterialResolver;
@@ -28,6 +29,9 @@ public class CreateModelImpl implements CreateModel {
 
     @Override
     public Model execute(CreateModelCommand command) {
+        if (modelRepository.existsByUnitIdAndNameIgnoreCase(command.unitId(), command.name())) {
+            throw new ModelNameAlreadyExistsException(command.name());
+        }
         // resolvida pelo par (categoryId, unitId): categoria de outra unidade nao existe daqui
         Category category = categoryRepository.findById(command.unitId(), command.categoryId())
                 .orElseThrow(() -> new CategoryNotFoundException(command.categoryId()));

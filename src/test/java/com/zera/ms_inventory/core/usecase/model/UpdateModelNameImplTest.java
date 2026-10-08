@@ -9,11 +9,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.exception.ModelNameAlreadyExistsException;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,5 +47,20 @@ class UpdateModelNameImplTest {
         UpdateModelNameImpl useCase = new UpdateModelNameImpl(modelRepository);
 
         assertThrows(ModelNotFoundException.class, () -> useCase.execute(Fixtures.OTHER_UNIT, id, "Notebook Pro"));
+    }
+
+    @Test
+    void shouldThrowWhenNameAlreadyUsedByAnotherModelInUnit() {
+        UUID id = UUID.randomUUID();
+        Model model = Fixtures.model(id, Fixtures.UNIT);
+        when(modelRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(model));
+        when(modelRepository.existsByUnitIdAndNameIgnoreCaseAndIdNot(Fixtures.UNIT, "Notebook Pro", id))
+                .thenReturn(true);
+
+        UpdateModelNameImpl useCase = new UpdateModelNameImpl(modelRepository);
+
+        assertThrows(ModelNameAlreadyExistsException.class,
+                () -> useCase.execute(Fixtures.UNIT, id, "Notebook Pro"));
+        verify(modelRepository, never()).save(model);
     }
 }

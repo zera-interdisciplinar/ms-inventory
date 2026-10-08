@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.zera.ms_inventory.core.domain.exception.CategoryInUseException;
+import com.zera.ms_inventory.core.domain.exception.CategoryNameAlreadyExistsException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.ItemIdInUseException;
 import com.zera.ms_inventory.core.domain.exception.DisposalNotFoundException;
@@ -20,6 +21,7 @@ import com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionExceptio
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.ModelInUseException;
+import com.zera.ms_inventory.core.domain.exception.ModelNameAlreadyExistsException;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.PhotoStorageUnavailableException;
 import com.zera.ms_inventory.core.domain.exception.RuleNotFoundException;
@@ -92,6 +94,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({CategoryInUseException.class, ModelInUseException.class, ItemIdInUseException.class})
     public ProblemDetail handleInUse(RuntimeException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler({CategoryNameAlreadyExistsException.class, ModelNameAlreadyExistsException.class})
+    public ProblemDetail handleNameAlreadyExists(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
