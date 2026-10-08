@@ -9,11 +9,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Category;
+import com.zera.ms_inventory.core.domain.exception.CategoryNameAlreadyExistsException;
 import com.zera.ms_inventory.core.repository.CategoryRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,5 +40,17 @@ class CreateCategoryImplTest {
         assertEquals("Devices", result.getDescription());
         assertEquals(now, result.getCreatedAt());
         verify(categoryRepository).save(result);
+    }
+
+    @Test
+    void shouldThrowWhenNameAlreadyExistsInUnit() {
+        when(categoryRepository.existsByUnitIdAndNameIgnoreCase(Fixtures.UNIT, "Electronics")).thenReturn(true);
+
+        CreateCategoryImpl useCase = new CreateCategoryImpl(categoryRepository);
+        LocalDateTime now = LocalDateTime.of(2026, 8, 4, 10, 0);
+
+        assertThrows(CategoryNameAlreadyExistsException.class,
+                () -> useCase.execute(Fixtures.UNIT, "Electronics", "Devices", now, now));
+        verify(categoryRepository, never()).save(any(Category.class));
     }
 }

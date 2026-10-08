@@ -14,6 +14,7 @@ import com.zera.ms_inventory.core.domain.entity.Material;
 import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.MaterialNotFoundException;
+import com.zera.ms_inventory.core.domain.exception.ModelNameAlreadyExistsException;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.ActorRole;
 import com.zera.ms_inventory.core.domain.valueobject.ApprovalStatus;
@@ -122,5 +123,16 @@ class CreateModelImplTest {
         assertEquals(manager, result.getCreatedBy());
         assertEquals(manager, result.getReviewedBy());
         assertNotNull(result.getReviewedAt());
+    }
+
+    @Test
+    void shouldThrowWhenNameAlreadyExistsInUnit() {
+        UUID categoryId = UUID.randomUUID();
+        when(modelRepository.existsByUnitIdAndNameIgnoreCase(Fixtures.UNIT, "Laptop X1")).thenReturn(true);
+
+        CreateModelImpl useCase = new CreateModelImpl(modelRepository, categoryRepository, materialResolver);
+
+        assertThrows(ModelNameAlreadyExistsException.class, () -> useCase.execute(command(categoryId)));
+        verify(modelRepository, never()).save(any(Model.class));
     }
 }

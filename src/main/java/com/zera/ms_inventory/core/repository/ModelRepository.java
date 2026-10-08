@@ -19,4 +19,8 @@ public interface ModelRepository {
     boolean existsByCategory(UUID unitId, UUID categoryId);
     List<Model> semanticSearch(UUID unitId, String query, int limit);
     void deleteById(UUID unitId, UUID id);
+    /** Comparacao ignora caixa; usado para impedir nomes duplicados na mesma unidade. */
+    boolean existsByUnitIdAndNameIgnoreCase(UUID unitId, String name);
+    /** Mesma checagem, excluindo o proprio id (usado ao renomear). */
+    boolean existsByUnitIdAndNameIgnoreCaseAndIdNot(UUID unitId, String name, UUID id);
 }

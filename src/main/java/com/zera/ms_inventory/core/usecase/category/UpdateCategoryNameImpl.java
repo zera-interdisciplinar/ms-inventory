@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.zera.ms_inventory.core.domain.entity.Category;
+import com.zera.ms_inventory.core.domain.exception.CategoryNameAlreadyExistsException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.repository.CategoryRepository;
 
@@ -20,6 +21,9 @@ public class UpdateCategoryNameImpl implements UpdateCategoryName {
     public Category execute(UUID unitId, UUID id, String name) {
         Category category = categoryRepository.findById(unitId, id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));
+        if (categoryRepository.existsByUnitIdAndNameIgnoreCaseAndIdNot(unitId, name, id)) {
+            throw new CategoryNameAlreadyExistsException(name);
+        }
         category.rename(name);
         return categoryRepository.save(category);
     }

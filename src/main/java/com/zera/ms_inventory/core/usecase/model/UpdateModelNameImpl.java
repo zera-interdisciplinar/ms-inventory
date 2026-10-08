@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.zera.ms_inventory.core.domain.entity.Model;
+import com.zera.ms_inventory.core.domain.exception.ModelNameAlreadyExistsException;
 import com.zera.ms_inventory.core.domain.exception.ModelNotFoundException;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 
@@ -20,6 +21,9 @@ public class UpdateModelNameImpl implements UpdateModelName {
     public Model execute(UUID unitId, UUID id, String name) {
         Model model = modelRepository.findById(unitId, id)
                 .orElseThrow(() -> new ModelNotFoundException(id));
+        if (modelRepository.existsByUnitIdAndNameIgnoreCaseAndIdNot(unitId, name, id)) {
+            throw new ModelNameAlreadyExistsException(name);
+        }
         model.rename(name);
         return modelRepository.save(model);
     }

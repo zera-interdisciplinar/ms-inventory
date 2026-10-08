@@ -152,4 +152,14 @@ public class ModelRepositoryImpl implements ModelRepository {
     public void deleteById(UUID unitId, UUID id) {
         neo4jRepository.deleteByIdAndUnitId(id, unitId);
     }
+
+    @Override
+    public boolean existsByUnitIdAndNameIgnoreCase(UUID unitId, String name) {
+        return neo4jRepository.existsByUnitIdAndNameIgnoreCase(unitId, name);
+    }
+
+    @Override
+    public boolean existsByUnitIdAndNameIgnoreCaseAndIdNot(UUID unitId, String name, UUID id) {
+        return neo4jRepository.existsByUnitIdAndNameIgnoreCaseAndIdNot(unitId, name, id);
+    }
 }

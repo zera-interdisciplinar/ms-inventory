@@ -15,6 +15,10 @@ interface CategoryNeo4jRepository extends Neo4jRepository<CategoryNode, UUID> {
 
     Optional<CategoryNode> findByIdAndUnitId(UUID id, UUID unitId);
 
+    boolean existsByUnitIdAndNameIgnoreCase(UUID unitId, String name);
+
+    boolean existsByUnitIdAndNameIgnoreCaseAndIdNot(UUID unitId, String name, UUID id);
+
     @Transactional
     void deleteByIdAndUnitId(UUID id, UUID unitId);
 }

@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.zera.ms_inventory.core.domain.entity.Category;
+import com.zera.ms_inventory.core.domain.exception.CategoryNameAlreadyExistsException;
 import com.zera.ms_inventory.core.repository.CategoryRepository;
 
 @Service
@@ -18,6 +19,9 @@ public class CreateCategoryImpl implements CreateCategory {
 
     @Override
     public Category execute(UUID unitId, String name, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        if (categoryRepository.existsByUnitIdAndNameIgnoreCase(unitId, name)) {
+            throw new CategoryNameAlreadyExistsException(name);
+        }
         Category category = new Category(UUID.randomUUID(), unitId, name, description, createdAt, updatedAt);
         return categoryRepository.save(category);
     }
