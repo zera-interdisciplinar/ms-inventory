@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.zera.ms_inventory.core.domain.entity.Disposal;
 import com.zera.ms_inventory.core.domain.exception.DisposalNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.repository.DisposalRepository;
@@ -23,8 +24,8 @@ public class DisposalQueryUseCases implements ListDisposals, FindDisposalById, C
     }
 
     @Override
-    public PageResult<Disposal> execute(UUID unitId, Pagination pagination) {
-        return disposalRepository.findPage(unitId, pagination);
+    public PageResult<Disposal> execute(UUID unitId, DisposalFilter filter, Pagination pagination) {
+        return disposalRepository.findPage(unitId, filter, pagination);
     }
 
     @Override

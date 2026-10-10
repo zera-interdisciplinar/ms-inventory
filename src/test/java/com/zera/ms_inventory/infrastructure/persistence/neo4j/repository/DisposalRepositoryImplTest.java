@@ -18,6 +18,7 @@ import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Disposal;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedWeight;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
@@ -190,10 +191,12 @@ class DisposalRepositoryImplTest {
         DisposalNode node = new DisposalNode(UUID.randomUUID(), Fixtures.UNIT, DestinationType.LANDFILL, null,
                 null, LocalDate.now(), null, null, null, null, null, false);
         node.setItems(java.util.Set.of(mapper.toRelationship(itemNode(UUID.randomUUID(), "100001"), 3.0)));
-        when(neo4jRepository.countByUnit(Fixtures.UNIT)).thenReturn(5L);
-        when(neo4jRepository.findPageByUnit(Fixtures.UNIT, 2L, 2)).thenReturn(List.of(node));
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, null, null, null, null, null, null, null, null, null))
+                .thenReturn(5L);
+        when(neo4jRepository.findFilteredPage(Fixtures.UNIT, null, null, null, null, null, null, null, null, null,
+                2L, 2)).thenReturn(List.of(node));
 
-        PageResult<Disposal> result = repository.findPage(Fixtures.UNIT, new Pagination(1, 2));
+        PageResult<Disposal> result = repository.findPage(Fixtures.UNIT, DisposalFilter.none(), new Pagination(1, 2));
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.totalElements()).isEqualTo(5);
@@ -202,11 +205,16 @@ class DisposalRepositoryImplTest {
 
     @Test
     void shouldReturnAnEmptyPageWithoutQueryingWhenThereIsNoDisposal() {
-        when(neo4jRepository.countByUnit(Fixtures.UNIT)).thenReturn(0L);
+        when(neo4jRepository.countFiltered(Fixtures.UNIT, "DONATION", LocalDate.parse("2026-03-01"),
+                LocalDate.parse("2026-03-31"), null, null, Fixtures.OPERATOR.userId(), "place-9", null, "aterro"))
+                .thenReturn(0L);
 
-        PageResult<Disposal> result = repository.findPage(Fixtures.UNIT, new Pagination(0, 20));
+        DisposalFilter filter = new DisposalFilter(DestinationType.DONATION, LocalDate.parse("2026-03-01"),
+                LocalDate.parse("2026-03-31"), null, null, Fixtures.OPERATOR.userId(), "place-9", null, "aterro");
+        PageResult<Disposal> result = repository.findPage(Fixtures.UNIT, filter, new Pagination(0, 20));
 
         assertThat(result.content()).isEmpty();
-        verify(neo4jRepository, never()).findPageByUnit(any(), anyLong(), anyInt());
+        verify(neo4jRepository, never()).findFilteredPage(any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), anyLong(), anyInt());
     }
 }

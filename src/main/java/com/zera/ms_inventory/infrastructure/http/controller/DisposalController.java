@@ -1,5 +1,6 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.disposal.CancelDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CorrectDisposalDestination;
@@ -70,10 +73,21 @@ public class DisposalController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PageResponse<DisposalResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                                  @RequestParam(required = false) DestinationType destination,
+                                                                  @RequestParam(required = false) LocalDate disposedFrom,
+                                                                  @RequestParam(required = false) LocalDate disposedTo,
+                                                                  @RequestParam(required = false) LocalDate createdFrom,
+                                                                  @RequestParam(required = false) LocalDate createdTo,
+                                                                  @RequestParam(required = false) UUID createdBy,
+                                                                  @RequestParam(required = false) String placeId,
+                                                                  @RequestParam(required = false) UUID itemId,
+                                                                  @RequestParam(required = false) String q,
                                                                   @RequestParam(defaultValue = "0") int page,
                                                                   @RequestParam(defaultValue = "20") int size) {
+        DisposalFilter filter = new DisposalFilter(destination, disposedFrom, disposedTo, createdFrom, createdTo,
+                createdBy, placeId, itemId, q);
         return ResponseEntity.ok(PageResponse.from(
-                listDisposals.execute(unitId, new Pagination(page, size)), DisposalResponse::from));
+                listDisposals.execute(unitId, filter, new Pagination(page, size)), DisposalResponse::from));
     }
 
     @GetMapping("/{id}")

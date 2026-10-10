@@ -18,6 +18,7 @@ import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Disposal;
 import com.zera.ms_inventory.core.domain.exception.DisposalNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
@@ -110,13 +111,50 @@ class DisposalControllerTest {
     @Test
     @DisplayName("GET /api/v1/disposals - deve listar paginado")
     void shouldListDisposals() throws Exception {
-        when(listDisposals.execute(UNIT, new Pagination(0, 20)))
+        when(listDisposals.execute(UNIT, DisposalFilter.none(), new Pagination(0, 20)))
                 .thenReturn(new PageResult<>(List.of(sample(DestinationType.DONATION)), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/disposals").header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].destination").value("DONATION"))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/disposals - deve encaminhar os filtros da tela")
+    void shouldForwardTheListFilters() throws Exception {
+        UUID createdBy = UUID.randomUUID();
+        UUID itemId = UUID.randomUUID();
+        DisposalFilter filter = new DisposalFilter(DestinationType.RECYCLING, LocalDate.parse("2026-01-01"),
+                LocalDate.parse("2026-01-31"), LocalDate.parse("2026-01-02"), LocalDate.parse("2026-01-20"),
+                createdBy, "place-1", itemId, "notebook");
+        when(listDisposals.execute(UNIT, filter, new Pagination(1, 10)))
+                .thenReturn(new PageResult<>(List.of(), 1, 10, 0));
+
+        mockMvc.perform(get("/api/v1/disposals")
+                        .header("X-Unit-Id", UNIT)
+                        .param("destination", "RECYCLING")
+                        .param("disposedFrom", "2026-01-01")
+                        .param("disposedTo", "2026-01-31")
+                        .param("createdFrom", "2026-01-02")
+                        .param("createdTo", "2026-01-20")
+                        .param("createdBy", createdBy.toString())
+                        .param("placeId", "place-1")
+                        .param("itemId", itemId.toString())
+                        .param("q", "notebook")
+                        .param("page", "1")
+                        .param("size", "10"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/disposals - deve recusar intervalo de datas invertido")
+    void shouldRejectAnInvertedDateRange() throws Exception {
+        mockMvc.perform(get("/api/v1/disposals")
+                        .header("X-Unit-Id", UNIT)
+                        .param("disposedFrom", "2026-02-01")
+                        .param("disposedTo", "2026-01-01"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
