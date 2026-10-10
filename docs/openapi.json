@@ -377,6 +377,32 @@
         },
         "type": "object"
       },
+      "DisposalReport": {
+        "properties": {
+          "issued_at": {
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Line"
+            },
+            "type": "array"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "proposal_deadline": {
+            "type": "string"
+          },
+          "quote_number": {
+            "type": "string"
+          },
+          "requester": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "DisposalResponse": {
         "properties": {
           "createdAt": {
@@ -716,6 +742,41 @@
           "usageIntensity": {
             "format": "int32",
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "Line": {
+        "properties": {
+          "asset_number": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "equipment_type": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "serial_number": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
           }
         },
         "type": "object"
@@ -2024,6 +2085,46 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/DisposalResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "disposal-controller"
+        ]
+      }
+    },
+    "/api/v1/disposals/{id}/report": {
+      "get": {
+        "operationId": "report",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisposalReport"
                 }
               }
             },
