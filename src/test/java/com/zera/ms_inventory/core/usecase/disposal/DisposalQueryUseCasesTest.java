@@ -13,6 +13,7 @@ import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Disposal;
 import com.zera.ms_inventory.core.domain.exception.DisposalNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
@@ -42,10 +43,10 @@ class DisposalQueryUseCasesTest {
     @Test
     void shouldPageTheDisposalsOfTheUnit() {
         Pagination pagination = new Pagination(0, 20);
-        when(disposalRepository.findPage(Fixtures.UNIT, pagination))
+        when(disposalRepository.findPage(Fixtures.UNIT, DisposalFilter.none(), pagination))
                 .thenReturn(new PageResult<>(List.of(disposal(DestinationType.RECYCLING)), 0, 20, 1));
 
-        PageResult<Disposal> result = useCase().execute(Fixtures.UNIT, pagination);
+        PageResult<Disposal> result = useCase().execute(Fixtures.UNIT, DisposalFilter.none(), pagination);
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.totalElements()).isEqualTo(1);

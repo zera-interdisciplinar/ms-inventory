@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.zera.ms_inventory.core.domain.entity.Disposal;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedWeight;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
@@ -119,13 +120,17 @@ public class DisposalRepositoryImpl implements DisposalRepository {
     }
 
     @Override
-    public PageResult<Disposal> findPage(UUID unitId, Pagination pagination) {
-        long total = neo4jRepository.countByUnit(unitId);
+    public PageResult<Disposal> findPage(UUID unitId, DisposalFilter filter, Pagination pagination) {
+        String destination = filter.destination() == null ? null : filter.destination().name();
+        long total = neo4jRepository.countFiltered(unitId, destination, filter.disposedFrom(), filter.disposedTo(),
+                filter.createdFrom(), filter.createdTo(), filter.createdBy(), filter.placeId(), filter.itemId(),
+                filter.query());
         if (total == 0) {
             return new PageResult<>(List.of(), pagination.page(), pagination.size(), 0);
         }
-        List<DisposalNode> nodes = neo4jRepository.findPageByUnit(unitId,
-                (long) pagination.page() * pagination.size(), pagination.size());
+        List<DisposalNode> nodes = neo4jRepository.findFilteredPage(unitId, destination, filter.disposedFrom(),
+                filter.disposedTo(), filter.createdFrom(), filter.createdTo(), filter.createdBy(), filter.placeId(),
+                filter.itemId(), filter.query(), (long) pagination.page() * pagination.size(), pagination.size());
         return new PageResult<>(nodes.stream().map(mapper::toDomain).toList(), pagination.page(),
                 pagination.size(), total);
     }

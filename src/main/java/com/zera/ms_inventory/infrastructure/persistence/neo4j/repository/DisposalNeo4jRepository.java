@@ -1,5 +1,6 @@
 package com.zera.ms_inventory.infrastructure.persistence.neo4j.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,18 +20,50 @@ interface DisposalNeo4jRepository extends Neo4jRepository<DisposalNode, UUID> {
             """)
     Optional<DisposalNode> findByIdAndUnitId(@Param("id") UUID id, @Param("unitId") UUID unitId);
 
-    @Query("""
+    /**
+     * Cancelado some da lista: o app filtra o historico visivel, nao o que ja foi desfeito.
+     * Parametro nulo nao restringe, no mesmo molde da listagem de itens.
+     */
+    String FILTER = """
             MATCH (d:Disposal {unitId: $unitId})
-            WHERE d.cancelled IS NULL OR d.cancelled = false
+            WHERE (d.cancelled IS NULL OR d.cancelled = false)
+              AND ($destination IS NULL OR d.destination = $destination)
+              AND ($disposedFrom IS NULL OR d.disposedAt >= $disposedFrom)
+              AND ($disposedTo IS NULL OR d.disposedAt <= $disposedTo)
+              AND ($createdFrom IS NULL OR date(d.createdAt) >= date($createdFrom))
+              AND ($createdTo IS NULL OR date(d.createdAt) <= date($createdTo))
+              AND ($createdBy IS NULL OR d.createdBy = $createdBy)
+              AND ($placeId IS NULL OR d.placeId = $placeId)
+              AND ($itemId IS NULL OR EXISTS { MATCH (d)-[:INCLUDES]->(:Item {id: $itemId}) })
+              AND ($query IS NULL
+                   OR toLower(coalesce(d.placeName, '')) CONTAINS toLower($query)
+                   OR toLower(coalesce(d.notes, '')) CONTAINS toLower($query)
+                   OR toLower(coalesce(d.createdByName, '')) CONTAINS toLower($query)
+                   OR EXISTS { MATCH (d)-[:INCLUDES]->(i:Item)
+                               WHERE i.displayCode STARTS WITH $query
+                                  OR toLower(coalesce(i.name, '')) CONTAINS toLower($query) })
+            """;
+
+    @Query(FILTER + """
             WITH d ORDER BY d.disposedAt DESC, d.createdAt DESC SKIP $skip LIMIT $limit
             OPTIONAL MATCH (d)-[inc:INCLUDES]->(i:Item)
             WITH d, collect(inc) AS incs, collect(i) AS items
             ORDER BY d.disposedAt DESC, d.createdAt DESC
             RETURN d, incs, items
             """)
-    List<DisposalNode> findPageByUnit(@Param("unitId") UUID unitId, @Param("skip") long skip,
-                                      @Param("limit") int limit);
+    List<DisposalNode> findFilteredPage(@Param("unitId") UUID unitId, @Param("destination") String destination,
+                                        @Param("disposedFrom") LocalDate disposedFrom,
+                                        @Param("disposedTo") LocalDate disposedTo,
+                                        @Param("createdFrom") LocalDate createdFrom,
+                                        @Param("createdTo") LocalDate createdTo,
+                                        @Param("createdBy") UUID createdBy, @Param("placeId") String placeId,
+                                        @Param("itemId") UUID itemId, @Param("query") String query,
+                                        @Param("skip") long skip, @Param("limit") int limit);
 
-    @Query("MATCH (d:Disposal {unitId: $unitId}) WHERE d.cancelled IS NULL OR d.cancelled = false RETURN count(d)")
-    long countByUnit(@Param("unitId") UUID unitId);
+    @Query(FILTER + "RETURN count(d)")
+    long countFiltered(@Param("unitId") UUID unitId, @Param("destination") String destination,
+                       @Param("disposedFrom") LocalDate disposedFrom, @Param("disposedTo") LocalDate disposedTo,
+                       @Param("createdFrom") LocalDate createdFrom, @Param("createdTo") LocalDate createdTo,
+                       @Param("createdBy") UUID createdBy, @Param("placeId") String placeId,
+                       @Param("itemId") UUID itemId, @Param("query") String query);
 }
