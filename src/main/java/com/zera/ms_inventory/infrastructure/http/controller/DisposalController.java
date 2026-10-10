@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
+import com.zera.ms_inventory.core.usecase.disposal.CancelDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CorrectDisposalDestination;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.FindDisposalById;
@@ -39,15 +40,18 @@ public class DisposalController {
     private final ListDisposals listDisposals;
     private final FindDisposalById findDisposalById;
     private final CorrectDisposalDestination correctDisposalDestination;
+    private final CancelDisposal cancelDisposal;
 
     public DisposalController(CreateDisposal createDisposal,
                               ListDisposals listDisposals,
                               FindDisposalById findDisposalById,
-                              CorrectDisposalDestination correctDisposalDestination) {
+                              CorrectDisposalDestination correctDisposalDestination,
+                              CancelDisposal cancelDisposal) {
         this.createDisposal = createDisposal;
         this.listDisposals = listDisposals;
         this.findDisposalById = findDisposalById;
         this.correctDisposalDestination = correctDisposalDestination;
+        this.cancelDisposal = cancelDisposal;
     }
 
     @PostMapping
@@ -81,5 +85,14 @@ public class DisposalController {
             @RequestBody @Valid CorrectDisposalDestinationRequest request) {
         return ResponseEntity.ok(DisposalResponse.from(
                 correctDisposalDestination.execute(unitId, id, request.destination())));
+    }
+
+    /** So o gestor desfaz: mexe em estoque e indicadores depois do fato. */
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<Void> cancel(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                       Actor actor) {
+        cancelDisposal.execute(unitId, id, actor);
+        return ResponseEntity.noContent().build();
     }
 }

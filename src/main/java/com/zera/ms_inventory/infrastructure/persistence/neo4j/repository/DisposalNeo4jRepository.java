@@ -21,6 +21,7 @@ interface DisposalNeo4jRepository extends Neo4jRepository<DisposalNode, UUID> {
 
     @Query("""
             MATCH (d:Disposal {unitId: $unitId})
+            WHERE d.cancelled IS NULL OR d.cancelled = false
             WITH d ORDER BY d.disposedAt DESC, d.createdAt DESC SKIP $skip LIMIT $limit
             OPTIONAL MATCH (d)-[inc:INCLUDES]->(i:Item)
             WITH d, collect(inc) AS incs, collect(i) AS items
@@ -30,6 +31,6 @@ interface DisposalNeo4jRepository extends Neo4jRepository<DisposalNode, UUID> {
     List<DisposalNode> findPageByUnit(@Param("unitId") UUID unitId, @Param("skip") long skip,
                                       @Param("limit") int limit);
 
-    @Query("MATCH (d:Disposal {unitId: $unitId}) RETURN count(d)")
+    @Query("MATCH (d:Disposal {unitId: $unitId}) WHERE d.cancelled IS NULL OR d.cancelled = false RETURN count(d)")
     long countByUnit(@Param("unitId") UUID unitId);
 }

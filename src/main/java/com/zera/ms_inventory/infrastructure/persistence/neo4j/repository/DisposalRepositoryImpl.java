@@ -35,7 +35,8 @@ public class DisposalRepositoryImpl implements DisposalRepository {
     /** Uma linha por item descartado: o agrupamento por (descarte, item) evita juntar itens iguais. */
     private static final String DISPOSED_WEIGHTS = """
             MATCH (d:Disposal {unitId: $unitId})-[inc:INCLUDES]->(i:Item)
-            WHERE d.disposedAt >= $from AND d.disposedAt <= $to
+            WHERE (d.cancelled IS NULL OR d.cancelled = false)
+            AND d.disposedAt >= $from AND d.disposedAt <= $to
             OPTIONAL MATCH (i)-[:IS_MODEL]->(:Model)-[:MADE_OF]->(mat:Material)
             WITH d, i, inc.weightKg AS weightKg, collect(DISTINCT mat.code) AS materials
             RETURN d.destination AS destination, d.disposedAt AS disposedAt, weightKg, materials
@@ -70,6 +71,7 @@ public class DisposalRepositoryImpl implements DisposalRepository {
             DisposalNode node = stored.get();
             node.setDestination(disposal.getDestination());
             node.setUpdatedAt(disposal.getUpdatedAt());
+            node.setCancelled(disposal.isCancelled());
             return mapper.toDomain(neo4jRepository.save(node));
         }
         return mapper.toDomain(neo4jRepository.save(withItems(disposal)));

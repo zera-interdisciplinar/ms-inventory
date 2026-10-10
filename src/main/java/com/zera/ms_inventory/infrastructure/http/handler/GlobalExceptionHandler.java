@@ -15,6 +15,7 @@ import com.zera.ms_inventory.core.domain.exception.CategoryInUseException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNameAlreadyExistsException;
 import com.zera.ms_inventory.core.domain.exception.CategoryNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.ItemIdInUseException;
+import com.zera.ms_inventory.core.domain.exception.DisposalAlreadyCancelledException;
 import com.zera.ms_inventory.core.domain.exception.DisposalNotFoundException;
 import com.zera.ms_inventory.core.domain.exception.IncompleteItemException;
 import com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException;
@@ -89,6 +90,11 @@ public class GlobalExceptionHandler {
     // transicao fora da maquina de estados do item
     @ExceptionHandler(InvalidItemTransitionException.class)
     public ProblemDetail handleInvalidTransition(InvalidItemTransitionException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(DisposalAlreadyCancelledException.class)
+    public ProblemDetail handleDisposalAlreadyCancelled(DisposalAlreadyCancelledException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 

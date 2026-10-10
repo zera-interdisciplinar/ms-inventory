@@ -549,6 +549,7 @@
               "MAINTENANCE_FINISHED",
               "EVALUATED",
               "DISPOSED",
+              "DISPOSAL_CANCELLED",
               "REMOVED",
               "RESTORED",
               "STATUS_CHANGED"
@@ -2027,6 +2028,47 @@
                 }
               }
             },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "disposal-controller"
+        ]
+      }
+    },
+    "/api/v1/disposals/{id}/cancel": {
+      "patch": {
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": "OK"
           }
         },

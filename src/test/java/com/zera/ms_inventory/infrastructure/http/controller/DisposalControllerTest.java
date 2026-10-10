@@ -21,6 +21,7 @@ import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
+import com.zera.ms_inventory.core.usecase.disposal.CancelDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CorrectDisposalDestination;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposalCommand;
@@ -50,6 +51,7 @@ class DisposalControllerTest {
     @MockitoBean private ListDisposals listDisposals;
     @MockitoBean private FindDisposalById findDisposalById;
     @MockitoBean private CorrectDisposalDestination correctDisposalDestination;
+    @MockitoBean private CancelDisposal cancelDisposal;
 
     private Disposal sample(DestinationType destination) {
         return Disposal.register(UNIT, destination, "places/abc", "Ecoponto Central", LocalDate.now(), null,
@@ -138,5 +140,19 @@ class DisposalControllerTest {
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.destination").value("RECYCLING"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/disposals/{id}/cancel - deve cancelar o descarte")
+    void shouldCancelDisposal() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/v1/disposals/{id}/cancel", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_MANAGER"))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isNoContent());
+
+        org.mockito.Mockito.verify(cancelDisposal).execute(org.mockito.ArgumentMatchers.eq(UNIT),
+                org.mockito.ArgumentMatchers.eq(id), org.mockito.ArgumentMatchers.any());
     }
 }

@@ -115,14 +115,14 @@ class DisposalRepositoryImplTest {
         UUID id = UUID.randomUUID();
         UUID itemId = UUID.randomUUID();
         DisposalNode gravado = new DisposalNode(id, Fixtures.UNIT, DestinationType.RECYCLING, null, null,
-                LocalDate.now(), null, null, null, null, null);
+                LocalDate.now(), null, null, null, null, null, false);
         gravado.setItems(java.util.Set.of(mapper.toRelationship(itemNode(itemId, "100001"), 2.5)));
         when(neo4jRepository.findByIdAndUnitId(id, Fixtures.UNIT)).thenReturn(Optional.of(gravado));
         when(neo4jRepository.save(any(DisposalNode.class))).thenAnswer(i -> i.getArgument(0));
 
         Disposal corrigido = new Disposal(id, Fixtures.UNIT, DestinationType.LANDFILL, null, null,
                 LocalDate.now(), null, List.of(new DisposedItem(itemId, "100001", "Notebook", 2.5)),
-                null, null, null, null);
+                null, null, null, null, false);
 
         Disposal resultado = repository.save(corrigido);
 
@@ -141,7 +141,7 @@ class DisposalRepositoryImplTest {
     void shouldFindTheDisposalWithinTheUnit() {
         UUID id = UUID.randomUUID();
         DisposalNode node = new DisposalNode(id, Fixtures.UNIT, DestinationType.DONATION, null, null,
-                LocalDate.now(), null, null, null, null, null);
+                LocalDate.now(), null, null, null, null, null, false);
         node.setItems(java.util.Set.of(mapper.toRelationship(itemNode(UUID.randomUUID(), "100001"), 1.0)));
         when(neo4jRepository.findByIdAndUnitId(id, Fixtures.UNIT)).thenReturn(Optional.of(node));
 
@@ -188,7 +188,7 @@ class DisposalRepositoryImplTest {
     @Test
     void shouldPageTheDisposalsOfTheUnit() {
         DisposalNode node = new DisposalNode(UUID.randomUUID(), Fixtures.UNIT, DestinationType.LANDFILL, null,
-                null, LocalDate.now(), null, null, null, null, null);
+                null, LocalDate.now(), null, null, null, null, null, false);
         node.setItems(java.util.Set.of(mapper.toRelationship(itemNode(UUID.randomUUID(), "100001"), 3.0)));
         when(neo4jRepository.countByUnit(Fixtures.UNIT)).thenReturn(5L);
         when(neo4jRepository.findPageByUnit(Fixtures.UNIT, 2L, 2)).thenReturn(List.of(node));

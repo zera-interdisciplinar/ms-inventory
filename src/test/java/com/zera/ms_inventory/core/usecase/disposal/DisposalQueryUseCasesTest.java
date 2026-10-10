@@ -95,4 +95,19 @@ class DisposalQueryUseCasesTest {
                 .isInstanceOf(DisposalNotFoundException.class);
         verify(disposalRepository, never()).save(any());
     }
+
+    @Test
+    void shouldHideACancelledDisposalFromReadAndCorrection() {
+        Disposal disposal = disposal(DestinationType.RECYCLING);
+        disposal.cancel();
+        when(disposalRepository.findById(Fixtures.UNIT, disposal.getId())).thenReturn(Optional.of(disposal));
+
+        DisposalQueryUseCases useCase = useCase();
+
+        assertThatThrownBy(() -> useCase.execute(Fixtures.UNIT, disposal.getId()))
+                .isInstanceOf(DisposalNotFoundException.class);
+        assertThatThrownBy(() -> useCase.execute(Fixtures.UNIT, disposal.getId(), DestinationType.LANDFILL))
+                .isInstanceOf(DisposalNotFoundException.class);
+        verify(disposalRepository, never()).save(any());
+    }
 }

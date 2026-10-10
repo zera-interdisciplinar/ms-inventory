@@ -29,16 +29,24 @@ public class DisposalQueryUseCases implements ListDisposals, FindDisposalById, C
 
     @Override
     public Disposal execute(UUID unitId, UUID id) {
-        return disposalRepository.findById(unitId, id)
-                .orElseThrow(() -> new DisposalNotFoundException(id));
+        return requireVisible(unitId, id);
     }
 
     @Override
     @Transactional
     public Disposal execute(UUID unitId, UUID id, DestinationType destination) {
-        Disposal disposal = disposalRepository.findById(unitId, id)
-                .orElseThrow(() -> new DisposalNotFoundException(id));
+        Disposal disposal = requireVisible(unitId, id);
         disposal.correctDestination(destination);
         return disposalRepository.save(disposal);
+    }
+
+    /** Cancelado some do historico: para o app e o mesmo que nao existir. */
+    private Disposal requireVisible(UUID unitId, UUID id) {
+        Disposal disposal = disposalRepository.findById(unitId, id)
+                .orElseThrow(() -> new DisposalNotFoundException(id));
+        if (disposal.isCancelled()) {
+            throw new DisposalNotFoundException(id);
+        }
+        return disposal;
     }
 }

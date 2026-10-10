@@ -31,6 +31,7 @@ import com.zera.ms_inventory.core.usecase.item.DeleteItem;
 import com.zera.ms_inventory.core.usecase.item.RestoreItem;
 import com.zera.ms_inventory.core.usecase.model.CreateModel;
 import com.zera.ms_inventory.core.usecase.model.DeleteModel;
+import com.zera.ms_inventory.core.usecase.disposal.CancelDisposal;
 import com.zera.ms_inventory.core.usecase.rule.FindAllRules;
 
 @SpringBootTest
@@ -49,6 +50,7 @@ class SecurityRbacIntegrationTest {
     @MockitoBean private AssignItemUnit assignItemUnit;
     @MockitoBean private CreateModel createModel;
     @MockitoBean private DeleteModel deleteModel;
+    @MockitoBean private CancelDisposal cancelDisposal;
 
     private static MockHttpServletRequestBuilder asRole(MockHttpServletRequestBuilder request, String role) {
         return request.with(jwt()
@@ -156,6 +158,20 @@ class SecurityRbacIntegrationTest {
                         .contentType("application/json")
                         .content("{\"unitId\":\"" + Fixtures.OTHER_UNIT + "\"}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void employeeCannotCancelADisposal() throws Exception {
+        mockMvc.perform(asRole(patch("/api/v1/disposals/" + UUID.randomUUID() + "/cancel"), "EMPLOYEE")
+                        .header("X-Unit-Id", Fixtures.UNIT.toString()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void managerCanCancelADisposal() throws Exception {
+        mockMvc.perform(asRole(patch("/api/v1/disposals/" + UUID.randomUUID() + "/cancel"), "MANAGER")
+                        .header("X-Unit-Id", Fixtures.UNIT.toString()))
+                .andExpect(status().isNoContent());
     }
 
     @Test

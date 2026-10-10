@@ -34,7 +34,7 @@ class DisposalMapperTest {
     void shouldMapTheDisposalWithItsFrozenItems() {
         DisposalNode node = new DisposalNode(UUID.randomUUID(), Fixtures.UNIT, DestinationType.RECYCLING,
                 "places/abc", "Ecoponto", LocalDate.now(), "sem observacao",
-                Fixtures.OPERATOR.userId(), "Gustavo Operario", LocalDateTime.now(), LocalDateTime.now());
+                Fixtures.OPERATOR.userId(), "Gustavo Operario", LocalDateTime.now(), LocalDateTime.now(), false);
         node.setItems(Set.of(new DisposedItemRelationship(itemNode("100002"), 1.5),
                 new DisposedItemRelationship(itemNode("100001"), 2.5)));
 
@@ -51,7 +51,7 @@ class DisposalMapperTest {
     @Test
     void shouldIgnoreARelationshipWithoutItem() {
         DisposalNode node = new DisposalNode(UUID.randomUUID(), Fixtures.UNIT, DestinationType.LANDFILL, null,
-                null, LocalDate.now(), null, null, null, LocalDateTime.now(), LocalDateTime.now());
+                null, LocalDate.now(), null, null, null, LocalDateTime.now(), LocalDateTime.now(), false);
         node.setItems(Set.of(new DisposedItemRelationship(itemNode("100001"), 1.0),
                 new DisposedItemRelationship(null, 9.0)));
 
