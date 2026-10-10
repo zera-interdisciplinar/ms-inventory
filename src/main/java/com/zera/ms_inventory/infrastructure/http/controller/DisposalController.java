@@ -22,7 +22,9 @@ import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.disposal.CancelDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CorrectDisposalDestination;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposal;
+import com.zera.ms_inventory.core.usecase.disposal.DisposalReport;
 import com.zera.ms_inventory.core.usecase.disposal.FindDisposalById;
+import com.zera.ms_inventory.core.usecase.disposal.GetDisposalReport;
 import com.zera.ms_inventory.core.usecase.disposal.ListDisposals;
 import com.zera.ms_inventory.infrastructure.http.request.CorrectDisposalDestinationRequest;
 import com.zera.ms_inventory.infrastructure.http.request.CreateDisposalRequest;
@@ -41,17 +43,20 @@ public class DisposalController {
     private final FindDisposalById findDisposalById;
     private final CorrectDisposalDestination correctDisposalDestination;
     private final CancelDisposal cancelDisposal;
+    private final GetDisposalReport getDisposalReport;
 
     public DisposalController(CreateDisposal createDisposal,
                               ListDisposals listDisposals,
                               FindDisposalById findDisposalById,
                               CorrectDisposalDestination correctDisposalDestination,
-                              CancelDisposal cancelDisposal) {
+                              CancelDisposal cancelDisposal,
+                              GetDisposalReport getDisposalReport) {
         this.createDisposal = createDisposal;
         this.listDisposals = listDisposals;
         this.findDisposalById = findDisposalById;
         this.correctDisposalDestination = correctDisposalDestination;
         this.cancelDisposal = cancelDisposal;
+        this.getDisposalReport = getDisposalReport;
     }
 
     @PostMapping
@@ -76,6 +81,14 @@ public class DisposalController {
     public ResponseEntity<DisposalResponse> findById(@RequestHeader("X-Unit-Id") UUID unitId,
                                                      @PathVariable UUID id) {
         return ResponseEntity.ok(DisposalResponse.from(findDisposalById.execute(unitId, id)));
+    }
+
+    /** Payload do PDF de cotacao. Nao substitui o GET do descarte, que continua com o snapshot curto. */
+    @GetMapping("/{id}/report")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<DisposalReport> report(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                 @PathVariable UUID id) {
+        return ResponseEntity.ok(getDisposalReport.execute(unitId, id));
     }
 
     /** Corrige o destino informado por engano; os itens continuam descartados. */
