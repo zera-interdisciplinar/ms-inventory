@@ -84,7 +84,7 @@ class DisposalTest {
         assertThatThrownBy(() -> Disposal.register(Fixtures.UNIT, DestinationType.RECYCLING, null, null, null,
                 null, List.of(), Fixtures.OPERATOR)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new Disposal(null, Fixtures.UNIT, DestinationType.RECYCLING, null, null, null,
-                null, null, null, null, null, null)).isInstanceOf(IllegalArgumentException.class);
+                null, null, null, null, null, null, false)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -94,6 +94,18 @@ class DisposalTest {
 
         assertThatThrownBy(() -> disposal.correctDestination(null))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldCancelOnceAndRefuseASecondCancel() {
+        Disposal disposal = Disposal.register(Fixtures.UNIT, DestinationType.RECYCLING, null, null, null, null,
+                List.of(item(1.0)), Fixtures.OPERATOR);
+
+        disposal.cancel();
+
+        assertThat(disposal.isCancelled()).isTrue();
+        assertThatThrownBy(disposal::cancel)
+                .isInstanceOf(com.zera.ms_inventory.core.domain.exception.DisposalAlreadyCancelledException.class);
     }
 
     @Test

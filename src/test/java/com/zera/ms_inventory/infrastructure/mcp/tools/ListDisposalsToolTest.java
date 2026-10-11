@@ -41,7 +41,7 @@ class ListDisposalsToolTest {
     }
 
     private void returning(Disposal... disposals) {
-        when(listDisposals.execute(any(), any()))
+        when(listDisposals.execute(any(), any(), any()))
                 .thenReturn(new PageResult<>(List.of(disposals), 0, 20, disposals.length));
     }
 
@@ -84,7 +84,7 @@ class ListDisposalsToolTest {
         new ListDisposalsTool(listDisposals).listDisposals(Fixtures.UNIT, 5000, -2);
 
         ArgumentCaptor<Pagination> pagination = ArgumentCaptor.forClass(Pagination.class);
-        verify(listDisposals).execute(any(), pagination.capture());
+        verify(listDisposals).execute(any(), any(), pagination.capture());
         assertThat(pagination.getValue().size()).isEqualTo(Pagination.MAX_SIZE);
         assertThat(pagination.getValue().page()).isZero();
     }

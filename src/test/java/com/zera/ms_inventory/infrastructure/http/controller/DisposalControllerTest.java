@@ -18,9 +18,11 @@ import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Disposal;
 import com.zera.ms_inventory.core.domain.exception.DisposalNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
+import com.zera.ms_inventory.core.usecase.disposal.CancelDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CorrectDisposalDestination;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposalCommand;
@@ -53,6 +55,7 @@ class DisposalControllerTest {
     @MockitoBean private FindDisposalById findDisposalById;
     @MockitoBean private CorrectDisposalDestination correctDisposalDestination;
     @MockitoBean private GetDisposalReport getDisposalReport;
+    @MockitoBean private CancelDisposal cancelDisposal;
 
     private Disposal sample(DestinationType destination) {
         return Disposal.register(UNIT, destination, "places/abc", "Ecoponto Central", LocalDate.now(), null,
@@ -108,13 +111,50 @@ class DisposalControllerTest {
     @Test
     @DisplayName("GET /api/v1/disposals - deve listar paginado")
     void shouldListDisposals() throws Exception {
-        when(listDisposals.execute(UNIT, new Pagination(0, 20)))
+        when(listDisposals.execute(UNIT, DisposalFilter.none(), new Pagination(0, 20)))
                 .thenReturn(new PageResult<>(List.of(sample(DestinationType.DONATION)), 0, 20, 1));
 
         mockMvc.perform(get("/api/v1/disposals").header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].destination").value("DONATION"))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/disposals - deve encaminhar os filtros da tela")
+    void shouldForwardTheListFilters() throws Exception {
+        UUID createdBy = UUID.randomUUID();
+        UUID itemId = UUID.randomUUID();
+        DisposalFilter filter = new DisposalFilter(DestinationType.RECYCLING, LocalDate.parse("2026-01-01"),
+                LocalDate.parse("2026-01-31"), LocalDate.parse("2026-01-02"), LocalDate.parse("2026-01-20"),
+                createdBy, "place-1", itemId, "notebook");
+        when(listDisposals.execute(UNIT, filter, new Pagination(1, 10)))
+                .thenReturn(new PageResult<>(List.of(), 1, 10, 0));
+
+        mockMvc.perform(get("/api/v1/disposals")
+                        .header("X-Unit-Id", UNIT)
+                        .param("destination", "RECYCLING")
+                        .param("disposedFrom", "2026-01-01")
+                        .param("disposedTo", "2026-01-31")
+                        .param("createdFrom", "2026-01-02")
+                        .param("createdTo", "2026-01-20")
+                        .param("createdBy", createdBy.toString())
+                        .param("placeId", "place-1")
+                        .param("itemId", itemId.toString())
+                        .param("q", "notebook")
+                        .param("page", "1")
+                        .param("size", "10"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/disposals - deve recusar intervalo de datas invertido")
+    void shouldRejectAnInvertedDateRange() throws Exception {
+        mockMvc.perform(get("/api/v1/disposals")
+                        .header("X-Unit-Id", UNIT)
+                        .param("disposedFrom", "2026-02-01")
+                        .param("disposedTo", "2026-01-01"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -164,5 +204,19 @@ class DisposalControllerTest {
                 .andExpect(jsonPath("$.items[0].asset_number").value("100001"))
                 .andExpect(jsonPath("$.items[0].serial_number").value("SN-001"))
                 .andExpect(jsonPath("$.items[0].status").value("DAMAGED"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/disposals/{id}/cancel - deve cancelar o descarte")
+    void shouldCancelDisposal() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/v1/disposals/{id}/cancel", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_MANAGER"))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isNoContent());
+
+        org.mockito.Mockito.verify(cancelDisposal).execute(org.mockito.ArgumentMatchers.eq(UNIT),
+                org.mockito.ArgumentMatchers.eq(id), org.mockito.ArgumentMatchers.any());
     }
 }

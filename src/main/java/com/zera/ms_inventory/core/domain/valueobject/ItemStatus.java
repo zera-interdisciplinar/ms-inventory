@@ -5,8 +5,9 @@ import java.util.Set;
 
 /**
  * Estados do item no fluxo v1 (Figma "Section 4"). As transicoes validas moram aqui: o dominio
- * recusa qualquer outra, e a API responde 409. {@link #DISPOSED} e terminal; {@link #REMOVED} e
- * alcancavel de qualquer estado menos o descarte (ZERA-247).
+ * recusa qualquer outra, e a API responde 409. {@link #DISPOSED} so volta para o estoque ou
+ * avaliacao (cancelamento de descarte); {@link #REMOVED} e alcancavel de qualquer estado menos
+ * o descarte (ZERA-247).
  */
 public enum ItemStatus {
     /** Cadastro incompleto salvo pelo operario; ainda nao entrou no estoque. */
@@ -30,7 +31,7 @@ public enum ItemStatus {
             IN_STOCK, Set.of(IN_MAINTENANCE, DISPOSED, REMOVED),
             IN_MAINTENANCE, Set.of(AWAITING_EVALUATION, REMOVED),
             AWAITING_EVALUATION, Set.of(IN_STOCK, DISPOSED, REMOVED),
-            DISPOSED, Set.of(),
+            DISPOSED, Set.of(IN_STOCK, AWAITING_EVALUATION),
             REMOVED, Set.of(DRAFT, PENDING_APPROVAL, REJECTED, IN_STOCK, IN_MAINTENANCE, AWAITING_EVALUATION));
 
     public boolean canTransitionTo(ItemStatus target) {

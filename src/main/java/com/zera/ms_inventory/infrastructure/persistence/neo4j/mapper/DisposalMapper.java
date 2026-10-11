@@ -26,7 +26,7 @@ public class DisposalMapper {
                 .toList();
         return new Disposal(node.getId(), node.getUnitId(), node.getDestination(), node.getPlaceId(),
                 node.getPlaceName(), node.getDisposedAt(), node.getNotes(), items, node.getCreatedBy(),
-                node.getCreatedByName(), node.getCreatedAt(), node.getUpdatedAt());
+                node.getCreatedByName(), node.getCreatedAt(), node.getUpdatedAt(), node.isCancelled());
     }
 
     /** As arestas com os itens sao montadas pelo repositorio, que resolve os nos gravados. */
@@ -37,7 +37,7 @@ public class DisposalMapper {
         return new DisposalNode(disposal.getId(), disposal.getUnitId(), disposal.getDestination(),
                 disposal.getPlaceId(), disposal.getPlaceName(), disposal.getDisposedAt(), disposal.getNotes(),
                 disposal.getCreatedBy(), disposal.getCreatedByName(), disposal.getCreatedAt(),
-                disposal.getUpdatedAt());
+                disposal.getUpdatedAt(), disposal.isCancelled());
     }
 
     public DisposedItemRelationship toRelationship(

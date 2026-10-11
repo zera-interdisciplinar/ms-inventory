@@ -1,5 +1,6 @@
 package com.zera.ms_inventory.infrastructure.http.controller;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -18,7 +19,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
+import com.zera.ms_inventory.core.usecase.disposal.CancelDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CorrectDisposalDestination;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.DisposalReport;
@@ -42,17 +46,20 @@ public class DisposalController {
     private final FindDisposalById findDisposalById;
     private final CorrectDisposalDestination correctDisposalDestination;
     private final GetDisposalReport getDisposalReport;
+    private final CancelDisposal cancelDisposal;
 
     public DisposalController(CreateDisposal createDisposal,
                               ListDisposals listDisposals,
                               FindDisposalById findDisposalById,
                               CorrectDisposalDestination correctDisposalDestination,
-                              GetDisposalReport getDisposalReport) {
+                              GetDisposalReport getDisposalReport,
+                              CancelDisposal cancelDisposal) {
         this.createDisposal = createDisposal;
         this.listDisposals = listDisposals;
         this.findDisposalById = findDisposalById;
         this.correctDisposalDestination = correctDisposalDestination;
         this.getDisposalReport = getDisposalReport;
+        this.cancelDisposal = cancelDisposal;
     }
 
     @PostMapping
@@ -66,10 +73,21 @@ public class DisposalController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PageResponse<DisposalResponse>> findAll(@RequestHeader("X-Unit-Id") UUID unitId,
+                                                                  @RequestParam(required = false) DestinationType destination,
+                                                                  @RequestParam(required = false) LocalDate disposedFrom,
+                                                                  @RequestParam(required = false) LocalDate disposedTo,
+                                                                  @RequestParam(required = false) LocalDate createdFrom,
+                                                                  @RequestParam(required = false) LocalDate createdTo,
+                                                                  @RequestParam(required = false) UUID createdBy,
+                                                                  @RequestParam(required = false) String placeId,
+                                                                  @RequestParam(required = false) UUID itemId,
+                                                                  @RequestParam(required = false) String q,
                                                                   @RequestParam(defaultValue = "0") int page,
                                                                   @RequestParam(defaultValue = "20") int size) {
+        DisposalFilter filter = new DisposalFilter(destination, disposedFrom, disposedTo, createdFrom, createdTo,
+                createdBy, placeId, itemId, q);
         return ResponseEntity.ok(PageResponse.from(
-                listDisposals.execute(unitId, new Pagination(page, size)), DisposalResponse::from));
+                listDisposals.execute(unitId, filter, new Pagination(page, size)), DisposalResponse::from));
     }
 
     @GetMapping("/{id}")
@@ -94,5 +112,14 @@ public class DisposalController {
             @RequestBody @Valid CorrectDisposalDestinationRequest request) {
         return ResponseEntity.ok(DisposalResponse.from(
                 correctDisposalDestination.execute(unitId, id, request.destination())));
+    }
+
+    /** So o gestor desfaz: mexe em estoque e indicadores depois do fato. */
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize(Authz.MANAGER)
+    public ResponseEntity<Void> cancel(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                       Actor actor) {
+        cancelDisposal.execute(unitId, id, actor);
+        return ResponseEntity.noContent().build();
     }
 }

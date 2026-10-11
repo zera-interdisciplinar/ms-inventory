@@ -221,9 +221,9 @@ class ItemTest {
         assertEquals(ItemStatus.IN_STOCK, item.getStatus());
     }
 
-    /** O descarte encerra a vida do item: nem a remocao logica sai de la. */
+    /** Remocao nao sai do descarte; voltar ao estoque e o caminho do cancelamento. */
     @Test
-    void shouldRefuseAnyTransitionOutOfDisposed() {
+    void shouldRefuseRemovalFromDisposedAndAllowReturnToStock() {
         UUID unitId = UUID.randomUUID();
         Item item = new Item(UUID.randomUUID(), new Barcode("111111-J"), ItemStatus.IN_STOCK, unitId, model(unitId),
                 null, null, null, null, null, null);
@@ -231,8 +231,8 @@ class ItemTest {
 
         org.junit.jupiter.api.Assertions.assertThrows(InvalidItemTransitionException.class,
                 () -> item.transitionTo(ItemStatus.REMOVED, EventType.REMOVED, null, null));
-        org.junit.jupiter.api.Assertions.assertThrows(InvalidItemTransitionException.class,
-                () -> item.transitionTo(ItemStatus.IN_STOCK, EventType.RESTORED, null, null));
+        item.transitionTo(ItemStatus.IN_STOCK, EventType.DISPOSAL_CANCELLED, null, null);
+        assertEquals(ItemStatus.IN_STOCK, item.getStatus());
     }
 
     /** restoreStatus e da persistencia: reidrata sem passar pela maquina de estados. */
