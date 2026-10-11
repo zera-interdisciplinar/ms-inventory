@@ -115,6 +115,6 @@ class GetDisposalReportImplTest {
         LocalDateTime issuedAt = LocalDateTime.of(2026, 3, 15, 10, 30);
         return new Disposal(UUID.randomUUID(), Fixtures.UNIT, DestinationType.RECYCLING, null, null,
                 null, null, items, Fixtures.OPERATOR.userId(), Fixtures.OPERATOR.name(),
-                issuedAt, issuedAt);
+                issuedAt, issuedAt, false);
     }
 }
