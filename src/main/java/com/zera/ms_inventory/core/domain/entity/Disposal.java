@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.zera.ms_inventory.core.domain.exception.DisposalAlreadyCancelledException;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
@@ -29,10 +30,12 @@ public class Disposal {
     private final String createdByName;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    /** Soft cancel: some do historico e dos indicadores sem apagar o no. */
+    private boolean cancelled;
 
     public Disposal(UUID id, UUID unitId, DestinationType destination, String placeId, String placeName,
                     LocalDate disposedAt, String notes, List<DisposedItem> items, UUID createdBy,
-                    String createdByName, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                    String createdByName, LocalDateTime createdAt, LocalDateTime updatedAt, boolean cancelled) {
         if (unitId == null) {
             throw new IllegalArgumentException("unitId is required");
         }
@@ -57,13 +60,14 @@ public class Disposal {
         this.createdByName = createdByName;
         this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
         this.updatedAt = updatedAt != null ? updatedAt : this.createdAt;
+        this.cancelled = cancelled;
     }
 
     /** Descarte novo, registrado por quem esta com o token. */
     public static Disposal register(UUID unitId, DestinationType destination, String placeId, String placeName,
                                     LocalDate disposedAt, String notes, List<DisposedItem> items, Actor actor) {
         return new Disposal(null, unitId, destination, placeId, placeName, disposedAt, notes, items,
-                actor != null ? actor.userId() : null, actor != null ? actor.name() : null, null, null);
+                actor != null ? actor.userId() : null, actor != null ? actor.name() : null, null, null, false);
     }
 
     /**
@@ -75,6 +79,18 @@ public class Disposal {
             throw new IllegalArgumentException("destination is required");
         }
         this.destination = destination;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * O registro deixa de valer: some do historico e dos indicadores. Segunda chamada e conflito,
+     * nao no-op, para o app distinguir "ja cancelou" de sucesso.
+     */
+    public void cancel() {
+        if (cancelled) {
+            throw new DisposalAlreadyCancelledException(id);
+        }
+        this.cancelled = true;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -137,5 +153,9 @@ public class Disposal {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
     }
 }

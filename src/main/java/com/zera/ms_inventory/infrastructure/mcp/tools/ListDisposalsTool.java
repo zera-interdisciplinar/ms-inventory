@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.zera.ms_inventory.core.domain.entity.Disposal;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
 import com.zera.ms_inventory.core.domain.valueobject.PageResult;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
@@ -50,7 +51,8 @@ public class ListDisposalsTool {
         Pagination pagination = new Pagination(Math.max(0, page == null ? 0 : page), size);
 
         PageResult<DisposalSummary> result =
-                listDisposals.execute(McpToolScope.require(unitId), pagination).map(ListDisposalsTool::summaryOf);
+                listDisposals.execute(McpToolScope.require(unitId), DisposalFilter.none(), pagination)
+                        .map(ListDisposalsTool::summaryOf);
         return new DisposalPage(result.content(), result.totalElements(), result.page(), result.size());
     }
 

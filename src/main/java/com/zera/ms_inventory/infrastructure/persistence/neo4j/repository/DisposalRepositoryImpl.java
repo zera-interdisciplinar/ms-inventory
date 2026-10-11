@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.zera.ms_inventory.core.domain.entity.Disposal;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.DestinationType;
+import com.zera.ms_inventory.core.domain.valueobject.DisposalFilter;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedItem;
 import com.zera.ms_inventory.core.domain.valueobject.DisposedWeight;
 import com.zera.ms_inventory.core.domain.valueobject.MaterialCode;
@@ -35,7 +36,8 @@ public class DisposalRepositoryImpl implements DisposalRepository {
     /** Uma linha por item descartado: o agrupamento por (descarte, item) evita juntar itens iguais. */
     private static final String DISPOSED_WEIGHTS = """
             MATCH (d:Disposal {unitId: $unitId})-[inc:INCLUDES]->(i:Item)
-            WHERE d.disposedAt >= $from AND d.disposedAt <= $to
+            WHERE (d.cancelled IS NULL OR d.cancelled = false)
+            AND d.disposedAt >= $from AND d.disposedAt <= $to
             OPTIONAL MATCH (i)-[:IS_MODEL]->(:Model)-[:MADE_OF]->(mat:Material)
             WITH d, i, inc.weightKg AS weightKg, collect(DISTINCT mat.code) AS materials
             RETURN d.destination AS destination, d.disposedAt AS disposedAt, weightKg, materials
@@ -70,6 +72,7 @@ public class DisposalRepositoryImpl implements DisposalRepository {
             DisposalNode node = stored.get();
             node.setDestination(disposal.getDestination());
             node.setUpdatedAt(disposal.getUpdatedAt());
+            node.setCancelled(disposal.isCancelled());
             return mapper.toDomain(neo4jRepository.save(node));
         }
         return mapper.toDomain(neo4jRepository.save(withItems(disposal)));
@@ -117,13 +120,17 @@ public class DisposalRepositoryImpl implements DisposalRepository {
     }
 
     @Override
-    public PageResult<Disposal> findPage(UUID unitId, Pagination pagination) {
-        long total = neo4jRepository.countByUnit(unitId);
+    public PageResult<Disposal> findPage(UUID unitId, DisposalFilter filter, Pagination pagination) {
+        String destination = filter.destination() == null ? null : filter.destination().name();
+        long total = neo4jRepository.countFiltered(unitId, destination, filter.disposedFrom(), filter.disposedTo(),
+                filter.createdFrom(), filter.createdTo(), filter.createdBy(), filter.placeId(), filter.itemId(),
+                filter.query());
         if (total == 0) {
             return new PageResult<>(List.of(), pagination.page(), pagination.size(), 0);
         }
-        List<DisposalNode> nodes = neo4jRepository.findPageByUnit(unitId,
-                (long) pagination.page() * pagination.size(), pagination.size());
+        List<DisposalNode> nodes = neo4jRepository.findFilteredPage(unitId, destination, filter.disposedFrom(),
+                filter.disposedTo(), filter.createdFrom(), filter.createdTo(), filter.createdBy(), filter.placeId(),
+                filter.itemId(), filter.query(), (long) pagination.page() * pagination.size(), pagination.size());
         return new PageResult<>(nodes.stream().map(mapper::toDomain).toList(), pagination.page(),
                 pagination.size(), total);
     }

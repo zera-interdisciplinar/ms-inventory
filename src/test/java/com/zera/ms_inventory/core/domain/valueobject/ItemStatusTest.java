@@ -19,6 +19,7 @@ class ItemStatusTest {
             "IN_STOCK, IN_MAINTENANCE", "IN_STOCK, DISPOSED", "IN_STOCK, REMOVED",
             "IN_MAINTENANCE, AWAITING_EVALUATION",
             "AWAITING_EVALUATION, IN_STOCK", "AWAITING_EVALUATION, DISPOSED",
+            "DISPOSED, IN_STOCK", "DISPOSED, AWAITING_EVALUATION",
             "REMOVED, IN_STOCK", "REMOVED, DRAFT"})
     void shouldAllowTheTransitionsOfTheFlow(ItemStatus from, ItemStatus to) {
         assertThat(from.canTransitionTo(to)).isTrue();
@@ -31,6 +32,7 @@ class ItemStatusTest {
             "IN_STOCK, PENDING_APPROVAL", "IN_STOCK, AWAITING_EVALUATION", "IN_STOCK, DRAFT",
             "IN_MAINTENANCE, IN_STOCK", "IN_MAINTENANCE, DISPOSED",
             "AWAITING_EVALUATION, IN_MAINTENANCE",
+            "DISPOSED, REMOVED", "DISPOSED, IN_MAINTENANCE",
             "REMOVED, DISPOSED"})
     void shouldRejectTransitionsOutsideTheFlow(ItemStatus from, ItemStatus to) {
         assertThat(from.canTransitionTo(to)).isFalse();
@@ -43,10 +45,11 @@ class ItemStatusTest {
         assertThat(status.canTransitionTo(status)).isFalse();
     }
 
-    /** O descarte encerra a vida do item: nem remocao logica sai de la (ZERA-247). */
+    /** Cancelar o descarte devolve o item ao estoque ou a avaliacao; remocao nao sai daqui. */
     @Test
-    void shouldLeaveDisposedAsATerminalStatus() {
-        assertThat(ItemStatus.DISPOSED.allowedTransitions()).isEmpty();
+    void shouldAllowDisposedOnlyBackToStockOrEvaluation() {
+        assertThat(ItemStatus.DISPOSED.allowedTransitions())
+                .containsExactlyInAnyOrder(ItemStatus.IN_STOCK, ItemStatus.AWAITING_EVALUATION);
     }
 
     @Test

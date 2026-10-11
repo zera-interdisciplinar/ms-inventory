@@ -38,6 +38,8 @@ public class DisposalNode {
 
     private LocalDateTime updatedAt;
 
+    private boolean cancelled;
+
     /** O peso vai na relacao, congelado no momento do descarte. */
     @Relationship(type = "INCLUDES", direction = Relationship.Direction.OUTGOING)
     private Set<DisposedItemRelationship> items = new HashSet<>();
@@ -47,7 +49,7 @@ public class DisposalNode {
 
     public DisposalNode(UUID id, UUID unitId, DestinationType destination, String placeId, String placeName,
                         LocalDate disposedAt, String notes, UUID createdBy, String createdByName,
-                        LocalDateTime createdAt, LocalDateTime updatedAt) {
+                        LocalDateTime createdAt, LocalDateTime updatedAt, boolean cancelled) {
         this.id = id;
         this.unitId = unitId;
         this.destination = destination;
@@ -59,6 +61,7 @@ public class DisposalNode {
         this.createdByName = createdByName;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.cancelled = cancelled;
     }
 
     public UUID getId() {
@@ -111,6 +114,14 @@ public class DisposalNode {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
     }
 
     public Set<DisposedItemRelationship> getItems() {

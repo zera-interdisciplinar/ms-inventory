@@ -13,6 +13,8 @@ public enum EventType {
     MAINTENANCE_FINISHED,
     EVALUATED,
     DISPOSED,
+    /** Cancelamento de um descarte ja registrado; o item volta ao status anterior. */
+    DISPOSAL_CANCELLED,
     REMOVED,
     RESTORED,
     /** Mudanca de status pelo endpoint generico, sem um passo de fluxo dedicado. */
