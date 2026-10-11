@@ -45,21 +45,21 @@ public class DisposalController {
     private final ListDisposals listDisposals;
     private final FindDisposalById findDisposalById;
     private final CorrectDisposalDestination correctDisposalDestination;
-    private final CancelDisposal cancelDisposal;
     private final GetDisposalReport getDisposalReport;
+    private final CancelDisposal cancelDisposal;
 
     public DisposalController(CreateDisposal createDisposal,
                               ListDisposals listDisposals,
                               FindDisposalById findDisposalById,
                               CorrectDisposalDestination correctDisposalDestination,
-                              CancelDisposal cancelDisposal,
-                              GetDisposalReport getDisposalReport) {
+                              GetDisposalReport getDisposalReport,
+                              CancelDisposal cancelDisposal) {
         this.createDisposal = createDisposal;
         this.listDisposals = listDisposals;
         this.findDisposalById = findDisposalById;
         this.correctDisposalDestination = correctDisposalDestination;
-        this.cancelDisposal = cancelDisposal;
         this.getDisposalReport = getDisposalReport;
+        this.cancelDisposal = cancelDisposal;
     }
 
     @PostMapping

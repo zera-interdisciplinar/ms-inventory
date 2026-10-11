@@ -54,8 +54,8 @@ class DisposalControllerTest {
     @MockitoBean private ListDisposals listDisposals;
     @MockitoBean private FindDisposalById findDisposalById;
     @MockitoBean private CorrectDisposalDestination correctDisposalDestination;
-    @MockitoBean private CancelDisposal cancelDisposal;
     @MockitoBean private GetDisposalReport getDisposalReport;
+    @MockitoBean private CancelDisposal cancelDisposal;
 
     private Disposal sample(DestinationType destination) {
         return Disposal.register(UNIT, destination, "places/abc", "Ecoponto Central", LocalDate.now(), null,
@@ -184,20 +184,6 @@ class DisposalControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/disposals/{id}/cancel - deve cancelar o descarte")
-    void shouldCancelDisposal() throws Exception {
-        UUID id = UUID.randomUUID();
-
-        mockMvc.perform(patch("/api/v1/disposals/{id}/cancel", id)
-                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_MANAGER"))
-                        .header("X-Unit-Id", UNIT))
-                .andExpect(status().isNoContent());
-
-        org.mockito.Mockito.verify(cancelDisposal).execute(org.mockito.ArgumentMatchers.eq(UNIT),
-                org.mockito.ArgumentMatchers.eq(id), org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
     @DisplayName("GET /api/v1/disposals/{id}/report - deve devolver o payload da cotacao")
     void shouldReturnTheReportPayload() throws Exception {
         UUID id = UUID.randomUUID();
@@ -218,5 +204,19 @@ class DisposalControllerTest {
                 .andExpect(jsonPath("$.items[0].asset_number").value("100001"))
                 .andExpect(jsonPath("$.items[0].serial_number").value("SN-001"))
                 .andExpect(jsonPath("$.items[0].status").value("DAMAGED"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/disposals/{id}/cancel - deve cancelar o descarte")
+    void shouldCancelDisposal() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/v1/disposals/{id}/cancel", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_MANAGER"))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isNoContent());
+
+        org.mockito.Mockito.verify(cancelDisposal).execute(org.mockito.ArgumentMatchers.eq(UNIT),
+                org.mockito.ArgumentMatchers.eq(id), org.mockito.ArgumentMatchers.any());
     }
 }
