@@ -87,8 +87,9 @@ class AdminCoreItemNotifierTest {
                 .containsEntry("eventId", item.getId().toString())
                 .containsEntry("ruleId", null);
         assertThat((String) payload.getValue().get("description"))
-                .contains(Fixtures.OPERATOR.name())
-                .contains("100001");
+                .contains("100001")
+                .contains("Laptop X1")
+                .contains("aguardando revisao");
     }
 
     @Test
