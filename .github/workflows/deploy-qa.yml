@@ -60,6 +60,23 @@ jobs:
           kubectl apply -f k8s/service-qa.yaml -n qa
           kubectl rollout status deployment/ms-inventory -n qa --timeout=180s
 
+      - name: Carga de dados sintetica (QA)
+        env:
+          QA_SEED_UNIT_ID: ${{ secrets.QA_SEED_UNIT_ID }}
+          QA_SEED_GESTOR_EMAIL: ${{ secrets.QA_SEED_GESTOR_EMAIL }}
+          QA_SEED_GESTOR_PASSWORD: ${{ secrets.QA_SEED_GESTOR_PASSWORD }}
+          QA_SEED_OPERARIO_EMAIL: ${{ secrets.QA_SEED_OPERARIO_EMAIL }}
+          QA_SEED_OPERARIO_PASSWORD: ${{ secrets.QA_SEED_OPERARIO_PASSWORD }}
+          QA_KONG_APIKEY: ${{ secrets.QA_KONG_APIKEY }}
+        run: |
+          python3 scripts/seed_qa_data.py \
+            --base-url http://35.247.253.238/qa/inventory \
+            --admin-base-url http://35.247.253.238/qa/administrative \
+            --unit-id "$QA_SEED_UNIT_ID" \
+            --email "$QA_SEED_GESTOR_EMAIL" --password "$QA_SEED_GESTOR_PASSWORD" \
+            --employee-email "$QA_SEED_OPERARIO_EMAIL" --employee-password "$QA_SEED_OPERARIO_PASSWORD" \
+            --header "apikey: $QA_KONG_APIKEY"
+
       - name: Annotate Deployment
         run: |
           kubectl annotate deployment ms-inventory \

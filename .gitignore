@@ -42,3 +42,4 @@ build/
 CLAUDE.md
 .mcp.json
 .claude
+__pycache__/
