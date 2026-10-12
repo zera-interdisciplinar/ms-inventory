@@ -21,6 +21,7 @@ import com.zera.ms_inventory.core.domain.valueobject.EventType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.repository.EventRepository;
+import com.zera.ms_inventory.core.repository.ItemNotifier;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 
@@ -37,9 +38,10 @@ class SubmitItemImplTest {
     @Mock private ItemRepository itemRepository;
     @Mock private ModelRepository modelRepository;
     @Mock private EventRepository eventRepository;
+    @Mock private ItemNotifier notifier;
 
     private SubmitItemImpl useCase() {
-        return new SubmitItemImpl(itemRepository, modelRepository, eventRepository);
+        return new SubmitItemImpl(itemRepository, modelRepository, eventRepository, notifier);
     }
 
     /** Rascunho completo: tem os obrigatorios do cadastro. A foto e opcional, vai junto de brinde. */
@@ -65,6 +67,7 @@ class SubmitItemImplTest {
         verify(eventRepository).save(event.capture());
         assertThat(event.getValue().getType()).isEqualTo(EventType.SUBMITTED);
         assertThat(event.getValue().getToStatus()).isEqualTo(ItemStatus.PENDING_APPROVAL);
+        verify(notifier).itemPendingApproval(item, Fixtures.OPERATOR);
     }
 
     /** O gestor e quem aprovaria, entao o item dele entra direto no estoque com o modelo aprovado. */
@@ -82,6 +85,7 @@ class SubmitItemImplTest {
         assertThat(result.getStatus()).isEqualTo(ItemStatus.IN_STOCK);
         assertThat(model.getApprovalStatus()).isEqualTo(ApprovalStatus.APPROVED);
         verify(modelRepository).save(model);
+        verify(notifier, never()).itemPendingApproval(any(), any());
     }
 
     @Test
@@ -133,6 +137,7 @@ class SubmitItemImplTest {
         assertThat(item.getPhotoKey()).isNull();
         assertThat(submitted.getStatus()).isEqualTo(ItemStatus.PENDING_APPROVAL);
         verify(eventRepository).save(any());
+        verify(notifier).itemPendingApproval(item, Fixtures.OPERATOR);
     }
 
     @Test

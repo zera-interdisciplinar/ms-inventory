@@ -1,6 +1,8 @@
 package com.zera.ms_inventory.infrastructure.admincore;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,12 +11,14 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.repository.ItemNotifier;
 
 /**
- * Notifica quem cadastrou o item sobre a decisao do gestor. Substitui o adaptador de log da
- * ZERA-245, que existia porque o admin-core ainda nao tinha esses tipos de notificacao.
+ * Notifica quem cadastrou o item sobre a decisao do gestor, e notifica o gestor quando ha um
+ * cadastro novo esperando essa decisao. Substitui o adaptador de log da ZERA-245, que existia
+ * porque o admin-core ainda nao tinha esses tipos de notificacao.
  *
  * <p>Item sem autor registrado nao tem para quem avisar: acontece com o que foi migrado de antes
  * do createdBy, e nesse caso a notificacao e apenas registrada.
@@ -46,6 +50,27 @@ public class AdminCoreItemNotifier implements ItemNotifier {
                 "Seu cadastro do item %s foi reprovado: %s".formatted(describe(item), reason));
     }
 
+    @Override
+    public void itemPendingApproval(Item item, Actor submitter) {
+        if (!properties.isConfigured()) {
+            log.info("[NOTIFY] ITEM_PENDING_APPROVAL item={} submitter={}", item.getId(),
+                    submitter != null ? submitter.userId() : null);
+            return;
+        }
+        Optional<UUID> manager = client.managerOf(item.getUnitId());
+        if (manager.isEmpty()) {
+            log.info("[NOTIFY] ITEM_PENDING_APPROVAL item={} submitter={} sem gestor na unidade",
+                    item.getId(), submitter != null ? submitter.userId() : null);
+            return;
+        }
+        String who = submitter != null && submitter.name() != null ? submitter.name() : "Um colaborador";
+        String description = "%s cadastrou o item %s (modelo %s), aguardando sua aprovacao"
+                .formatted(who, describe(item), describeModel(item));
+        // eventId e o proprio item: junto com a ausencia de regra, e o que identifica a notificacao
+        client.postAlert(AdminCoreClient.alertPayload(manager.get(), item.getUnitId(), null,
+                item.getId(), "ITEM_PENDING_APPROVAL", "LOW", description, LocalDateTime.now()));
+    }
+
     private void notify(Item item, String kind, String severity, String description) {
         if (!properties.isConfigured() || item.getCreatedBy() == null) {
             log.info("[NOTIFY] {} item={} creator={}", kind, item.getId(), item.getCreatedBy());
@@ -54,6 +79,11 @@ public class AdminCoreItemNotifier implements ItemNotifier {
         // eventId e o proprio item: junto com a ausencia de regra, e o que identifica a notificacao
         client.postAlert(AdminCoreClient.alertPayload(item.getCreatedBy(), item.getUnitId(), null,
                 item.getId(), kind, severity, description, LocalDateTime.now()));
+    }
+
+    private static String describeModel(Item item) {
+        Model model = item.getModel();
+        return model != null ? model.getName() : "desconhecido";
     }
 
     private static String describe(Item item) {
