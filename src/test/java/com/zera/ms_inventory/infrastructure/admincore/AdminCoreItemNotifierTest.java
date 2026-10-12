@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AdminCoreItemNotifierTest {
@@ -68,6 +69,41 @@ class AdminCoreItemNotifierTest {
         assertThat(payload.getValue()).containsEntry("kind", "ITEM_REJECTED")
                 .containsEntry("severity", "MEDIUM");
         assertThat((String) payload.getValue().get("description")).contains("Foto ilegivel");
+    }
+
+    @Test
+    void shouldNotifyTheManagerWhenAnItemIsSubmittedForApproval() {
+        Item item = itemDoOperario();
+        when(client.managerOf(Fixtures.UNIT)).thenReturn(java.util.Optional.of(Fixtures.MANAGER.userId()));
+
+        new AdminCoreItemNotifier(client, properties("segredo")).itemPendingApproval(item, Fixtures.OPERATOR);
+
+        ArgumentCaptor<Map<String, Object>> payload = ArgumentCaptor.forClass(Map.class);
+        verify(client).postAlert(payload.capture());
+        assertThat(payload.getValue())
+                .containsEntry("kind", "ITEM_PENDING_APPROVAL")
+                .containsEntry("userId", Fixtures.MANAGER.userId().toString())
+                .containsEntry("eventId", item.getId().toString())
+                .containsEntry("ruleId", null);
+        assertThat((String) payload.getValue().get("description"))
+                .contains(Fixtures.OPERATOR.name())
+                .contains("100001");
+    }
+
+    @Test
+    void shouldOnlyLogWhenTheUnitHasNoManagerToNotify() {
+        when(client.managerOf(Fixtures.UNIT)).thenReturn(java.util.Optional.empty());
+
+        new AdminCoreItemNotifier(client, properties("segredo")).itemPendingApproval(itemDoOperario(), Fixtures.OPERATOR);
+
+        verify(client, never()).postAlert(any());
+    }
+
+    @Test
+    void shouldOnlyLogThePendingApprovalWhenTheIntegrationIsNotConfigured() {
+        new AdminCoreItemNotifier(client, properties("")).itemPendingApproval(itemDoOperario(), Fixtures.OPERATOR);
+
+        verify(client, never()).postAlert(any());
     }
 
     /** Item migrado de antes do createdBy nao tem para quem avisar. */
