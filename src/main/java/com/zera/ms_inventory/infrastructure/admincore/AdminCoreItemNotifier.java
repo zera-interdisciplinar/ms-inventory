@@ -52,14 +52,16 @@ public class AdminCoreItemNotifier implements ItemNotifier {
 
     @Override
     public void itemPendingApproval(Item item, Actor submitter) {
-        if (!properties.isConfigured()) {
+        if (!properties.isConfigured() || item.getCreatedBy() == null) {
             log.info("[NOTIFY] ITEM_PENDING_APPROVAL item={} submitter={}", item.getId(),
                     submitter != null ? submitter.userId() : null);
             return;
         }
-        Optional<UUID> manager = client.managerOf(item.getUnitId());
+        // o gestor DESSE funcionario, nao "um gestor qualquer da unidade" -- unidade pode ter mais
+        // de um MANAGER, e managerOf(unitId) pegaria o primeiro que a listagem devolvesse
+        Optional<UUID> manager = client.managerOfEmployee(item.getCreatedBy());
         if (manager.isEmpty()) {
-            log.info("[NOTIFY] ITEM_PENDING_APPROVAL item={} submitter={} sem gestor na unidade",
+            log.info("[NOTIFY] ITEM_PENDING_APPROVAL item={} submitter={} sem gestor atribuido",
                     item.getId(), submitter != null ? submitter.userId() : null);
             return;
         }

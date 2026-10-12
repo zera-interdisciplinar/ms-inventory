@@ -74,7 +74,8 @@ class AdminCoreItemNotifierTest {
     @Test
     void shouldNotifyTheManagerWhenAnItemIsSubmittedForApproval() {
         Item item = itemDoOperario();
-        when(client.managerOf(Fixtures.UNIT)).thenReturn(java.util.Optional.of(Fixtures.MANAGER.userId()));
+        when(client.managerOfEmployee(Fixtures.OPERATOR.userId()))
+                .thenReturn(java.util.Optional.of(Fixtures.MANAGER.userId()));
 
         new AdminCoreItemNotifier(client, properties("segredo")).itemPendingApproval(item, Fixtures.OPERATOR);
 
@@ -91,10 +92,20 @@ class AdminCoreItemNotifierTest {
     }
 
     @Test
-    void shouldOnlyLogWhenTheUnitHasNoManagerToNotify() {
-        when(client.managerOf(Fixtures.UNIT)).thenReturn(java.util.Optional.empty());
+    void shouldOnlyLogWhenTheEmployeeHasNoManagerAssigned() {
+        when(client.managerOfEmployee(Fixtures.OPERATOR.userId())).thenReturn(java.util.Optional.empty());
 
         new AdminCoreItemNotifier(client, properties("segredo")).itemPendingApproval(itemDoOperario(), Fixtures.OPERATOR);
+
+        verify(client, never()).postAlert(any());
+    }
+
+    /** Item migrado de antes do createdBy nao tem para quem avisar. */
+    @Test
+    void shouldOnlyLogThePendingApprovalWhenTheItemHasNoCreator() {
+        Item semAutor = Fixtures.item(UUID.randomUUID(), Fixtures.UNIT);
+
+        new AdminCoreItemNotifier(client, properties("segredo")).itemPendingApproval(semAutor, Fixtures.OPERATOR);
 
         verify(client, never()).postAlert(any());
     }
