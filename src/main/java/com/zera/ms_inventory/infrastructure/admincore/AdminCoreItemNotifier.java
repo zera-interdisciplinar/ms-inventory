@@ -65,9 +65,8 @@ public class AdminCoreItemNotifier implements ItemNotifier {
                     item.getId(), submitter != null ? submitter.userId() : null);
             return;
         }
-        String who = submitter != null && submitter.name() != null ? submitter.name() : "Um colaborador";
-        String description = "%s cadastrou o item %s (modelo %s), aguardando sua aprovacao"
-                .formatted(who, describe(item), describeModel(item));
+        String description = "Item %s (modelo %s) aguardando revisao"
+                .formatted(describe(item), describeModel(item));
         // eventId e o proprio item: junto com a ausencia de regra, e o que identifica a notificacao
         client.postAlert(AdminCoreClient.alertPayload(manager.get(), item.getUnitId(), null,
                 item.getId(), "ITEM_PENDING_APPROVAL", "LOW", description, LocalDateTime.now()));
