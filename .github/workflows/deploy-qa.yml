@@ -60,6 +60,41 @@ jobs:
           kubectl apply -f k8s/service-qa.yaml -n qa
           kubectl rollout status deployment/ms-inventory -n qa --timeout=180s
 
+      - name: Carga de dados sintetica (QA)
+        env:
+          QA_SEED_UNIT_ID: ${{ secrets.QA_SEED_UNIT_ID }}
+          QA_SEED_GESTOR_EMAIL: ${{ secrets.QA_SEED_GESTOR_EMAIL }}
+          QA_SEED_GESTOR_PASSWORD: ${{ secrets.QA_SEED_GESTOR_PASSWORD }}
+          QA_SEED_OPERARIO_EMAIL: ${{ secrets.QA_SEED_OPERARIO_EMAIL }}
+          QA_SEED_OPERARIO_PASSWORD: ${{ secrets.QA_SEED_OPERARIO_PASSWORD }}
+        run: |
+          # 35.247.253.238 (Kong) nao e alcancavel do runner -- deu timeout na primeira tentativa.
+          # E IP interno da VPC, roteavel so de dentro do cluster. Em vez de Kong, port-forward
+          # direto pros Services (ClusterIP) do proprio namespace qa, que o runner ja acessa via
+          # kubectl (credencial do get-gke-credentials acima). Sem Kong no meio, o header apikey
+          # tambem deixa de ser necessario -- quem valida daqui pra frente e so o JWT, na app.
+          kubectl port-forward svc/ms-administrative-core 18080:80 -n qa &
+          PF_ADMIN=$!
+          kubectl port-forward svc/ms-inventory 18081:80 -n qa &
+          PF_INVENTORY=$!
+
+          cleanup() { kill "$PF_ADMIN" "$PF_INVENTORY" 2>/dev/null || true; }
+          trap cleanup EXIT
+
+          for porta in 18080 18081; do
+            for tentativa in $(seq 1 15); do
+              curl -sf "http://localhost:$porta/actuator/health/liveness" > /dev/null && break
+              sleep 1
+            done
+          done
+
+          python3 scripts/seed_qa_data.py \
+            --base-url http://localhost:18081 \
+            --admin-base-url http://localhost:18080 \
+            --unit-id "$QA_SEED_UNIT_ID" \
+            --email "$QA_SEED_GESTOR_EMAIL" --password "$QA_SEED_GESTOR_PASSWORD" \
+            --employee-email "$QA_SEED_OPERARIO_EMAIL" --employee-password "$QA_SEED_OPERARIO_PASSWORD"
+
       - name: Annotate Deployment
         run: |
           kubectl annotate deployment ms-inventory \

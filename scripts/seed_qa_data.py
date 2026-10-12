@@ -12,6 +12,17 @@ destino e as regras padrao da unidade (semeadas pelo proprio app na primeira lei
 GET /rules) — o suficiente para preencher as telas da Secao 4 do Figma sem depender de dados
 manuais.
 
+Depois da carga geral, roda uma carga extra especifica da empresa do operario de QA
+(--employee-email/--employee-password, ou --employee-token): mais itens cadastrados por ele (alem
+do unico item por estado da carga geral) e dois descartes extras com destino DONATION e LANDFILL
+(a carga geral so cria um, de RECYCLING) — para a tela dele ter volume e os indicadores de
+descarte terem mais de um destino para diferenciar.
+
+IDEMPOTENTE: a carga roda a cada deploy em QA (ver .github/workflows/deploy-qa.yml). Antes de
+criar qualquer coisa, o script confere se a categoria "Notebooks" ja existe na unidade; se existir,
+sai sem fazer nada. Sem essa guarda, cada deploy duplicaria categorias e modelos, e a API rejeitaria
+a segunda tentativa com 409 (nome unico por unidade — ver V014__category_model_name_unique_per_unit).
+
 Uso:
     python3 scripts/seed_qa_data.py --base-url http://localhost:8080 --unit-id <uuid> \\
         --token <jwt-de-gestor>
@@ -99,6 +110,12 @@ def login(admin_base_url, email, password, extra_headers):
     return body["accessToken"]
 
 
+def already_seeded(client):
+    """True se a carga geral ja rodou nesta unidade (categoria 'Notebooks' ja existe)."""
+    categorias = client.get("/api/v1/categories")
+    return any(c["name"] == "Notebooks" for c in categorias)
+
+
 def create_category(client, name, description):
     return client.post("/api/v1/categories", {"name": name, "description": description})["id"]
 
@@ -167,6 +184,65 @@ def upload_fake_photo(client, item_id):
         raise
 
 
+def seed_operario_extra(employee, manager, model_ids):
+    """Carga extra, especifica da empresa do operario de QA.
+
+    A carga geral cobre cada estado do item uma unica vez, para testar a maquina de estados. Isso
+    deixa a empresa do operario com so 1 item por tela — pouco para validar listagem/paginacao do
+    dia a dia dele. Esta funcao adiciona mais itens cadastrados por ele (sem passar por todos os
+    estados) e dois descartes com destino diferente do unico que a carga geral cria (RECYCLING),
+    para o indicador de descarte ter DONATION e LANDFILL tambem.
+    """
+    dell_5420, think_t14, macbook_air, monitor_27, teclado, monitor_24 = model_ids
+    codigo = 950000
+
+    def barcode():
+        nonlocal codigo
+        codigo += 1
+        return f"78955555{codigo}"
+
+    print("Itens extras da empresa do operario (nao passam por todos os estados)...")
+    drafts = [
+        create_draft_item(employee, dell_5420, barcode(), "Notebook reserva do operario"),
+        create_draft_item(employee, teclado, barcode(), "Teclado extra da sala"),
+        create_draft_item(employee, monitor_24, barcode(), "Monitor sobressalente"),
+        create_draft_item(employee, think_t14, barcode(), "Notebook emprestado para visitante"),
+    ]
+
+    pendentes = []
+    for model_id, nome in [(macbook_air, "MacBook para aprovacao do gestor"),
+                            (monitor_27, "Monitor novo para aprovacao")]:
+        item_id = create_draft_item(employee, model_id, barcode(), nome)
+        upload_fake_photo(employee, item_id)
+        employee.post(f"/api/v1/items/{item_id}/submit")
+        pendentes.append(item_id)
+
+    print("Descartes extras, com destino diferente do da carga geral (RECYCLING)...")
+    doacao = create_draft_item(employee, monitor_24, barcode(), "Monitor para doacao")
+    upload_fake_photo(employee, doacao)
+    employee.post(f"/api/v1/items/{doacao}/submit")
+    manager.post(f"/api/v1/items/{doacao}/approve")
+    employee.post("/api/v1/disposals", {
+        "destination": "DONATION",
+        "placeName": "ONG Parceira QA",
+        "disposedAt": date.today().isoformat(),
+        "itemIds": [doacao],
+    })
+
+    aterro = create_draft_item(employee, teclado, barcode(), "Teclado sem conserto possivel")
+    upload_fake_photo(employee, aterro)
+    employee.post(f"/api/v1/items/{aterro}/submit")
+    manager.post(f"/api/v1/items/{aterro}/approve")
+    employee.post("/api/v1/disposals", {
+        "destination": "LANDFILL",
+        "placeName": "Aterro Municipal QA",
+        "disposedAt": date.today().isoformat(),
+        "itemIds": [aterro],
+    })
+
+    print(f"  itens extras: drafts={drafts}, pendentes={pendentes}, doacao={doacao}, aterro={aterro}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                       formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -215,6 +291,10 @@ def main():
         employee = manager
 
     client = manager
+
+    if already_seeded(client):
+        print("seed_qa_data: unidade ja tem a categoria 'Notebooks' -- carga ja rodou, pulando.")
+        return
 
     print("Categorias e modelos...")
     notebooks = create_category(client, "Notebooks", "Notebooks e laptops corporativos")
@@ -296,6 +376,9 @@ def main():
 
     print("Regras da unidade (semeadas automaticamente na primeira leitura)...")
     client.get("/api/v1/rules")
+
+    seed_operario_extra(employee, manager,
+                         (dell_5420, think_t14, macbook_air, monitor_27, teclado, monitor_24))
 
     print("Carga concluida.")
     print(f"  categorias: Notebooks={notebooks}, Perifericos={perifericos}")
