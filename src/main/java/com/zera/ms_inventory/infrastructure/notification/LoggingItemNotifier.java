@@ -29,4 +29,10 @@ public class LoggingItemNotifier implements ItemNotifier {
         log.info("Item {} rejected by {} ({}); notify creator {}", item.getId(),
                 reviewer != null ? reviewer.userId() : null, reason, item.getCreatedBy());
     }
+
+    @Override
+    public void itemPendingApproval(Item item, Actor submitter) {
+        log.info("Item {} submitted by {}; notify the unit manager", item.getId(),
+                submitter != null ? submitter.userId() : null);
+    }
 }

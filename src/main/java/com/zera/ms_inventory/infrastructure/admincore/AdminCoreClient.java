@@ -29,6 +29,7 @@ public class AdminCoreClient {
     private final ServiceTokenProvider tokens;
     private final AdminCoreProperties properties;
     private final Map<UUID, CachedRecipient> recipients = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<UUID, CachedRecipient> employeeManagers = new java.util.concurrent.ConcurrentHashMap<>();
 
     private record CachedRecipient(UUID userId, Instant expiresAt) {}
 
@@ -74,6 +75,39 @@ public class AdminCoreClient {
         } catch (RuntimeException failure) {
             invalidateOnUnauthorized(failure);
             log.warn("Could not resolve the manager of unit {}: {}", unitId, failure.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Gestor de um funcionario especifico (o {@code managerId} real dele), nao "um gestor
+     * qualquer da unidade" -- usar {@link #managerOf(UUID)} buscaria o primeiro MANAGER que a
+     * listagem devolvesse, o que manda o alerta pro gestor errado quando a unidade tem mais de um.
+     * Mesmo cache curto de {@link #managerOf(UUID)}, chave separada pra nao colidir.
+     */
+    public Optional<UUID> managerOfEmployee(UUID employeeId) {
+        CachedRecipient cached = employeeManagers.get(employeeId);
+        if (cached != null && Instant.now().isBefore(cached.expiresAt())) {
+            return Optional.of(cached.userId());
+        }
+        try {
+            Map<String, Object> employee = restClient.get()
+                    .uri("/api/v1/users/{id}", employeeId)
+                    .header("Authorization", "Bearer " + tokens.token())
+                    .retrieve()
+                    .body(Map.class);
+            Object managerId = employee == null ? null : employee.get("managerId");
+            if (managerId == null) {
+                log.warn("Employee {} has no manager assigned; alert has no recipient", employeeId);
+                return Optional.empty();
+            }
+            UUID userId = UUID.fromString((String) managerId);
+            employeeManagers.put(employeeId, new CachedRecipient(userId,
+                    Instant.now().plus(properties.recipientCacheTtl())));
+            return Optional.of(userId);
+        } catch (RuntimeException failure) {
+            invalidateOnUnauthorized(failure);
+            log.warn("Could not resolve the manager of employee {}: {}", employeeId, failure.getMessage());
             return Optional.empty();
         }
     }
