@@ -26,7 +26,9 @@ import com.zera.ms_inventory.core.usecase.disposal.CancelDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CorrectDisposalDestination;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposal;
 import com.zera.ms_inventory.core.usecase.disposal.CreateDisposalCommand;
+import com.zera.ms_inventory.core.usecase.disposal.DisposalReport;
 import com.zera.ms_inventory.core.usecase.disposal.FindDisposalById;
+import com.zera.ms_inventory.core.usecase.disposal.GetDisposalReport;
 import com.zera.ms_inventory.core.usecase.disposal.ListDisposals;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
 
@@ -52,6 +54,7 @@ class DisposalControllerTest {
     @MockitoBean private ListDisposals listDisposals;
     @MockitoBean private FindDisposalById findDisposalById;
     @MockitoBean private CorrectDisposalDestination correctDisposalDestination;
+    @MockitoBean private GetDisposalReport getDisposalReport;
     @MockitoBean private CancelDisposal cancelDisposal;
 
     private Disposal sample(DestinationType destination) {
@@ -178,6 +181,29 @@ class DisposalControllerTest {
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.destination").value("RECYCLING"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/disposals/{id}/report - deve devolver o payload da cotacao")
+    void shouldReturnTheReportPayload() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(getDisposalReport.execute(UNIT, id)).thenReturn(new DisposalReport(
+                "", "2026-03-15", "", "", "Gustavo Operario",
+                List.of(new DisposalReport.Line(
+                        "Item 1 - Notebook", "Electronics", "Acme", "Laptop X1", "1",
+                        "100001", "SN-001", UNIT.toString(), "DAMAGED", "tela riscada"))));
+
+        mockMvc.perform(get("/api/v1/disposals/{id}/report", id).header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quote_number").value(""))
+                .andExpect(jsonPath("$.issued_at").value("2026-03-15"))
+                .andExpect(jsonPath("$.proposal_deadline").value(""))
+                .andExpect(jsonPath("$.requester").value(""))
+                .andExpect(jsonPath("$.owner").value("Gustavo Operario"))
+                .andExpect(jsonPath("$.items[0].equipment_type").value("Electronics"))
+                .andExpect(jsonPath("$.items[0].asset_number").value("100001"))
+                .andExpect(jsonPath("$.items[0].serial_number").value("SN-001"))
+                .andExpect(jsonPath("$.items[0].status").value("DAMAGED"));
     }
 
     @Test
