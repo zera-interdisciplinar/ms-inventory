@@ -129,6 +129,44 @@ class AdminCoreIntegrationTest {
         assertThat(client.managerOf(Fixtures.UNIT)).isEmpty();
     }
 
+    @Test
+    void shouldResolveTheEmployeesManagerAndCacheIt() {
+        UUID employeeId = UUID.randomUUID();
+        UUID managerId = UUID.randomUUID();
+        expectToken();
+        server.expect(requestTo("http://admin-core/api/v1/users/" + employeeId))
+                .andExpect(method(GET))
+                .andExpect(header("Authorization", "Bearer token-de-servico"))
+                .andRespond(withSuccess("{\"userId\":\"" + employeeId + "\",\"managerId\":\"" + managerId + "\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.managerOfEmployee(employeeId)).contains(managerId);
+        // segunda chamada sai do cache; sem ele o servidor simulado reclamaria
+        assertThat(client.managerOfEmployee(employeeId)).contains(managerId);
+        server.verify();
+    }
+
+    @Test
+    void shouldReturnEmptyWhenTheEmployeeHasNoManagerAssigned() {
+        UUID employeeId = UUID.randomUUID();
+        expectToken();
+        server.expect(requestTo("http://admin-core/api/v1/users/" + employeeId))
+                .andRespond(withSuccess("{\"userId\":\"" + employeeId + "\",\"managerId\":null}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.managerOfEmployee(employeeId)).isEmpty();
+    }
+
+    @Test
+    void shouldReturnEmptyWhenTheEmployeeLookupFails() {
+        UUID employeeId = UUID.randomUUID();
+        expectToken();
+        server.expect(requestTo("http://admin-core/api/v1/users/" + employeeId))
+                .andRespond(withServerError());
+
+        assertThat(client.managerOfEmployee(employeeId)).isEmpty();
+    }
+
     // ---- envio do alerta ----
 
     private RuleAlert alerta() {

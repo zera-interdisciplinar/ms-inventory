@@ -15,6 +15,7 @@ import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.EventType;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.repository.EventRepository;
+import com.zera.ms_inventory.core.repository.ItemNotifier;
 import com.zera.ms_inventory.core.repository.ItemRepository;
 import com.zera.ms_inventory.core.repository.ModelRepository;
 
@@ -24,12 +25,14 @@ public class SubmitItemImpl implements SubmitItem {
     private final ItemRepository itemRepository;
     private final ModelRepository modelRepository;
     private final EventRepository eventRepository;
+    private final ItemNotifier notifier;
 
     public SubmitItemImpl(ItemRepository itemRepository, ModelRepository modelRepository,
-                          EventRepository eventRepository) {
+                          EventRepository eventRepository, ItemNotifier notifier) {
         this.itemRepository = itemRepository;
         this.modelRepository = modelRepository;
         this.eventRepository = eventRepository;
+        this.notifier = notifier;
     }
 
     /**
@@ -56,6 +59,10 @@ public class SubmitItemImpl implements SubmitItem {
         }
         Item saved = itemRepository.save(item);
         eventRepository.save(event);
+
+        if (!manager) {
+            notifier.itemPendingApproval(saved, actor);
+        }
         return saved;
     }
 
