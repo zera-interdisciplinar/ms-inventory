@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.zera.ms_inventory.core.domain.entity.Event;
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.EventType;
@@ -30,6 +31,13 @@ public class UpdateItemStatusImpl implements UpdateItemStatus {
     public Item execute(UUID unitId, UUID id, ItemStatus status, Actor actor) {
         Item item = itemRepository.findById(unitId, id)
                 .orElseThrow(() -> new ItemNotFoundException(id));
+        // emprestimo e devolucao tem evento proprio (LOAN_*); pelo generico o historico perderia o passo
+        if (status == ItemStatus.IN_USE) {
+            throw new InvalidItemTransitionException(id, item.getStatus(), status, "use POST /items/{id}/lend");
+        }
+        if (item.getStatus() == ItemStatus.IN_USE && status == ItemStatus.IN_STOCK) {
+            throw new InvalidItemTransitionException(id, item.getStatus(), status, "use POST /items/{id}/return");
+        }
         Event event = item.transitionTo(status, EventType.STATUS_CHANGED, null, actor);
         Item saved = itemRepository.save(item);
         eventRepository.save(event);

@@ -35,10 +35,12 @@ import com.zera.ms_inventory.core.usecase.item.EvaluateItem;
 import com.zera.ms_inventory.core.usecase.item.FinishMaintenance;
 import com.zera.ms_inventory.core.usecase.item.FindItemByBarcode;
 import com.zera.ms_inventory.core.usecase.item.FindItemById;
+import com.zera.ms_inventory.core.usecase.item.LendItem;
 import com.zera.ms_inventory.core.usecase.item.ListItemEvents;
 import com.zera.ms_inventory.core.usecase.item.ListItems;
 import com.zera.ms_inventory.core.usecase.item.RejectItem;
 import com.zera.ms_inventory.core.usecase.item.RestoreItem;
+import com.zera.ms_inventory.core.usecase.item.ReturnItem;
 import com.zera.ms_inventory.core.usecase.item.StartMaintenance;
 import com.zera.ms_inventory.core.usecase.item.SubmitItem;
 import com.zera.ms_inventory.core.usecase.item.UpdateItem;
@@ -75,6 +77,8 @@ public class ItemController {
     private final StartMaintenance startMaintenance;
     private final FinishMaintenance finishMaintenance;
     private final EvaluateItem evaluateItem;
+    private final LendItem lendItem;
+    private final ReturnItem returnItem;
     private final RestoreItem restoreItem;
     private final UploadItemPhoto uploadItemPhoto;
     private final UpdateItemStatus updateItemStatus;
@@ -93,6 +97,8 @@ public class ItemController {
                            StartMaintenance startMaintenance,
                            FinishMaintenance finishMaintenance,
                            EvaluateItem evaluateItem,
+                           LendItem lendItem,
+                           ReturnItem returnItem,
                            RestoreItem restoreItem,
                            UploadItemPhoto uploadItemPhoto,
                            UpdateItemStatus updateItemStatus,
@@ -112,6 +118,8 @@ public class ItemController {
         this.startMaintenance = startMaintenance;
         this.finishMaintenance = finishMaintenance;
         this.evaluateItem = evaluateItem;
+        this.lendItem = lendItem;
+        this.returnItem = returnItem;
         this.restoreItem = restoreItem;
         this.uploadItemPhoto = uploadItemPhoto;
         this.updateItemStatus = updateItemStatus;
@@ -223,6 +231,19 @@ public class ItemController {
                 request.hasDamages(), request.damages(), actor)));
     }
 
+    /** Empresta o item; so o estado muda, sem registro de quem pegou (v2). */
+    @PostMapping("/{id}/lend")
+    public ResponseEntity<ItemResponse> lend(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                             Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(lendItem.execute(unitId, id, actor)));
+    }
+
+    @PostMapping("/{id}/return")
+    public ResponseEntity<ItemResponse> giveBack(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
+                                                 Actor actor) {
+        return ResponseEntity.ok(itemResponses.from(returnItem.execute(unitId, id, actor)));
+    }
+
     /** Desfaz a remocao logica, devolvendo o item ao estado de onde ele saiu. */
     @PostMapping("/{id}/restore")
     @PreAuthorize(Authz.MANAGER)
@@ -231,7 +252,8 @@ public class ItemController {
         return ResponseEntity.ok(itemResponses.from(restoreItem.execute(unitId, id, actor)));
     }
 
-    // transicao fora da maquina de estados responde 409; os passos do fluxo ganham endpoint proprio nas ZERA-244 a 247
+    // transicao fora da maquina de estados responde 409; os passos do fluxo ganham endpoint proprio nas ZERA-244 a 247,
+    // e o emprestimo (IN_USE) so entra por lend/return para o historico ter LOAN_STARTED/LOAN_RETURNED
     @PatchMapping("/{id}/status")
     public ResponseEntity<ItemResponse> updateStatus(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id,
                                                      @RequestBody @Valid UpdateItemStatusRequest request, Actor actor) {

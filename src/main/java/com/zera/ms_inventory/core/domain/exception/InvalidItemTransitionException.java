@@ -11,4 +11,10 @@ public class InvalidItemTransitionException extends RuntimeException {
         super("Item " + itemId + " cannot go from " + from + " to " + to
                 + "; allowed: " + from.allowedTransitions());
     }
+
+    /** Transicao valida na maquina, mas reservada a um endpoint proprio. */
+    public InvalidItemTransitionException(UUID itemId, ItemStatus from, ItemStatus to, String hint) {
+        super("Item " + itemId + " cannot go from " + from + " to " + to + " through the generic status update; "
+                + hint);
+    }
 }

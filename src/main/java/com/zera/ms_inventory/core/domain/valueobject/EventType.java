@@ -12,6 +12,8 @@ public enum EventType {
     MAINTENANCE_STARTED,
     MAINTENANCE_FINISHED,
     EVALUATED,
+    LOAN_STARTED,
+    LOAN_RETURNED,
     DISPOSED,
     /** Cancelamento de um descarte ja registrado; o item volta ao status anterior. */
     DISPOSAL_CANCELLED,

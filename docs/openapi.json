@@ -530,6 +530,7 @@
               "PENDING_APPROVAL",
               "REJECTED",
               "IN_STOCK",
+              "IN_USE",
               "IN_MAINTENANCE",
               "AWAITING_EVALUATION",
               "DISPOSED",
@@ -558,6 +559,7 @@
               "PENDING_APPROVAL",
               "REJECTED",
               "IN_STOCK",
+              "IN_USE",
               "IN_MAINTENANCE",
               "AWAITING_EVALUATION",
               "DISPOSED",
@@ -574,6 +576,8 @@
               "MAINTENANCE_STARTED",
               "MAINTENANCE_FINISHED",
               "EVALUATED",
+              "LOAN_STARTED",
+              "LOAN_RETURNED",
               "DISPOSED",
               "DISPOSAL_CANCELLED",
               "REMOVED",
@@ -725,6 +729,7 @@
               "PENDING_APPROVAL",
               "REJECTED",
               "IN_STOCK",
+              "IN_USE",
               "IN_MAINTENANCE",
               "AWAITING_EVALUATION",
               "DISPOSED",
@@ -1335,6 +1340,7 @@
               "PENDING_APPROVAL",
               "REJECTED",
               "IN_STOCK",
+              "IN_USE",
               "IN_MAINTENANCE",
               "AWAITING_EVALUATION",
               "DISPOSED",
@@ -2284,6 +2290,7 @@
                 "PENDING_APPROVAL",
                 "REJECTED",
                 "IN_STOCK",
+                "IN_USE",
                 "IN_MAINTENANCE",
                 "AWAITING_EVALUATION",
                 "DISPOSED",
@@ -2743,6 +2750,54 @@
         ]
       }
     },
+    "/api/v1/items/{id}/lend": {
+      "post": {
+        "operationId": "lend",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
     "/api/v1/items/{id}/maintenance/finish": {
       "post": {
         "operationId": "finishMaintenance",
@@ -2968,6 +3023,54 @@
     "/api/v1/items/{id}/restore": {
       "post": {
         "operationId": "restore",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Actor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "item-controller"
+        ]
+      }
+    },
+    "/api/v1/items/{id}/return": {
+      "post": {
+        "operationId": "giveBack",
         "parameters": [
           {
             "in": "header",
