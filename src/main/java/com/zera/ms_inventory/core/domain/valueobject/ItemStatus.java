@@ -17,6 +17,11 @@ public enum ItemStatus {
     /** Reprovado pelo gestor; pode ser corrigido e reenviado. */
     REJECTED,
     IN_STOCK,
+    /**
+     * Item emprestado. Na v1 e so o estado: nao ha registro de quem pegou nem de prazo, porque o
+     * sistema ainda nao tem um papel para quem retira o item (fica para a v2).
+     */
+    IN_USE,
     IN_MAINTENANCE,
     /** Manutencao concluida, esperando alguem avaliar em que condicao o item voltou. */
     AWAITING_EVALUATION,
@@ -28,11 +33,14 @@ public enum ItemStatus {
             DRAFT, Set.of(PENDING_APPROVAL, IN_STOCK, REMOVED),
             PENDING_APPROVAL, Set.of(IN_STOCK, REJECTED, REMOVED),
             REJECTED, Set.of(PENDING_APPROVAL, IN_STOCK, REMOVED),
-            IN_STOCK, Set.of(IN_MAINTENANCE, DISPOSED, REMOVED),
+            IN_STOCK, Set.of(IN_USE, IN_MAINTENANCE, DISPOSED, REMOVED),
+            // descarte so sai do estoque: o item volta antes, e a devolucao fica no historico
+            IN_USE, Set.of(IN_STOCK, IN_MAINTENANCE, REMOVED),
             IN_MAINTENANCE, Set.of(AWAITING_EVALUATION, REMOVED),
             AWAITING_EVALUATION, Set.of(IN_STOCK, DISPOSED, REMOVED),
             DISPOSED, Set.of(IN_STOCK, AWAITING_EVALUATION),
-            REMOVED, Set.of(DRAFT, PENDING_APPROVAL, REJECTED, IN_STOCK, IN_MAINTENANCE, AWAITING_EVALUATION));
+            REMOVED, Set.of(DRAFT, PENDING_APPROVAL, REJECTED, IN_STOCK, IN_USE, IN_MAINTENANCE,
+                    AWAITING_EVALUATION));
 
     public boolean canTransitionTo(ItemStatus target) {
         return target != null && TRANSITIONS.get(this).contains(target);

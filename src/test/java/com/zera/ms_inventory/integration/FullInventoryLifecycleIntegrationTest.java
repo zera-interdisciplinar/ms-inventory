@@ -223,6 +223,25 @@ class FullInventoryLifecycleIntegrationTest {
 
     @Test
     @Order(10)
+    void operarioEmprestaOItem() throws Exception {
+        mockMvc.perform(asRole(post("/api/v1/items/{id}/lend", itemId), "EMPLOYEE", EMPLOYEE_ID)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_USE"));
+    }
+
+    /** Devolvido direto ao estoque; so ai o descarte do passo seguinte e permitido. */
+    @Test
+    @Order(11)
+    void operarioDevolveOItemAoEstoque() throws Exception {
+        mockMvc.perform(asRole(post("/api/v1/items/{id}/return", itemId), "EMPLOYEE", EMPLOYEE_ID)
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_STOCK"));
+    }
+
+    @Test
+    @Order(12)
     void operarioRegistraODescarteParaReciclagem() throws Exception {
         String body = mockMvc.perform(asRole(post("/api/v1/disposals"), "EMPLOYEE", EMPLOYEE_ID)
                         .header("X-Unit-Id", UNIT)
@@ -242,7 +261,7 @@ class FullInventoryLifecycleIntegrationTest {
     }
 
     @Test
-    @Order(11)
+    @Order(13)
     void oDescarteApareceNosIndicadoresDaUnidade() throws Exception {
         String today = java.time.LocalDate.now().toString();
         mockMvc.perform(asRole(get("/api/v1/dashboard/indicators"), "MANAGER", MANAGER_ID)
@@ -259,7 +278,7 @@ class FullInventoryLifecycleIntegrationTest {
      * descartado, nao tem mais nada ativo, e o descarte recente aparece na janela.
      */
     @Test
-    @Order(12)
+    @Order(14)
     void oPainelInicialReflete_o_estadoFinalDaUnidade() throws Exception {
         mockMvc.perform(asRole(get("/api/v1/dashboard/home"), "MANAGER", MANAGER_ID)
                         .header("X-Unit-Id", UNIT))

@@ -16,7 +16,8 @@ class ItemStatusTest {
             "DRAFT, PENDING_APPROVAL", "DRAFT, IN_STOCK", "DRAFT, REMOVED",
             "PENDING_APPROVAL, IN_STOCK", "PENDING_APPROVAL, REJECTED",
             "REJECTED, PENDING_APPROVAL", "REJECTED, IN_STOCK",
-            "IN_STOCK, IN_MAINTENANCE", "IN_STOCK, DISPOSED", "IN_STOCK, REMOVED",
+            "IN_STOCK, IN_MAINTENANCE", "IN_STOCK, DISPOSED", "IN_STOCK, REMOVED", "IN_STOCK, IN_USE",
+            "IN_USE, IN_STOCK", "IN_USE, IN_MAINTENANCE", "IN_USE, REMOVED",
             "IN_MAINTENANCE, AWAITING_EVALUATION",
             "AWAITING_EVALUATION, IN_STOCK", "AWAITING_EVALUATION, DISPOSED",
             "DISPOSED, IN_STOCK", "DISPOSED, AWAITING_EVALUATION",
@@ -33,7 +34,9 @@ class ItemStatusTest {
             "IN_MAINTENANCE, IN_STOCK", "IN_MAINTENANCE, DISPOSED",
             "AWAITING_EVALUATION, IN_MAINTENANCE",
             "DISPOSED, REMOVED", "DISPOSED, IN_MAINTENANCE",
-            "REMOVED, DISPOSED"})
+            "REMOVED, DISPOSED",
+            "IN_USE, DISPOSED", "IN_USE, AWAITING_EVALUATION", "IN_USE, PENDING_APPROVAL",
+            "IN_MAINTENANCE, IN_USE", "AWAITING_EVALUATION, IN_USE", "DISPOSED, IN_USE"})
     void shouldRejectTransitionsOutsideTheFlow(ItemStatus from, ItemStatus to) {
         assertThat(from.canTransitionTo(to)).isFalse();
     }
@@ -65,7 +68,7 @@ class ItemStatusTest {
     void shouldRestoreFromRemovedToEveryActiveStatus() {
         assertThat(ItemStatus.REMOVED.allowedTransitions())
                 .allMatch(ItemStatus::isActive)
-                .hasSize(6);
+                .hasSize(7);
     }
 
     @Test

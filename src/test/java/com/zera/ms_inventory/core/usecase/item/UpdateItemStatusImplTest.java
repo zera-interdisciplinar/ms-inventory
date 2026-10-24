@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
+import com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException;
 import com.zera.ms_inventory.core.domain.exception.ItemNotFoundException;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.domain.entity.Event;
@@ -18,6 +19,8 @@ import com.zera.ms_inventory.core.repository.ItemRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,5 +60,46 @@ class UpdateItemStatusImplTest {
         UpdateItemStatusImpl useCase = new UpdateItemStatusImpl(itemRepository, eventRepository);
 
         assertThrows(ItemNotFoundException.class, () -> useCase.execute(Fixtures.OTHER_UNIT, id, ItemStatus.IN_MAINTENANCE, Fixtures.MANAGER));
+    }
+
+    @Test
+    void shouldRejectLendingThroughTheGenericUpdate() {
+        UUID id = UUID.randomUUID();
+        Item item = Fixtures.item(id, Fixtures.UNIT);
+        when(itemRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(item));
+
+        UpdateItemStatusImpl useCase = new UpdateItemStatusImpl(itemRepository, eventRepository);
+
+        assertThrows(InvalidItemTransitionException.class,
+                () -> useCase.execute(Fixtures.UNIT, id, ItemStatus.IN_USE, Fixtures.MANAGER));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectReturningThroughTheGenericUpdate() {
+        UUID id = UUID.randomUUID();
+        Item item = Fixtures.item(id, Fixtures.UNIT);
+        item.restoreStatus(ItemStatus.IN_USE);
+        when(itemRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(item));
+
+        UpdateItemStatusImpl useCase = new UpdateItemStatusImpl(itemRepository, eventRepository);
+
+        assertThrows(InvalidItemTransitionException.class,
+                () -> useCase.execute(Fixtures.UNIT, id, ItemStatus.IN_STOCK, Fixtures.MANAGER));
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldStillAllowSendingALoanedItemToMaintenanceThroughTheGenericUpdate() {
+        UUID id = UUID.randomUUID();
+        Item item = Fixtures.item(id, Fixtures.UNIT);
+        item.restoreStatus(ItemStatus.IN_USE);
+        when(itemRepository.findById(Fixtures.UNIT, id)).thenReturn(Optional.of(item));
+        when(itemRepository.save(item)).thenReturn(item);
+
+        UpdateItemStatusImpl useCase = new UpdateItemStatusImpl(itemRepository, eventRepository);
+
+        assertEquals(ItemStatus.IN_MAINTENANCE,
+                useCase.execute(Fixtures.UNIT, id, ItemStatus.IN_MAINTENANCE, Fixtures.MANAGER).getStatus());
     }
 }
