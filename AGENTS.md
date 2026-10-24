@@ -96,6 +96,10 @@ próprio (**não é Flyway**). Falha de migração impede o boot; migração já
   consome; já foi trocado por enum uma vez e teve de voltar.
 - `displayCode` (6 dígitos, único por unidade) é diferente do `barcode`.
 - Modelo é obrigatório; aprovar o item aprova o modelo criado junto.
+- `IN_USE` (item emprestado) é **só o estado**: sem registro de quem pegou nem prazo, porque não há
+  papel de usuário não técnico no sistema. Isso fica para a v2 — não adicione borrower/`Loan` por
+  conta própria. Entra e sai só por `lend`/`return` (eventos `LOAN_*`); o `PATCH /status` genérico
+  recusa `IN_USE` e a devolução. Devolve direto ao `IN_STOCK`, sem avaliação, e só o estoque vai a `DISPOSED`.
 - Descarte **não tem agendamento** — o app só registra destino, local e data.
 - Integrações (`ADMIN_CORE_*`, `PREDICTION_*`, `PHOTOS_BUCKET`) **nascem desligadas** e degradam com
   graça. Mantenha esse padrão: ligar uma integração nunca deve ser pré-requisito para o serviço subir.

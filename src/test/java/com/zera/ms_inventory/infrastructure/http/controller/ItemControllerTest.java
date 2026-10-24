@@ -89,6 +89,8 @@ class ItemControllerTest {
     @MockitoBean private com.zera.ms_inventory.core.usecase.item.FinishMaintenance finishMaintenance;
     @MockitoBean private com.zera.ms_inventory.core.usecase.item.EvaluateItem evaluateItem;
     @MockitoBean private com.zera.ms_inventory.core.usecase.item.RestoreItem restoreItem;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.LendItem lendItem;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.item.ReturnItem returnItem;
 
     private Item sampleItem(UUID id) {
         return new Item(id, new Barcode("123456"), ItemStatus.IN_STOCK, UNIT,
@@ -198,6 +200,35 @@ class ItemControllerTest {
         mockMvc.perform(get("/api/v1/items/{id}", id)
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/lend - operario empresta o item sem corpo")
+    void shouldLendItemWithoutBody() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(lendItem.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.any())).thenReturn(sampleItem(id));
+
+        mockMvc.perform(post("/api/v1/items/{id}/lend", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/items/{id}/return - devolve o item e responde 409 fora do fluxo")
+    void shouldReturnItemAndReportConflictOutsideTheFlow() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(returnItem.execute(org.mockito.ArgumentMatchers.eq(UNIT), org.mockito.ArgumentMatchers.eq(id),
+                org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new com.zera.ms_inventory.core.domain.exception.InvalidItemTransitionException(
+                        id, com.zera.ms_inventory.core.domain.valueobject.ItemStatus.IN_STOCK,
+                        com.zera.ms_inventory.core.domain.valueobject.ItemStatus.IN_STOCK));
+
+        mockMvc.perform(post("/api/v1/items/{id}/return", id)
+                        .principal(new TestingAuthenticationToken(OPERATOR_ID.toString(), null, "ROLE_EMPLOYEE"))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isConflict());
     }
 
     @Test

@@ -38,6 +38,8 @@ DRAFT ──submit──> PENDING_APPROVAL ──approve──> IN_STOCK ──d
                                                    ↓
                                          AWAITING_EVALUATION ──evaluate──> IN_STOCK (ou DISPOSED)
 
+IN_STOCK ──lend──> IN_USE ──return──> IN_STOCK   (IN_USE também pode ir para IN_MAINTENANCE)
+
 Qualquer estado ──remove──> REMOVED ──restore──> estado de origem
 ```
 
@@ -177,7 +179,7 @@ operações administrativas, **operário** (`EMPLOYEE`) para o dia a dia do inve
 | Categorias | `POST/GET /categories`, `GET/PATCH/DELETE /categories/{id}` | Criar/editar: gestor. Ler: qualquer autenticado |
 | Modelos | `POST/GET /models`, `GET /models/{id}`, `GET /models/{id}/items`, `PATCH /models/{id}/{name,manufacturer,warranty-months,expected-lifespan-months,materials}`, `DELETE /models/{id}` | Criar/editar: operário ou gestor. Excluir: gestor |
 | Materiais | `GET /materials`, `GET /materials/{code}` | Qualquer autenticado (catálogo somente leitura) |
-| Itens | `POST/GET /items`, `GET /items/{id}`, `GET /items/by-barcode/{barcode}`, `PATCH /items/{id}`, `POST /items/{id}/photo`, `GET /items/{id}/events`, `POST /items/{id}/{submit,approve,reject,maintenance/start,maintenance/finish,evaluate,restore}`, `PATCH /items/{id}/{status,unit}`, `DELETE /items/{id}` | Cadastro/manutenção: operário ou gestor. Aprovar/reprovar/restaurar/transferir unidade: gestor |
+| Itens | `POST/GET /items`, `GET /items/{id}`, `GET /items/by-barcode/{barcode}`, `PATCH /items/{id}`, `POST /items/{id}/photo`, `GET /items/{id}/events`, `POST /items/{id}/{submit,approve,reject,maintenance/start,maintenance/finish,evaluate,lend,return,restore}`, `PATCH /items/{id}/{status,unit}`, `DELETE /items/{id}` | Cadastro/manutenção: operário ou gestor. Aprovar/reprovar/restaurar/transferir unidade: gestor |
 | Descartes | `POST/GET /disposals`, `GET /disposals/{id}`, `PATCH /disposals/{id}` (corrigir destino) | Registrar/corrigir: operário ou gestor. Ler: qualquer autenticado |
 | Regras | `POST/GET /rules`, `GET/PATCH/DELETE /rules/{id}` (nome, limite, alvo, ativar/desativar) | Gestor (leitura de `GET` também aceita qualquer autenticado) |
 | Configuração da unidade | `GET/PATCH /unit-settings` | Ler: qualquer autenticado. Editar: gestor |

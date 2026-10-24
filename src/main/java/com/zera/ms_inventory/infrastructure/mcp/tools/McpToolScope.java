@@ -9,7 +9,7 @@ final class McpToolScope {
 
     /** Os estados do item no modelo v1; itens removidos nao aparecem em nenhuma ferramenta. */
     static final String STATUS_VALUES =
-            "DRAFT, PENDING_APPROVAL, REJECTED, IN_STOCK, IN_MAINTENANCE, AWAITING_EVALUATION ou DISPOSED";
+            "DRAFT, PENDING_APPROVAL, REJECTED, IN_STOCK, IN_USE, IN_MAINTENANCE, AWAITING_EVALUATION ou DISPOSED";
 
     /** Condicao fisica, independente do estado; um item IN_STOCK pode estar SEMI_DAMAGED. */
     static final String CONDITION_VALUES = "NEW, USED, SEMI_DAMAGED ou DAMAGED";
