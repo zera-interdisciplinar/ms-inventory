@@ -27,7 +27,7 @@ public final class DefaultRules {
                 rule(unitId, "Muito tempo em estoque", RuleKind.TIME_IN_STOCK_LIMIT, 12, RuleLimitUnit.MONTHS),
                 rule(unitId, "Item parado", RuleKind.STALE_ITEM, 6, RuleLimitUnit.MONTHS),
                 rule(unitId, "Reciclavel indo para o aterro", RuleKind.RECYCLABLE_TO_LANDFILL, null, null),
-                rule(unitId, "Quebra prevista", RuleKind.PREDICTED_FAILURE, 15, RuleLimitUnit.DAYS));
+                rule(unitId, "Quebra prevista", RuleKind.PREDICTED_FAILURE, 75, RuleLimitUnit.DAYS));
     }
 
     private static Rule rule(UUID unitId, String name, RuleKind kind, Integer limitValue,
