@@ -16,7 +16,9 @@ import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.domain.valueobject.Pagination;
 import com.zera.ms_inventory.core.usecase.dashboard.GetDisposalIndicators;
 import com.zera.ms_inventory.core.usecase.dashboard.GetHomeSummary;
+import com.zera.ms_inventory.core.usecase.dashboard.GetItemsByCategory;
 import com.zera.ms_inventory.core.usecase.dashboard.GetWorkCenter;
+import com.zera.ms_inventory.infrastructure.http.response.CategoryBreakdownResponse;
 import com.zera.ms_inventory.infrastructure.http.response.DisposalIndicatorsResponse;
 import com.zera.ms_inventory.infrastructure.http.response.HomeSummaryResponse;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
@@ -30,15 +32,18 @@ public class DashboardController {
     private final GetDisposalIndicators getDisposalIndicators;
     private final GetHomeSummary getHomeSummary;
     private final GetWorkCenter getWorkCenter;
+    private final GetItemsByCategory getItemsByCategory;
     private final ItemResponses itemResponses;
 
     public DashboardController(GetDisposalIndicators getDisposalIndicators,
                                GetHomeSummary getHomeSummary,
                                GetWorkCenter getWorkCenter,
+                               GetItemsByCategory getItemsByCategory,
                                ItemResponses itemResponses) {
         this.getDisposalIndicators = getDisposalIndicators;
         this.getHomeSummary = getHomeSummary;
         this.getWorkCenter = getWorkCenter;
+        this.getItemsByCategory = getItemsByCategory;
         this.itemResponses = itemResponses;
     }
 
@@ -58,6 +63,15 @@ public class DashboardController {
     @GetMapping("/work-center")
     public ResponseEntity<WorkCenterResponse> workCenter(@RequestHeader("X-Unit-Id") UUID unitId, Actor actor) {
         return ResponseEntity.ok(WorkCenterResponse.from(getWorkCenter.execute(unitId, actor)));
+    }
+
+    /**
+     * Secao do dashboard mobile: quantos itens ativos ha em cada categoria. Nao pagina porque o
+     * volume e o de categorias da unidade, nao o de itens.
+     */
+    @GetMapping("/by-category")
+    public ResponseEntity<CategoryBreakdownResponse> byCategory(@RequestHeader("X-Unit-Id") UUID unitId) {
+        return ResponseEntity.ok(CategoryBreakdownResponse.from(getItemsByCategory.execute(unitId)));
     }
 
     /** Sem datas, assume os ultimos 12 meses. */

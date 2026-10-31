@@ -12,6 +12,7 @@ import org.neo4j.driver.types.TypeSystem;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Repository;
 
+import com.zera.ms_inventory.core.domain.valueobject.CategoryItemCount;
 import com.zera.ms_inventory.core.domain.valueobject.InventoryCounts;
 import com.zera.ms_inventory.core.domain.valueobject.ItemStatus;
 import com.zera.ms_inventory.core.repository.DashboardRepository;
@@ -43,6 +44,18 @@ public class DashboardRepositoryImpl implements DashboardRepository {
             MATCH (d:Disposal {unitId: $unitId})
             WHERE d.disposedAt >= $since
             RETURN count(d) AS total
+            """;
+
+    /**
+     * OPTIONAL MATCH porque item DRAFT pode ainda nao ter modelo. count(i) com categoria nula
+     * agrupa esses itens numa linha so, em vez de exclui-los do grafico.
+     */
+    private static final String BY_CATEGORY = """
+            MATCH (i:Item {unitId: $unitId})
+            WHERE i.status IN $activeStatuses
+            OPTIONAL MATCH (i)-[:IS_MODEL]->(:Model)-[:BELONGS_TO]->(c:Category)
+            RETURN c.id AS categoryId, c.name AS name, count(i) AS itemCount
+            ORDER BY itemCount DESC, name ASC
             """;
 
     private static final String LAST_REJECTIONS = """
@@ -114,5 +127,26 @@ public class DashboardRepositoryImpl implements DashboardRepository {
                 .forEach(row -> reasons.put(UUID.fromString((String) row.get("itemId")),
                         (String) row.get("reason")));
         return Map.copyOf(reasons);
+    }
+
+    @Override
+    public List<CategoryItemCount> countActiveItemsByCategory(UUID unitId) {
+        return neo4jClient.query(BY_CATEGORY)
+                .bindAll(Map.of("unitId", unitId.toString(), "activeStatuses", ACTIVE_STATUSES))
+                .fetch()
+                .all()
+                .stream()
+                .map(DashboardRepositoryImpl::toCategoryCount)
+                .toList();
+    }
+
+    static CategoryItemCount toCategoryCount(Map<String, Object> row) {
+        Object id = row.get("categoryId");
+        Object name = row.get("name");
+        Object count = row.get("itemCount");
+        return new CategoryItemCount(
+                id == null ? null : UUID.fromString(id.toString()),
+                name == null ? null : name.toString(),
+                count == null ? 0L : ((Number) count).longValue());
     }
 }

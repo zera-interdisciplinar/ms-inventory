@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.zera.ms_inventory.Fixtures;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.entity.UnitInventorySettings;
+import com.zera.ms_inventory.core.domain.valueobject.CategoryBreakdown;
+import com.zera.ms_inventory.core.domain.valueobject.CategoryItemCount;
 import com.zera.ms_inventory.core.domain.valueobject.HomeSummary;
 import com.zera.ms_inventory.core.domain.valueobject.InventoryCounts;
 import com.zera.ms_inventory.core.domain.valueobject.ItemCondition;
@@ -199,6 +201,22 @@ class DashboardUseCasesTest {
 
         assertThat(central.rejectionReasons()).isEmpty();
         assertThat(central.drafts()).isEmpty();
+    }
+
+    @Test
+    void shouldComputePercentOverActiveItemsIncludingUncategorized() {
+        UUID notebooks = UUID.randomUUID();
+        when(dashboardRepository.countActiveItemsByCategory(Fixtures.UNIT)).thenReturn(List.of(
+                new CategoryItemCount(notebooks, "Notebooks", 3),
+                new CategoryItemCount(null, null, 1)));
+
+        CategoryBreakdown breakdown = useCase().execute(Fixtures.UNIT);
+
+        assertThat(breakdown.totalItems()).isEqualTo(4);
+        assertThat(breakdown.categories()).hasSize(2);
+        assertThat(breakdown.categories().get(0).percent()).isEqualTo(75.0);
+        assertThat(breakdown.categories().get(1).categoryId()).isNull();
+        assertThat(breakdown.categories().get(1).percent()).isEqualTo(25.0);
     }
 
     @Test

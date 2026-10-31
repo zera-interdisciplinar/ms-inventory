@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.zera.ms_inventory.core.domain.entity.Item;
 import com.zera.ms_inventory.core.domain.entity.UnitInventorySettings;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
+import com.zera.ms_inventory.core.domain.valueobject.CategoryBreakdown;
 import com.zera.ms_inventory.core.domain.valueobject.HomeSummary;
 import com.zera.ms_inventory.core.domain.valueobject.InventoryCounts;
 import com.zera.ms_inventory.core.domain.valueobject.ItemFilter;
@@ -22,7 +23,7 @@ import com.zera.ms_inventory.core.repository.ItemRepository;
 import com.zera.ms_inventory.core.usecase.unit.GetUnitSettings;
 
 @Service
-public class DashboardUseCases implements GetHomeSummary, GetWorkCenter {
+public class DashboardUseCases implements GetHomeSummary, GetWorkCenter, GetItemsByCategory {
 
     /** Janela das variacoes e da contagem de descartes do painel. */
     static final int WINDOW_DAYS = 30;
@@ -84,5 +85,10 @@ public class DashboardUseCases implements GetHomeSummary, GetWorkCenter {
         return new WorkCenterSummary(drafts, rejected,
                 dashboardRepository.lastRejectionReasons(unitId, rejected.stream().map(Item::getId).toList()),
                 damaged, counts.inMaintenance(), counts.awaitingEvaluation());
+    }
+
+    @Override
+    public CategoryBreakdown execute(UUID unitId) {
+        return CategoryBreakdown.of(dashboardRepository.countActiveItemsByCategory(unitId));
     }
 }
