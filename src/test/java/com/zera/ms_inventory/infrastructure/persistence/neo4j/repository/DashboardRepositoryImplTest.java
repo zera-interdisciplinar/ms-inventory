@@ -16,6 +16,7 @@ import org.neo4j.driver.Values;
 import org.springframework.data.neo4j.core.Neo4jClient;
 
 import com.zera.ms_inventory.Fixtures;
+import com.zera.ms_inventory.core.domain.valueobject.CategoryItemCount;
 import com.zera.ms_inventory.core.domain.valueobject.InventoryCounts;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -136,5 +137,36 @@ class DashboardRepositoryImplTest {
     void shouldNotQueryWithoutRejectedItems() {
         assertThat(repository().lastRejectionReasons(Fixtures.UNIT, List.of())).isEmpty();
         org.mockito.Mockito.verifyNoInteractions(neo4jClient);
+    }
+
+    @Test
+    void shouldMapACategoryRowIncludingTheUncategorized() {
+        UUID notebooks = UUID.randomUUID();
+        CategoryItemCount comCategoria = DashboardRepositoryImpl.toCategoryCount(
+                Map.of("categoryId", notebooks.toString(), "name", "Notebooks", "itemCount", 3L));
+        CategoryItemCount semCategoria = DashboardRepositoryImpl.toCategoryCount(
+                Map.of("itemCount", 1));
+
+        assertThat(comCategoria.categoryId()).isEqualTo(notebooks);
+        assertThat(comCategoria.name()).isEqualTo("Notebooks");
+        assertThat(comCategoria.itemCount()).isEqualTo(3);
+        assertThat(semCategoria.categoryId()).isNull();
+        assertThat(semCategoria.name()).isNull();
+        assertThat(semCategoria.itemCount()).isEqualTo(1);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldReturnTheActiveItemsGroupedByCategory() {
+        UUID notebooks = UUID.randomUUID();
+        Neo4jClient.RecordFetchSpec<Map<String, Object>> fetch = mock(Neo4jClient.RecordFetchSpec.class);
+        when(neo4jClient.query(anyString())).thenReturn(spec);
+        when(spec.bindAll(anyMap())).thenReturn(spec);
+        when(spec.fetch()).thenReturn(fetch);
+        when(fetch.all()).thenReturn(List.of(
+                Map.of("categoryId", notebooks.toString(), "name", "Notebooks", "itemCount", 3L)));
+
+        assertThat(repository().countActiveItemsByCategory(Fixtures.UNIT))
+                .containsExactly(new CategoryItemCount(notebooks, "Notebooks", 3));
     }
 }

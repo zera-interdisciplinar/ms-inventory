@@ -46,6 +46,7 @@ class UnitSettingsAndDashboardControllerTest {
     @MockitoBean private GetDisposalIndicators getDisposalIndicators;
     @MockitoBean private com.zera.ms_inventory.core.usecase.dashboard.GetHomeSummary getHomeSummary;
     @MockitoBean private com.zera.ms_inventory.core.usecase.dashboard.GetWorkCenter getWorkCenter;
+    @MockitoBean private com.zera.ms_inventory.core.usecase.dashboard.GetItemsByCategory getItemsByCategory;
     @MockitoBean private com.zera.ms_inventory.core.repository.PhotoStorage photoStorage;
 
     @Test
@@ -178,6 +179,27 @@ class UnitSettingsAndDashboardControllerTest {
                 .andExpect(jsonPath("$.rejected[0].rejectionReason").value("Foto ilegivel"))
                 .andExpect(jsonPath("$.inMaintenance").value(2))
                 .andExpect(jsonPath("$.awaitingEvaluation").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/dashboard/by-category - devolve contagem e percentual por categoria")
+    void shouldReturnItemsByCategory() throws Exception {
+        UUID notebooks = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        when(getItemsByCategory.execute(UNIT)).thenReturn(
+                com.zera.ms_inventory.core.domain.valueobject.CategoryBreakdown.of(List.of(
+                        new com.zera.ms_inventory.core.domain.valueobject.CategoryItemCount(
+                                notebooks, "Notebooks", 3),
+                        new com.zera.ms_inventory.core.domain.valueobject.CategoryItemCount(
+                                null, null, 1))));
+
+        mockMvc.perform(get("/api/v1/dashboard/by-category").header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalItems").value(4))
+                .andExpect(jsonPath("$.categories[0].name").value("Notebooks"))
+                .andExpect(jsonPath("$.categories[0].itemCount").value(3))
+                .andExpect(jsonPath("$.categories[0].percent").value(75.0))
+                .andExpect(jsonPath("$.categories[1].categoryId").value((Object) null))
+                .andExpect(jsonPath("$.categories[1].itemCount").value(1));
     }
 
     @Test
