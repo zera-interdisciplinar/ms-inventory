@@ -58,7 +58,7 @@ public class AdminCoreItemNotifier implements ItemNotifier {
             return;
         }
         // o gestor DESSE funcionario, nao "um gestor qualquer da unidade" -- unidade pode ter mais
-        // de um MANAGER, e managerOf(unitId) pegaria o primeiro que a listagem devolvesse
+        // de um MANAGER, e managersOf(unitId) avisaria todos eles de algo que so um deve decidir
         Optional<UUID> manager = client.managerOfEmployee(item.getCreatedBy());
         if (manager.isEmpty()) {
             log.info("[NOTIFY] ITEM_PENDING_APPROVAL item={} submitter={} sem gestor atribuido",
