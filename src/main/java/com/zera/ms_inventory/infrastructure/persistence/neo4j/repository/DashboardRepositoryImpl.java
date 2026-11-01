@@ -71,6 +71,15 @@ public class DashboardRepositoryImpl implements DashboardRepository {
             .map(ItemStatus::name)
             .toList();
 
+    /**
+     * Estoque do painel: rascunho e cadastro incompleto de um operario e ainda nao ocupa lugar
+     * nenhum, entao nao entra no total, na variacao nem na ocupacao. Lista a parte porque o grafico
+     * por categoria usa {@link #ACTIVE_STATUSES} e mantem os rascunhos de proposito.
+     */
+    private static final List<String> STOCK_STATUSES = ACTIVE_STATUSES.stream()
+            .filter(status -> !ItemStatus.DRAFT.name().equals(status))
+            .toList();
+
     private final Neo4jClient neo4jClient;
 
     public DashboardRepositoryImpl(Neo4jClient neo4jClient) {
@@ -81,7 +90,7 @@ public class DashboardRepositoryImpl implements DashboardRepository {
     public InventoryCounts countsOf(UUID unitId, LocalDateTime since) {
         return neo4jClient.query(COUNTS)
                 .bindAll(Map.of("unitId", unitId.toString(), "since", since,
-                        "activeStatuses", ACTIVE_STATUSES))
+                        "activeStatuses", STOCK_STATUSES))
                 .fetchAs(InventoryCounts.class)
                 .mappedBy(DashboardRepositoryImpl::toCounts)
                 .one()
