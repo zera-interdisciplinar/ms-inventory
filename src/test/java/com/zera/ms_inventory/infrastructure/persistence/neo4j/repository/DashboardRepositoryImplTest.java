@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.neo4j.driver.Record;
@@ -24,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -87,6 +89,21 @@ class DashboardRepositoryImplTest {
         stubFetchAs(InventoryCounts.class, Optional.of(esperado));
 
         assertThat(repository().countsOf(Fixtures.UNIT, LocalDateTime.now())).isSameAs(esperado);
+    }
+
+    /** Rascunho nao e estoque: se voltar para os estados ativos, o total do painel infla. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldLeaveDraftsOutOfTheStockStatuses() {
+        stubFetchAs(InventoryCounts.class, Optional.empty());
+
+        repository().countsOf(Fixtures.UNIT, LocalDateTime.now());
+
+        ArgumentCaptor<Map<String, Object>> parametros = ArgumentCaptor.forClass(Map.class);
+        verify(spec).bindAll(parametros.capture());
+        assertThat((List<String>) parametros.getValue().get("activeStatuses"))
+                .doesNotContain("DRAFT", "DISPOSED", "REMOVED")
+                .contains("PENDING_APPROVAL", "IN_STOCK");
     }
 
     /** Unidade sem nenhum item nao devolve linha; o painel abre zerado em vez de quebrar. */
