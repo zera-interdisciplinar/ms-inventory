@@ -96,7 +96,7 @@ class AdminCoreIntegrationTest {
     // ---- destinatario ----
 
     @Test
-    void shouldResolveTheUnitManagerAndCacheIt() {
+    void shouldResolveTheUnitManagersAndCacheThem() {
         UUID managerId = UUID.randomUUID();
         expectToken();
         server.expect(requestTo(org.hamcrest.Matchers.containsString("/api/v1/users")))
@@ -105,19 +105,35 @@ class AdminCoreIntegrationTest {
                 .andRespond(withSuccess("[{\"userId\":\"" + managerId + "\",\"name\":\"Kevin\"}]",
                         MediaType.APPLICATION_JSON));
 
-        assertThat(client.managerOf(Fixtures.UNIT)).contains(managerId);
+        assertThat(client.managersOf(Fixtures.UNIT)).containsExactly(managerId);
         // segunda chamada sai do cache; sem ele o servidor simulado reclamaria
-        assertThat(client.managerOf(Fixtures.UNIT)).contains(managerId);
+        assertThat(client.managersOf(Fixtures.UNIT)).containsExactly(managerId);
         server.verify();
     }
 
     @Test
-    void shouldReturnEmptyWhenTheUnitHasNoManager() {
+    void shouldResolveEveryActiveManagerOfTheUnit() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        expectToken();
+        server.expect(requestTo(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("role=MANAGER"),
+                        org.hamcrest.Matchers.containsString("status=ACTIVE"),
+                        org.hamcrest.Matchers.containsString("unitId=" + Fixtures.UNIT))))
+                .andRespond(withSuccess("[{\"userId\":\"" + first + "\"},{\"userId\":\"" + second + "\"}]",
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.managersOf(Fixtures.UNIT)).containsExactly(first, second);
+        server.verify();
+    }
+
+    @Test
+    void shouldReturnEmptyWhenTheUnitHasNoManagers() {
         expectToken();
         server.expect(requestTo(org.hamcrest.Matchers.containsString("/api/v1/users")))
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
-        assertThat(client.managerOf(Fixtures.UNIT)).isEmpty();
+        assertThat(client.managersOf(Fixtures.UNIT)).isEmpty();
     }
 
     @Test
@@ -126,7 +142,7 @@ class AdminCoreIntegrationTest {
         server.expect(requestTo(org.hamcrest.Matchers.containsString("/api/v1/users")))
                 .andRespond(withServerError());
 
-        assertThat(client.managerOf(Fixtures.UNIT)).isEmpty();
+        assertThat(client.managersOf(Fixtures.UNIT)).isEmpty();
     }
 
     @Test
@@ -194,6 +210,53 @@ class AdminCoreIntegrationTest {
                 .andRespond(withStatus(org.springframework.http.HttpStatus.ACCEPTED));
 
         assertThat(new AdminCoreAlertGateway(client, properties).send(alerta)).isTrue();
+        server.verify();
+    }
+
+    /** O alerta e da unidade: cada gestor recebe o seu, com o mesmo par (regra, evento). */
+    @Test
+    void shouldPostTheAlertToEveryManagerOfTheUnit() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        RuleAlert alerta = alerta();
+        expectToken();
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/api/v1/users")))
+                .andRespond(withSuccess("[{\"userId\":\"" + first + "\"},{\"userId\":\"" + second + "\"}]",
+                        MediaType.APPLICATION_JSON));
+        for (UUID manager : new UUID[] {first, second}) {
+            server.expect(requestTo("http://admin-core/api/v1/notifications/alerts"))
+                    .andExpect(method(POST))
+                    .andExpect(jsonPath("$.userId").value(manager.toString()))
+                    .andExpect(jsonPath("$.ruleId").value(alerta.ruleId().toString()))
+                    .andExpect(jsonPath("$.eventId").value(alerta.dedupSubject().toString()))
+                    .andRespond(withStatus(org.springframework.http.HttpStatus.ACCEPTED));
+        }
+
+        assertThat(new AdminCoreAlertGateway(client, properties).send(alerta)).isTrue();
+        server.verify();
+    }
+
+    /**
+     * Um gestor sem entrega nao pode deixar o seguinte sem alerta; o resultado e falso para o
+     * dispatcher tentar de novo na proxima execucao.
+     */
+    @Test
+    void shouldStillReachTheOtherManagersWhenOneDeliveryFails() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        expectToken();
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/api/v1/users")))
+                .andRespond(withSuccess("[{\"userId\":\"" + first + "\"},{\"userId\":\"" + second + "\"}]",
+                        MediaType.APPLICATION_JSON));
+        server.expect(org.springframework.test.web.client.ExpectedCount.times(2),
+                        requestTo("http://admin-core/api/v1/notifications/alerts"))
+                .andExpect(jsonPath("$.userId").value(first.toString()))
+                .andRespond(withServerError());
+        server.expect(requestTo("http://admin-core/api/v1/notifications/alerts"))
+                .andExpect(jsonPath("$.userId").value(second.toString()))
+                .andRespond(withStatus(org.springframework.http.HttpStatus.ACCEPTED));
+
+        assertThat(new AdminCoreAlertGateway(client, properties).send(alerta())).isFalse();
         server.verify();
     }
 

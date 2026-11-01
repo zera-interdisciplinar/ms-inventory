@@ -149,7 +149,7 @@ código. Referência completa em `src/main/resources/application.properties`.
 | Variável | Liga |
 |---|---|
 | `PHOTOS_BUCKET` | Upload e exibição da foto do item (bucket GCS). Sem ela o upload responde 503; o ciclo de vida do item não é afetado |
-| `ADMIN_CORE_ENABLED=true` + `ADMIN_CORE_BASE_URL` + `MS_INVENTORY_CLIENT_SECRET` | Envio de alertas ao gestor da unidade via ms-administrative-core (autenticação serviço-a-serviço) |
+| `ADMIN_CORE_ENABLED=true` + `ADMIN_CORE_BASE_URL` + `MS_INVENTORY_CLIENT_SECRET` | Envio de alertas a todos os gestores da unidade via ms-administrative-core (autenticação serviço-a-serviço) |
 | `PREDICTION_ENABLED=true` + `PREDICTION_BASE_URL` (+ `PREDICTION_API_KEY` quando atrás de um gateway) | Atualização diária de `predictedFailureDate` via o sistema preditivo de quebra (`POST /predict-batch`) |
 | `LOG_STRUCTURED_FORMAT=ecs` | Logs em JSON (formato ECS) em vez de texto simples |
 
