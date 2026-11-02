@@ -20,4 +20,18 @@ public enum RuleKind {
     public boolean acceptsPercent() {
         return this == STOCK_QUANTITY_LIMIT;
     }
+
+    /** Rotulo curto em portugues: o nome do enum nao deve ir para a notificacao. */
+    public String displayName() {
+        return switch (this) {
+            case WARRANTY_EXPIRATION -> "Garantia vencendo";
+            case LIFESPAN_EXPIRATION -> "Vida util no fim";
+            case USAGE_INTENSITY_LIMIT -> "Uso acima do limite";
+            case STOCK_QUANTITY_LIMIT -> "Estoque cheio";
+            case TIME_IN_STOCK_LIMIT -> "Muito tempo em estoque";
+            case STALE_ITEM -> "Item parado";
+            case RECYCLABLE_TO_LANDFILL -> "Reciclavel no aterro";
+            case PREDICTED_FAILURE -> "Quebra prevista";
+        };
+    }
 }

@@ -38,6 +38,8 @@ class AdminCoreItemNotifierTest {
         Item item = Fixtures.item(UUID.randomUUID(), Fixtures.UNIT);
         item.assignDisplayCode("100001");
         item.registerBy(Fixtures.OPERATOR);
+        item.restoreRegistration("Notebook", null, null, java.util.Set.of(), null,
+                Fixtures.OPERATOR.userId(), Fixtures.OPERATOR.name());
         return item;
     }
 
@@ -54,7 +56,23 @@ class AdminCoreItemNotifierTest {
                 .containsEntry("userId", Fixtures.OPERATOR.userId().toString())
                 .containsEntry("eventId", item.getId().toString())
                 .containsEntry("ruleId", null);
-        assertThat((String) payload.getValue().get("description")).contains("100001").contains("aprovado");
+        assertThat((String) payload.getValue().get("description")).contains("Notebook").contains("aprovado")
+                .doesNotContain(item.getId().toString());
+        assertThat(payload.getValue().get("deepLink")).isEqualTo("zera://item?id=" + item.getId());
+    }
+
+    @Test
+    void shouldFallBackToTheDisplayCodeWhenTheItemHasNoName() {
+        Item item = Fixtures.item(UUID.randomUUID(), Fixtures.UNIT);
+        item.assignDisplayCode("100001");
+        item.registerBy(Fixtures.OPERATOR);
+
+        new AdminCoreItemNotifier(client, properties("segredo")).itemApproved(item, Fixtures.MANAGER);
+
+        ArgumentCaptor<Map<String, Object>> payload = ArgumentCaptor.forClass(Map.class);
+        verify(client).postAlert(payload.capture());
+        assertThat((String) payload.getValue().get("description")).contains("100001").contains("aprovado")
+                .doesNotContain(item.getId().toString());
     }
 
     @Test
@@ -86,10 +104,10 @@ class AdminCoreItemNotifierTest {
                 .containsEntry("userId", Fixtures.MANAGER.userId().toString())
                 .containsEntry("eventId", item.getId().toString())
                 .containsEntry("ruleId", null);
-        assertThat((String) payload.getValue().get("description"))
-                .contains("100001")
-                .contains("Laptop X1")
-                .contains("aguardando revisao");
+        assertThat((String) payload.getValue().get("description")).contains("Notebook")
+                .contains("aguardando revisao")
+                .doesNotContain(item.getId().toString());
+        assertThat(payload.getValue().get("deepLink")).isEqualTo("zera://item?id=" + item.getId());
     }
 
     @Test

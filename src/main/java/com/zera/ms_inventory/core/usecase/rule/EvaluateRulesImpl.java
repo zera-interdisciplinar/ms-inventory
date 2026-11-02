@@ -92,8 +92,8 @@ public class EvaluateRulesImpl implements EvaluateRules {
                 || ocupacao.getAsDouble() < rule.getLimitValue()) {
             return java.util.Optional.empty();
         }
-        String descricao = "Ocupacao do estoque em %.0f%%, acima do limite de %d%% (%d itens de %d)"
-                .formatted(ocupacao.getAsDouble(), rule.getLimitValue(), itens, settings.getStockCapacity());
+        String descricao = "Ocupacao em %.0f%% (%d de %d)"
+                .formatted(ocupacao.getAsDouble(), itens, settings.getStockCapacity());
         return java.util.Optional.of(alert(rule, AlertSubject.unit(), descricao));
     }
 
@@ -103,11 +103,7 @@ public class EvaluateRulesImpl implements EvaluateRules {
     }
 
     private static String describe(Rule rule, AlertSubject subject) {
-        String limite = rule.getLimitValue() == null ? ""
-                : " (limite: %d %s)".formatted(rule.getLimitValue(),
-                        rule.getLimitUnit() == null ? "" : rule.getLimitUnit().name().toLowerCase());
-        return "%s: %s%s".formatted(rule.getName() != null ? rule.getName() : rule.getKind().name(),
-                subject.describe(), limite);
+        return "%s: %s".formatted(rule.getKind().displayName(), subject.describe());
     }
 
     /** Gravidade fixa por tipo: o que ameaca perda de valor ou seguranca entra como alta. */

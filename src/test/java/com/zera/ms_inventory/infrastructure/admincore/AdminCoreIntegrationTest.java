@@ -207,6 +207,8 @@ class AdminCoreIntegrationTest {
                 .andExpect(jsonPath("$.userId").value(managerId.toString()))
                 .andExpect(jsonPath("$.ruleId").value(alerta.ruleId().toString()))
                 .andExpect(jsonPath("$.eventId").value(alerta.dedupSubject().toString()))
+                .andExpect(jsonPath("$.deepLink").value("zera://item?id=" + alerta.subject().itemId()))
+                .andExpect(jsonPath("$.description").value("garantia vencendo"))
                 .andRespond(withStatus(org.springframework.http.HttpStatus.ACCEPTED));
 
         assertThat(new AdminCoreAlertGateway(client, properties).send(alerta)).isTrue();
@@ -231,6 +233,26 @@ class AdminCoreIntegrationTest {
                     .andExpect(jsonPath("$.eventId").value(alerta.dedupSubject().toString()))
                     .andRespond(withStatus(org.springframework.http.HttpStatus.ACCEPTED));
         }
+
+        assertThat(new AdminCoreAlertGateway(client, properties).send(alerta)).isTrue();
+        server.verify();
+    }
+
+    /** Alerta da unidade nao aponta para um item; deepLink no payload abriria tela vazia. */
+    @Test
+    void shouldOmitDeepLinkWhenTheAlertIsUnitWide() {
+        UUID managerId = UUID.randomUUID();
+        RuleAlert alerta = new RuleAlert(Fixtures.UNIT, UUID.randomUUID(), RuleKind.STOCK_QUANTITY_LIMIT,
+                AlertSubject.unit(), AlertSeverity.HIGH, "Ocupacao em 95% (19 de 20)",
+                LocalDateTime.of(2026, 9, 26, 3, 0));
+        expectToken();
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/api/v1/users")))
+                .andRespond(withSuccess("[{\"userId\":\"" + managerId + "\"}]", MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://admin-core/api/v1/notifications/alerts"))
+                .andExpect(method(POST))
+                .andExpect(jsonPath("$.deepLink").doesNotExist())
+                .andExpect(jsonPath("$.kind").value("STOCK_QUANTITY_LIMIT"))
+                .andRespond(withStatus(org.springframework.http.HttpStatus.ACCEPTED));
 
         assertThat(new AdminCoreAlertGateway(client, properties).send(alerta)).isTrue();
         server.verify();

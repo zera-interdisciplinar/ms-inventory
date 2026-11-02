@@ -73,7 +73,8 @@ class EvaluateRulesImplTest {
             assertThat(alerta.kind()).isEqualTo(RuleKind.WARRANTY_EXPIRATION);
             assertThat(alerta.severity()).isEqualTo(AlertSeverity.MEDIUM);
             assertThat(alerta.unitId()).isEqualTo(Fixtures.UNIT);
-            assertThat(alerta.description()).contains("limite: 30 days");
+            assertThat(alerta.description()).contains("Garantia vencendo").contains("Notebook");
+            assertThat(alerta.description()).doesNotContain("days").doesNotContain(alerta.subject().itemId().toString());
         });
     }
 
@@ -126,7 +127,7 @@ class EvaluateRulesImplTest {
         verify(dispatcher).dispatch(alerta.capture());
         assertThat(alerta.getValue().subject().isUnitWide()).isTrue();
         assertThat(alerta.getValue().severity()).isEqualTo(AlertSeverity.HIGH);
-        assertThat(alerta.getValue().description()).contains("95%").contains("95 itens de 100");
+        assertThat(alerta.getValue().description()).contains("95%").contains("95 de 100");
         // o assunto da regra de unidade e a propria unidade
         assertThat(alerta.getValue().dedupSubject()).isEqualTo(Fixtures.UNIT);
     }

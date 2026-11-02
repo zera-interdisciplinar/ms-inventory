@@ -40,6 +40,9 @@ public class AdminCoreAlertGateway implements AlertGateway {
         if (recipients.isEmpty()) {
             return false;
         }
+        String deepLink = alert.subject().isUnitWide()
+                ? null
+                : AdminCoreClient.itemDeepLink(alert.subject().itemId());
         // todos os envios sao tentados mesmo se um falhar, senao um gestor com problema de entrega
         // deixaria os seguintes sem alerta. Reenviar ao gestor que ja recebeu e inofensivo: o
         // admin-core deduplica por (regra, evento, usuario) enquanto o alerta esta OPEN.
@@ -47,7 +50,8 @@ public class AdminCoreAlertGateway implements AlertGateway {
         for (UUID recipient : recipients) {
             boolean delivered = withRetry(() -> client.postAlert(AdminCoreClient.alertPayload(
                     recipient, alert.unitId(), alert.ruleId(), alert.dedupSubject(),
-                    alert.kind().name(), alert.severity().name(), alert.description(), alert.occurredAt())));
+                    alert.kind().name(), alert.severity().name(), alert.description(), alert.occurredAt(),
+                    deepLink)));
             allDelivered &= delivered;
         }
         return allDelivered;

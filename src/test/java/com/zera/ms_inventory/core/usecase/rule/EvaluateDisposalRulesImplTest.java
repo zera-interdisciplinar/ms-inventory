@@ -76,7 +76,7 @@ class EvaluateDisposalRulesImplTest {
         verify(dispatcher).dispatch(alerta.capture());
         assertThat(alerta.getValue().kind()).isEqualTo(RuleKind.RECYCLABLE_TO_LANDFILL);
         assertThat(alerta.getValue().severity()).isEqualTo(AlertSeverity.HIGH);
-        assertThat(alerta.getValue().description()).contains("100001");
+        assertThat(alerta.getValue().description()).contains("Notebook").doesNotContain("100001");
         assertThat(alerta.getValue().dedupSubject()).isEqualTo(itemId);
     }
 
