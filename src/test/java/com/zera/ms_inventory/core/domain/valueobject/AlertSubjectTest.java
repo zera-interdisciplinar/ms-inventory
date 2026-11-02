@@ -16,7 +16,7 @@ class AlertSubjectTest {
         AlertSubject subject = new AlertSubject(itemId, "100001", "Notebook");
 
         assertThat(subject.isUnitWide()).isFalse();
-        assertThat(subject.describe()).isEqualTo("o item 100001 (Notebook)");
+        assertThat(subject.describe()).isEqualTo("Notebook");
         assertThat(subject.dedupKey(Fixtures.UNIT)).isEqualTo(itemId);
     }
 
@@ -24,8 +24,8 @@ class AlertSubjectTest {
     void shouldFallBackToTheIdWithoutAShortCode() {
         UUID itemId = UUID.randomUUID();
 
-        assertThat(new AlertSubject(itemId, null, null).describe()).isEqualTo("o item " + itemId);
-        assertThat(new AlertSubject(itemId, "100001", "  ").describe()).isEqualTo("o item 100001");
+        assertThat(new AlertSubject(itemId, null, null).describe()).isEqualTo("um item");
+        assertThat(new AlertSubject(itemId, "100001", "  ").describe()).isEqualTo("100001");
     }
 
     /** A regra de ocupacao nao tem item: o assunto e a unidade, e e por ela que deduplica. */

@@ -25,7 +25,12 @@ public record AlertSubject(UUID itemId, String displayCode, String name) {
         if (isUnitWide()) {
             return "a unidade";
         }
-        return "o item " + (displayCode != null ? displayCode : itemId)
-                + (name != null && !name.isBlank() ? " (" + name + ")" : "");
+        if (name != null && !name.isBlank()) {
+            return name;
+        }
+        if (displayCode != null && !displayCode.isBlank()) {
+            return displayCode;
+        }
+        return "um item";
     }
 }
