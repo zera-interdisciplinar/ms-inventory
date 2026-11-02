@@ -16,7 +16,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 /**
- * Conversa com o admin-core: resolve o gestor da unidade e entrega o alerta. As falhas viram
+ * Conversa com o admin-core: resolve os gestores da unidade e entrega o alerta. As falhas viram
  * {@code false} em vez de excecao, porque nenhum alerta pode derrubar o job nem o descarte.
  */
 @Component
@@ -28,10 +28,14 @@ public class AdminCoreClient {
     private final RestClient restClient;
     private final ServiceTokenProvider tokens;
     private final AdminCoreProperties properties;
-    private final Map<UUID, CachedRecipient> recipients = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<UUID, CachedRecipients> recipients = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<UUID, CachedRecipient> employeeManagers = new java.util.concurrent.ConcurrentHashMap<>();
 
+    private static final int MANAGERS_PAGE_SIZE = 100;
+
     private record CachedRecipient(UUID userId, Instant expiresAt) {}
+
+    private record CachedRecipients(List<UUID> userIds, Instant expiresAt) {}
 
     @org.springframework.beans.factory.annotation.Autowired
     public AdminCoreClient(ServiceTokenProvider tokens, AdminCoreProperties properties) {
@@ -46,44 +50,50 @@ public class AdminCoreClient {
     }
 
     /**
-     * Gestor da unidade, que e quem recebe os alertas de inventario. O resultado fica em cache
-     * curto: sem isso, cada alerta de uma mesma execucao repetiria a consulta.
+     * Todos os gestores ativos da unidade: o alerta de inventario (item quebrando, garantia,
+     * ocupacao) nao pertence a um gestor especifico, entao todos precisam ser avisados. Antes
+     * pegava so o primeiro da listagem, e os demais nunca ficavam sabendo. O resultado fica em
+     * cache curto: sem isso, cada alerta de uma mesma execucao repetiria a consulta.
      */
-    public Optional<UUID> managerOf(UUID unitId) {
-        CachedRecipient cached = recipients.get(unitId);
+    public List<UUID> managersOf(UUID unitId) {
+        CachedRecipients cached = recipients.get(unitId);
         if (cached != null && Instant.now().isBefore(cached.expiresAt())) {
-            return Optional.of(cached.userId());
+            return cached.userIds();
         }
         try {
+            // uma pagina so: unidade com mais gestores que o tamanho da pagina nao existe na pratica
             List<Map<String, Object>> users = restClient.get()
                     .uri(uri -> uri.path("/api/v1/users")
                             .queryParam("role", "MANAGER")
+                            .queryParam("status", "ACTIVE")
                             .queryParam("unitId", unitId)
-                            .queryParam("size", 1)
+                            .queryParam("size", MANAGERS_PAGE_SIZE)
                             .build())
                     .header("Authorization", "Bearer " + tokens.token())
                     .retrieve()
                     .body(List.class);
             if (users == null || users.isEmpty()) {
                 log.warn("No manager found for unit {}; alerts have no recipient", unitId);
-                return Optional.empty();
+                return List.of();
             }
-            UUID userId = UUID.fromString((String) users.get(0).get("userId"));
-            recipients.put(unitId, new CachedRecipient(userId,
+            List<UUID> userIds = users.stream()
+                    .map(user -> UUID.fromString((String) user.get("userId")))
+                    .toList();
+            recipients.put(unitId, new CachedRecipients(userIds,
                     Instant.now().plus(properties.recipientCacheTtl())));
-            return Optional.of(userId);
+            return userIds;
         } catch (RuntimeException failure) {
             invalidateOnUnauthorized(failure);
-            log.warn("Could not resolve the manager of unit {}: {}", unitId, failure.getMessage());
-            return Optional.empty();
+            log.warn("Could not resolve the managers of unit {}: {}", unitId, failure.getMessage());
+            return List.of();
         }
     }
 
     /**
      * Gestor de um funcionario especifico (o {@code managerId} real dele), nao "um gestor
-     * qualquer da unidade" -- usar {@link #managerOf(UUID)} buscaria o primeiro MANAGER que a
-     * listagem devolvesse, o que manda o alerta pro gestor errado quando a unidade tem mais de um.
-     * Mesmo cache curto de {@link #managerOf(UUID)}, chave separada pra nao colidir.
+     * qualquer da unidade" -- para o que e do funcionario (aprovacao de cadastro), avisar todos os
+     * gestores da {@link #managersOf(UUID) unidade} seria barulho para quem nao tem o que decidir.
+     * Mesmo cache curto de {@link #managersOf(UUID)}, chave separada pra nao colidir.
      */
     public Optional<UUID> managerOfEmployee(UUID employeeId) {
         CachedRecipient cached = employeeManagers.get(employeeId);
