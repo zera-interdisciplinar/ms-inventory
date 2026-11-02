@@ -1,6 +1,6 @@
 package com.zera.ms_inventory.infrastructure.admincore;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -12,8 +12,9 @@ import com.zera.ms_inventory.core.domain.entity.RuleAlert;
 import com.zera.ms_inventory.core.repository.AlertGateway;
 
 /**
- * Entrega o alerta ao admin-core, tentando de novo com espera crescente. Sem gestor na unidade o
- * alerta nao tem destinatario: e registrado e descartado, sem derrubar a execucao.
+ * Entrega o alerta ao admin-core, tentando de novo com espera crescente, a todos os gestores da
+ * unidade -- o alerta e da unidade, nao de um gestor. Sem gestor na unidade o alerta nao tem
+ * destinatario: e registrado e descartado, sem derrubar a execucao.
  */
 @Component
 @ConditionalOnProperty(prefix = "zera.admin-core", name = "enabled", havingValue = "true")
@@ -35,13 +36,21 @@ public class AdminCoreAlertGateway implements AlertGateway {
             log.debug("admin-core not configured; alert {} not sent", alert.kind());
             return false;
         }
-        Optional<UUID> recipient = client.managerOf(alert.unitId());
-        if (recipient.isEmpty()) {
+        List<UUID> recipients = client.managersOf(alert.unitId());
+        if (recipients.isEmpty()) {
             return false;
         }
-        return withRetry(() -> client.postAlert(AdminCoreClient.alertPayload(
-                recipient.get(), alert.unitId(), alert.ruleId(), alert.dedupSubject(),
-                alert.kind().name(), alert.severity().name(), alert.description(), alert.occurredAt())));
+        // todos os envios sao tentados mesmo se um falhar, senao um gestor com problema de entrega
+        // deixaria os seguintes sem alerta. Reenviar ao gestor que ja recebeu e inofensivo: o
+        // admin-core deduplica por (regra, evento, usuario) enquanto o alerta esta OPEN.
+        boolean allDelivered = true;
+        for (UUID recipient : recipients) {
+            boolean delivered = withRetry(() -> client.postAlert(AdminCoreClient.alertPayload(
+                    recipient, alert.unitId(), alert.ruleId(), alert.dedupSubject(),
+                    alert.kind().name(), alert.severity().name(), alert.description(), alert.occurredAt())));
+            allDelivered &= delivered;
+        }
+        return allDelivered;
     }
 
     /** Espera crescente entre as tentativas; a ultima falha so vira log. */
