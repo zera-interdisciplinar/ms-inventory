@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import com.zera.ms_inventory.core.domain.entity.Item;
-import com.zera.ms_inventory.core.domain.entity.Model;
 import com.zera.ms_inventory.core.domain.valueobject.Actor;
 import com.zera.ms_inventory.core.repository.ItemNotifier;
 
@@ -41,13 +40,13 @@ public class AdminCoreItemNotifier implements ItemNotifier {
     @Override
     public void itemApproved(Item item, Actor reviewer) {
         notify(item, "ITEM_APPROVED", "LOW",
-                "Seu cadastro do item %s foi aprovado".formatted(describe(item)));
+                "Cadastro de %s aprovado".formatted(describe(item)));
     }
 
     @Override
     public void itemRejected(Item item, Actor reviewer, String reason) {
         notify(item, "ITEM_REJECTED", "MEDIUM",
-                "Seu cadastro do item %s foi reprovado: %s".formatted(describe(item), reason));
+                "%s reprovado: %s".formatted(describe(item), reason));
     }
 
     @Override
@@ -65,11 +64,11 @@ public class AdminCoreItemNotifier implements ItemNotifier {
                     item.getId(), submitter != null ? submitter.userId() : null);
             return;
         }
-        String description = "Item %s (modelo %s) aguardando revisao"
-                .formatted(describe(item), describeModel(item));
+        String description = "%s aguardando revisao".formatted(describe(item));
         // eventId e o proprio item: junto com a ausencia de regra, e o que identifica a notificacao
         client.postAlert(AdminCoreClient.alertPayload(manager.get(), item.getUnitId(), null,
-                item.getId(), "ITEM_PENDING_APPROVAL", "LOW", description, LocalDateTime.now()));
+                item.getId(), "ITEM_PENDING_APPROVAL", "LOW", description, LocalDateTime.now(),
+                AdminCoreClient.itemDeepLink(item.getId())));
     }
 
     private void notify(Item item, String kind, String severity, String description) {
@@ -79,15 +78,17 @@ public class AdminCoreItemNotifier implements ItemNotifier {
         }
         // eventId e o proprio item: junto com a ausencia de regra, e o que identifica a notificacao
         client.postAlert(AdminCoreClient.alertPayload(item.getCreatedBy(), item.getUnitId(), null,
-                item.getId(), kind, severity, description, LocalDateTime.now()));
-    }
-
-    private static String describeModel(Item item) {
-        Model model = item.getModel();
-        return model != null ? model.getName() : "desconhecido";
+                item.getId(), kind, severity, description, LocalDateTime.now(),
+                AdminCoreClient.itemDeepLink(item.getId())));
     }
 
     private static String describe(Item item) {
-        return item.getDisplayCode() != null ? item.getDisplayCode() : item.getId().toString();
+        if (item.getName() != null && !item.getName().isBlank()) {
+            return item.getName();
+        }
+        if (item.getDisplayCode() != null) {
+            return item.getDisplayCode();
+        }
+        return "um item";
     }
 }

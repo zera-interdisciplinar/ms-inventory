@@ -151,7 +151,7 @@ public class AdminCoreClient {
 
     public static Map<String, Object> alertPayload(UUID userId, UUID unitId, UUID ruleId, UUID eventId,
                                                    String kind, String severity, String description,
-                                                   java.time.LocalDateTime occurredAt) {
+                                                   java.time.LocalDateTime occurredAt, String deepLink) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId.toString());
         payload.put("unitId", unitId.toString());
@@ -163,6 +163,13 @@ public class AdminCoreClient {
         payload.put("status", "OPEN");
         payload.put("description", description);
         payload.put("occurredAt", occurredAt.toString());
+        if (deepLink != null && !deepLink.isBlank()) {
+            payload.put("deepLink", deepLink);
+        }
         return payload;
+    }
+
+    public static String itemDeepLink(UUID itemId) {
+        return itemId == null ? null : "zera://item?id=" + itemId;
     }
 }

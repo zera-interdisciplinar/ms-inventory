@@ -207,6 +207,8 @@ class AdminCoreIntegrationTest {
                 .andExpect(jsonPath("$.userId").value(managerId.toString()))
                 .andExpect(jsonPath("$.ruleId").value(alerta.ruleId().toString()))
                 .andExpect(jsonPath("$.eventId").value(alerta.dedupSubject().toString()))
+                .andExpect(jsonPath("$.deepLink").value("zera://item?id=" + alerta.subject().itemId()))
+                .andExpect(jsonPath("$.description").value("garantia vencendo"))
                 .andRespond(withStatus(org.springframework.http.HttpStatus.ACCEPTED));
 
         assertThat(new AdminCoreAlertGateway(client, properties).send(alerta)).isTrue();

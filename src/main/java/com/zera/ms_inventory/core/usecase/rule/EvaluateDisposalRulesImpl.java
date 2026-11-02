@@ -56,12 +56,10 @@ public class EvaluateDisposalRulesImpl implements EvaluateDisposalRules {
                 continue;
             }
             for (Rule rule : regras) {
+                AlertSubject subject = new AlertSubject(item.itemId(), item.displayCode(), item.name());
                 RuleAlert alerta = new RuleAlert(disposal.getUnitId(), rule.getId(),
-                        RuleKind.RECYCLABLE_TO_LANDFILL,
-                        new AlertSubject(item.itemId(), item.displayCode(), item.name()),
-                        AlertSeverity.HIGH,
-                        "Material reciclavel enviado ao aterro: %s".formatted(
-                                new AlertSubject(item.itemId(), item.displayCode(), item.name()).describe()),
+                        RuleKind.RECYCLABLE_TO_LANDFILL, subject, AlertSeverity.HIGH,
+                        "%s: %s".formatted(RuleKind.RECYCLABLE_TO_LANDFILL.displayName(), subject.describe()),
                         java.time.LocalDateTime.now());
                 dispatcher.dispatch(alerta);
             }
