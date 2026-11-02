@@ -62,6 +62,20 @@ class AdminCoreItemNotifierTest {
     }
 
     @Test
+    void shouldFallBackToTheDisplayCodeWhenTheItemHasNoName() {
+        Item item = Fixtures.item(UUID.randomUUID(), Fixtures.UNIT);
+        item.assignDisplayCode("100001");
+        item.registerBy(Fixtures.OPERATOR);
+
+        new AdminCoreItemNotifier(client, properties("segredo")).itemApproved(item, Fixtures.MANAGER);
+
+        ArgumentCaptor<Map<String, Object>> payload = ArgumentCaptor.forClass(Map.class);
+        verify(client).postAlert(payload.capture());
+        assertThat((String) payload.getValue().get("description")).contains("100001").contains("aprovado")
+                .doesNotContain(item.getId().toString());
+    }
+
+    @Test
     void shouldCarryTheReasonOnRejection() {
         Item item = itemDoOperario();
 

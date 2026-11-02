@@ -85,4 +85,20 @@ class DefaultRulesTest {
         assertThat(Arrays.stream(RuleKind.values()).filter(RuleKind::acceptsPercent).toList())
                 .containsExactly(RuleKind.STOCK_QUANTITY_LIMIT);
     }
+
+    /** O nome do enum nao pode ir na notificacao; cada tipo tem rotulo curto em portugues. */
+    @Test
+    void shouldExposeAPortugueseDisplayNameForEveryKind() {
+        assertThat(RuleKind.WARRANTY_EXPIRATION.displayName()).isEqualTo("Garantia vencendo");
+        assertThat(RuleKind.LIFESPAN_EXPIRATION.displayName()).isEqualTo("Vida util no fim");
+        assertThat(RuleKind.USAGE_INTENSITY_LIMIT.displayName()).isEqualTo("Uso acima do limite");
+        assertThat(RuleKind.STOCK_QUANTITY_LIMIT.displayName()).isEqualTo("Estoque cheio");
+        assertThat(RuleKind.TIME_IN_STOCK_LIMIT.displayName()).isEqualTo("Muito tempo em estoque");
+        assertThat(RuleKind.STALE_ITEM.displayName()).isEqualTo("Item parado");
+        assertThat(RuleKind.RECYCLABLE_TO_LANDFILL.displayName()).isEqualTo("Reciclavel no aterro");
+        assertThat(RuleKind.PREDICTED_FAILURE.displayName()).isEqualTo("Quebra prevista");
+        assertThat(Arrays.stream(RuleKind.values()).map(RuleKind::displayName))
+                .doesNotContainNull()
+                .allMatch(nome -> !nome.isBlank());
+    }
 }
