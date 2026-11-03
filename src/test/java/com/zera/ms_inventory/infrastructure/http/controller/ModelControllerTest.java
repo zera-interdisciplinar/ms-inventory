@@ -35,6 +35,7 @@ import com.zera.ms_inventory.core.usecase.model.UpdateModelExpectedLifespanMonth
 import com.zera.ms_inventory.core.usecase.model.UpdateModelMaterials;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelManufacturer;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelName;
+import com.zera.ms_inventory.core.usecase.model.UpdateModelEstimatedWeightKg;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelWarrantyMonths;
 import com.zera.ms_inventory.infrastructure.http.handler.GlobalExceptionHandler;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
@@ -43,6 +44,7 @@ import com.zera.ms_inventory.infrastructure.http.request.UpdateModelExpectedLife
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelMaterialsRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturerRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
+import com.zera.ms_inventory.infrastructure.http.request.UpdateModelEstimatedWeightKgRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
 
 import static org.mockito.Mockito.doThrow;
@@ -79,6 +81,7 @@ class ModelControllerTest {
     @MockitoBean private UpdateModelName updateModelName;
     @MockitoBean private UpdateModelManufacturer updateModelManufacturer;
     @MockitoBean private UpdateModelWarrantyMonths updateModelWarrantyMonths;
+    @MockitoBean private UpdateModelEstimatedWeightKg updateModelEstimatedWeightKg;
     @MockitoBean private UpdateModelExpectedLifespanMonths updateModelExpectedLifespanMonths;
     @MockitoBean private UpdateModelMaterials updateModelMaterials;
     @MockitoBean private DeleteModel deleteModel;
@@ -208,6 +211,21 @@ class ModelControllerTest {
                         .header("X-Unit-Id", UNIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.warrantyMonths").value(36));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/models/{id}/estimated-weight-kg - deve atualizar o peso estimado")
+    void shouldUpdateEstimatedWeightKg() throws Exception {
+        UUID id = UUID.randomUUID();
+        Model model = new Model(id, UNIT, "Laptop X1", "Acme", 36, 60, Set.of(), 2.5, null, com.zera.ms_inventory.Fixtures.category(CATEGORY_ID, UNIT));
+        when(updateModelEstimatedWeightKg.execute(UNIT, id, 2.5)).thenReturn(model);
+
+        mockMvc.perform(patch("/api/v1/models/{id}/estimated-weight-kg", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateModelEstimatedWeightKgRequest(2.5)))
+                        .header("X-Unit-Id", UNIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estimatedWeightKg").value(2.5));
     }
 
     @Test
