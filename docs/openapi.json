@@ -1389,6 +1389,18 @@
         ],
         "type": "object"
       },
+      "UpdateModelEstimatedWeightKgRequest": {
+        "properties": {
+          "estimatedWeightKg": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "estimatedWeightKg"
+        ],
+        "type": "object"
+      },
       "UpdateModelExpectedLifespanMonthsRequest": {
         "properties": {
           "expectedLifespanMonths": {
@@ -3567,6 +3579,56 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "model-controller"
+        ]
+      }
+    },
+    "/api/v1/models/{id}/estimated-weight-kg": {
+      "patch": {
+        "operationId": "updateEstimatedWeightKg",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Unit-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateModelEstimatedWeightKgRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
