@@ -31,12 +31,14 @@ import com.zera.ms_inventory.core.usecase.model.UpdateModelExpectedLifespanMonth
 import com.zera.ms_inventory.core.usecase.model.UpdateModelManufacturer;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelMaterials;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelName;
+import com.zera.ms_inventory.core.usecase.model.UpdateModelEstimatedWeightKg;
 import com.zera.ms_inventory.core.usecase.model.UpdateModelWarrantyMonths;
 import com.zera.ms_inventory.infrastructure.http.request.CreateModelRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelExpectedLifespanMonthsRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelManufacturerRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelMaterialsRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelNameRequest;
+import com.zera.ms_inventory.infrastructure.http.request.UpdateModelEstimatedWeightKgRequest;
 import com.zera.ms_inventory.infrastructure.http.request.UpdateModelWarrantyMonthsRequest;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponse;
 import com.zera.ms_inventory.infrastructure.http.response.ItemResponses;
@@ -59,6 +61,7 @@ public class ModelController {
     private final UpdateModelWarrantyMonths updateModelWarrantyMonths;
     private final UpdateModelExpectedLifespanMonths updateModelExpectedLifespanMonths;
     private final UpdateModelMaterials updateModelMaterials;
+    private final UpdateModelEstimatedWeightKg updateModelEstimatedWeightKg;
     private final DeleteModel deleteModel;
 
     public ModelController(CreateModel createModel,
@@ -70,6 +73,7 @@ public class ModelController {
                             UpdateModelWarrantyMonths updateModelWarrantyMonths,
                             UpdateModelExpectedLifespanMonths updateModelExpectedLifespanMonths,
                             UpdateModelMaterials updateModelMaterials,
+                            UpdateModelEstimatedWeightKg updateModelEstimatedWeightKg,
                             DeleteModel deleteModel,
                             ItemResponses itemResponses) {
         this.itemResponses = itemResponses;
@@ -82,6 +86,7 @@ public class ModelController {
         this.updateModelWarrantyMonths = updateModelWarrantyMonths;
         this.updateModelExpectedLifespanMonths = updateModelExpectedLifespanMonths;
         this.updateModelMaterials = updateModelMaterials;
+        this.updateModelEstimatedWeightKg = updateModelEstimatedWeightKg;
         this.deleteModel = deleteModel;
     }
 
@@ -136,6 +141,11 @@ public class ModelController {
     @PatchMapping("/{id}/expected-lifespan-months")
     public ResponseEntity<ModelResponse> updateExpectedLifespanMonths(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelExpectedLifespanMonthsRequest request) {
         return ResponseEntity.ok(ModelResponse.from(updateModelExpectedLifespanMonths.execute(unitId, id, request.expectedLifespanMonths())));
+    }
+
+    @PatchMapping("/{id}/estimated-weight-kg")
+    public ResponseEntity<ModelResponse> updateEstimatedWeightKg(@RequestHeader("X-Unit-Id") UUID unitId, @PathVariable UUID id, @RequestBody @Valid UpdateModelEstimatedWeightKgRequest request) {
+        return ResponseEntity.ok(ModelResponse.from(updateModelEstimatedWeightKg.execute(unitId, id, request.estimatedWeightKg())));
     }
 
     @PatchMapping("/{id}/materials")
