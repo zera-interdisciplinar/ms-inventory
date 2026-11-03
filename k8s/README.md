@@ -58,33 +58,38 @@ identidade de serviço é um follow-up.
 (`zera.storage.photos-bucket`). Sem a variável, o serviço sobe normalmente (log `WARN`),
 o upload responde **503** e as respostas não trazem URL de foto.
 
-Credenciais pelo ADC: no GKE, a service account do workload identity do pod. Para cada
-ambiente:
+Credenciais pelo ADC via **Workload Identity** (a org bloqueia chave JSON de service account:
+`iam.disableServiceAccountKeyCreation`). O KSA `ms-inventory` (`serviceaccount.yaml`, aplicado
+pelo CI) assume a GSA `ms-inventory-photos`. Provisionamento único:
 
 ```sh
-PROJECT=<projeto-gcp>
-BUCKET=zera-ms-inventory-photos-qa        # -production no outro ambiente
-GSA=<service-account-do-ms-inventory>@$PROJECT.iam.gserviceaccount.com
+P=zera-512810; R=southamerica-east1
+GSA=ms-inventory-photos@$P.iam.gserviceaccount.com
 
-# bucket privado: as fotos são servidas só por URL assinada
-gcloud storage buckets create gs://$BUCKET --project $PROJECT --location southamerica-east1 \
-  --uniform-bucket-level-access --public-access-prevention
+# Workload Identity no cluster e nos nodes (reinicia os nodes em rolling)
+gcloud container clusters update zera-cluster --region $R --project $P --workload-pool=$P.svc.id.goog
+gcloud container node-pools update default-pool --cluster zera-cluster --region $R --project $P --workload-metadata=GKE_METADATA
 
-# gravar e apagar objetos no bucket
-gcloud storage buckets add-iam-policy-binding gs://$BUCKET \
-  --member serviceAccount:$GSA --role roles/storage.objectAdmin
+gcloud iam service-accounts create ms-inventory-photos --project $P
+
+for env in qa production; do
+  BUCKET=zera-ms-inventory-photos-$env
+  # bucket privado: as fotos são servidas só por URL assinada
+  gcloud storage buckets create gs://$BUCKET --project $P --location $R \
+    --uniform-bucket-level-access --public-access-prevention
+  gcloud storage buckets add-iam-policy-binding gs://$BUCKET \
+    --member serviceAccount:$GSA --role roles/storage.objectAdmin
+  # o pod (KSA ms-inventory) assume a GSA
+  gcloud iam service-accounts add-iam-policy-binding $GSA --project $P \
+    --role roles/iam.workloadIdentityUser --member "serviceAccount:$P.svc.id.goog[$env/ms-inventory]"
+done
 
 # assinar URLs V4 sem chave JSON (signBlob da própria service account)
-gcloud iam service-accounts add-iam-policy-binding $GSA \
+gcloud iam service-accounts add-iam-policy-binding $GSA --project $P \
   --member serviceAccount:$GSA --role roles/iam.serviceAccountTokenCreator
 ```
 
-Depois, no `deployment-qa.yaml` / `deployment.yaml`:
-
-```yaml
-        - name: PHOTOS_BUCKET
-          value: "zera-ms-inventory-photos-qa"
-```
+`PHOTOS_BUCKET` já está nos deployments (`zera-ms-inventory-photos-qa` / `-production`).
 
 As URLs assinadas duram `zera.storage.photo-url-ttl` (padrão 15 minutos).
 

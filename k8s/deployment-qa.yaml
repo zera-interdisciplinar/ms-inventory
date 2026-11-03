@@ -19,6 +19,7 @@ spec:
       labels:
         app: ms-inventory
     spec:
+      serviceAccountName: ms-inventory
       containers:
       - name: ms-inventory
         image: southamerica-east1-docker.pkg.dev/zera-512810/repo/ms-inventory:IMAGE_TAG
@@ -93,3 +94,6 @@ spec:
               name: ms-inventory-admin-core
               key: client-secret
               optional: true
+        # fotos dos itens (GCS). Credencial: Workload Identity (KSA ms-inventory -> GSA ms-inventory-photos).
+        - name: PHOTOS_BUCKET
+          value: "zera-ms-inventory-photos-qa"
