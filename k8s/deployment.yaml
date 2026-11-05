@@ -22,7 +22,7 @@ spec:
       serviceAccountName: ms-inventory
       containers:
       - name: ms-inventory
-        image: southamerica-east1-docker.pkg.dev/zeratech-prod/repo/ms-inventory:IMAGE_TAG
+        image: southamerica-east1-docker.pkg.dev/zera-512810/repo/ms-inventory:IMAGE_TAG
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -96,4 +96,4 @@ spec:
               optional: true
         # fotos dos itens (GCS). Credencial: Workload Identity (KSA ms-inventory -> GSA ms-inventory-photos).
         - name: PHOTOS_BUCKET
-          value: "zeratech-ms-inventory-photos-production"
+          value: "zera-ms-inventory-photos-production"
